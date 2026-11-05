@@ -1,5 +1,5 @@
 {
-  "name": "@better-t-app-template/server",
+  "name": "@mine/server",
   "private": true,
   "type": "module",
   "main": "src/worker.ts",
@@ -9,14 +9,15 @@
     "dev": "wrangler dev"
   },
   "dependencies": {
-    "@better-t-app-template/api": "workspace:*",
-    "@better-t-app-template/db": "workspace:*",
     "@hono/trpc-server": "^0.4.2",
+    "@mine/api": "workspace:*",
+    "@mine/auth": "workspace:*",
+    "@mine/db": "workspace:*",
     "@trpc/server": "catalog:",
     "hono": "catalog:"
   },
   "devDependencies": {
-    "@better-t-app-template/config": "workspace:*",
+    "@mine/config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "4.1.2",
     "wrangler": "4.80.0"

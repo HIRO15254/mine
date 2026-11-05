@@ -1,5 +1,5 @@
 {
-  "name": "@better-t-app-template/env",
+  "name": "@mine/env",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@better-t-app-template/config": "workspace:*",
+    "@mine/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

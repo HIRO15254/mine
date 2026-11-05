@@ -1,9 +1,21 @@
+import { getTableName } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { schema } from "../schema";
 
-describe("template database schema", () => {
-	it("starts without application tables", () => {
-		expect(schema).toEqual({});
+describe("database schema", () => {
+	it("registers the Better Auth tables", () => {
+		const tables = [
+			schema.user,
+			schema.session,
+			schema.account,
+			schema.verification,
+		];
+		expect(tables.map((table) => getTableName(table))).toEqual([
+			"user",
+			"session",
+			"account",
+			"verification",
+		]);
 	});
 });

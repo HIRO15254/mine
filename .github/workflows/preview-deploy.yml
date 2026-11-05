@@ -175,9 +175,10 @@ jobs:
       - name: Deploy preview Worker
         working-directory: apps/server
         env:
+          API_URL: ${{ needs.setup.outputs.api_url }}
           WEB_URL: ${{ needs.setup.outputs.web_url }}
           WORKER_NAME: ${{ needs.setup.outputs.worker_name }}
-        run: bunx wrangler deploy --name "$WORKER_NAME" --var "CORS_ORIGIN:${WEB_URL}"
+        run: bunx wrangler deploy --name "$WORKER_NAME" --var "CORS_ORIGIN:${WEB_URL}" --var "BETTER_AUTH_URL:${API_URL}"
 
   deploy-web:
     needs: [setup, deploy-api]
@@ -194,7 +195,7 @@ jobs:
       - name: Build web
         env:
           VITE_SERVER_URL: ${{ needs.setup.outputs.api_url }}
-        run: bun run --filter @better-t-app-template/web build
+        run: bun run --filter @mine/web build
       - name: Deploy preview Pages
         env:
           PAGES_PROJECT: ${{ needs.setup.outputs.pages_project }}
