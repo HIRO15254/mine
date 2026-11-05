@@ -38,15 +38,30 @@ app.on(["GET", "POST"], "/api/auth/*", (context) => {
 
 app.use("/trpc/*", (context, next) => {
 	const db = createDb(context.env.DB);
+	const auth = authFor(context.env, db);
 	const headers = context.req.raw.headers;
 	return trpcServer({
 		router: appRouter,
-		createContext: createContextFactory(db, async () => {
-			const session = await authFor(context.env, db).api.getSession({
-				headers,
-			});
-			return session ? { user: session.user } : null;
-		}),
+		createContext: createContextFactory(
+			db,
+			async () => {
+				const session = await auth.api.getSession({ headers });
+				return session ? { user: session.user } : null;
+			},
+			{
+				getGoogleAccessToken: async () => {
+					try {
+						const token = await auth.api.getAccessToken({
+							body: { providerId: "google" },
+							headers,
+						});
+						return token.accessToken ?? null;
+					} catch {
+						return null;
+					}
+				},
+			}
+		),
 	})(context, next);
 });
 

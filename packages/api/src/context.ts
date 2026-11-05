@@ -1,5 +1,7 @@
 import type { Database } from "@mine/db";
 
+import type { FetchLike } from "./google/calendar";
+
 export interface SessionUser {
 	email: string;
 	id: string;
@@ -13,16 +15,34 @@ export interface Session {
 
 export type SessionResolver = () => Promise<Session | null>;
 
+/** Returns a valid Google access token for the signed-in user, or null. */
+export type GoogleAccessTokenResolver = () => Promise<string | null>;
+
 export interface Context extends Record<string, unknown> {
 	db: Database;
+	fetch: FetchLike;
+	getGoogleAccessToken: GoogleAccessTokenResolver;
 	resolveSession: SessionResolver;
 }
 
+export interface ContextOptions {
+	fetch?: FetchLike;
+	getGoogleAccessToken?: GoogleAccessTokenResolver;
+}
+
 const noSession: SessionResolver = () => Promise.resolve(null);
+const noGoogleToken: GoogleAccessTokenResolver = () => Promise.resolve(null);
 
 export function createContextFactory(
 	db: Database,
-	resolveSession: SessionResolver = noSession
+	resolveSession: SessionResolver = noSession,
+	options: ContextOptions = {}
 ): () => Promise<Context> {
-	return () => Promise.resolve({ db, resolveSession });
+	return () =>
+		Promise.resolve({
+			db,
+			fetch: options.fetch ?? ((input, init) => fetch(input, init)),
+			getGoogleAccessToken: options.getGoogleAccessToken ?? noGoogleToken,
+			resolveSession,
+		});
 }

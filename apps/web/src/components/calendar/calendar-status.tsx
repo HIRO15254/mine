@@ -1,0 +1,96 @@
+import { IconAlertTriangle, IconCalendarOff } from "@tabler/icons-react";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button/button";
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty/empty";
+import { Spinner } from "@/components/ui/spinner/spinner";
+import { authClient } from "@/lib/auth-client";
+
+/** Message the API sends when Google has not granted calendar access. */
+export const CALENDAR_NOT_CONNECTED = "GOOGLE_CALENDAR_NOT_CONNECTED";
+
+export function isCalendarNotConnected(error: unknown): boolean {
+	return error instanceof Error && error.message === CALENDAR_NOT_CONNECTED;
+}
+
+export function CalendarLoading() {
+	return (
+		<div className="flex justify-center py-8 text-muted-foreground">
+			<Spinner />
+		</div>
+	);
+}
+
+/** Error or reconnect prompt for a failed calendar query. */
+export function CalendarError({
+	error,
+	onRetry,
+}: {
+	error: unknown;
+	onRetry: () => void;
+}) {
+	if (isCalendarNotConnected(error)) {
+		return <ConnectCalendar />;
+	}
+	return (
+		<Empty className="py-8">
+			<EmptyHeader>
+				<EmptyMedia>
+					<IconAlertTriangle aria-hidden />
+				</EmptyMedia>
+				<EmptyTitle>予定を読み込めませんでした</EmptyTitle>
+				<EmptyDescription>
+					時間をおいてもう一度お試しください。
+				</EmptyDescription>
+			</EmptyHeader>
+			<EmptyContent>
+				<Button onClick={onRetry} type="button" variant="secondary">
+					再読み込み
+				</Button>
+			</EmptyContent>
+		</Empty>
+	);
+}
+
+function ConnectCalendar() {
+	const [isRedirecting, setIsRedirecting] = useState(false);
+
+	const connect = async () => {
+		setIsRedirecting(true);
+		const result = await authClient.signIn.social({
+			provider: "google",
+			callbackURL: window.location.href,
+			errorCallbackURL: `${window.location.origin}/login`,
+		});
+		if (result.error) {
+			setIsRedirecting(false);
+		}
+	};
+
+	return (
+		<Empty className="py-8">
+			<EmptyHeader>
+				<EmptyMedia>
+					<IconCalendarOff aria-hidden />
+				</EmptyMedia>
+				<EmptyTitle>Google カレンダーと連携していません</EmptyTitle>
+				<EmptyDescription>
+					予定を表示するには、カレンダーの閲覧を許可してください。
+				</EmptyDescription>
+			</EmptyHeader>
+			<EmptyContent>
+				<Button disabled={isRedirecting} onClick={connect} type="button">
+					{isRedirecting && <Spinner />}
+					カレンダーを連携
+				</Button>
+			</EmptyContent>
+		</Empty>
+	);
+}

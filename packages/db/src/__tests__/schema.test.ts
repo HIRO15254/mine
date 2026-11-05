@@ -19,3 +19,9 @@ describe("database schema", () => {
 		]);
 	});
 });
+
+describe("calendar schema", () => {
+	it("registers the calendar preference table", () => {
+		expect(getTableName(schema.calendarPreference)).toBe("calendar_preference");
+	});
+});
