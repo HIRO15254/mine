@@ -21,7 +21,7 @@
     {
       "binding": "DB",
       "database_name": "mine-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "0ff4a26a-0a84-405e-a844-700437c0433b",
       "migrations_dir": "../../packages/db/src/migrations"
     }
   ]
