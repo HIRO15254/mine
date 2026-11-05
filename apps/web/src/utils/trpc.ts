@@ -1,5 +1,5 @@
-import type { AppRouter } from "@better-t-app-template/api/routers/index";
-import { env } from "@better-t-app-template/env/web";
+import type { AppRouter } from "@mine/api/routers/index";
+import { env } from "@mine/env/web";
 import { QueryClient } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";

@@ -13,8 +13,8 @@ export default defineConfig({
 		VitePWA({
 			registerType: "autoUpdate",
 			manifest: {
-				name: "Better T App Template",
-				short_name: "Better T App Template",
+				name: "Mine",
+				short_name: "Mine",
 				description: "A Cloudflare-ready TypeScript application template",
 				theme_color: "#171717",
 			},

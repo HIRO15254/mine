@@ -1,5 +1,5 @@
 {
-  "name": "@better-t-app-template/api",
+  "name": "@mine/api",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,11 +10,11 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@better-t-app-template/db": "workspace:*",
+    "@mine/db": "workspace:*",
     "@trpc/server": "catalog:"
   },
   "devDependencies": {
-    "@better-t-app-template/config": "workspace:*",
+    "@mine/config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "4.1.2"
   }

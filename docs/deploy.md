@@ -4,9 +4,9 @@
 
 Create these resources in the Cloudflare account that will run the application:
 
-1. A production D1 database named `better-t-app-template-db`.
-2. A Pages project named `better-t-app-template`.
-3. A Worker API named `better-t-app-template-api` (the first production deploy can create it).
+1. A production D1 database named `mine-db`.
+2. A Pages project named `mine`.
+3. A Worker API named `mine-api` (the first production deploy can create it).
 
 Copy the production D1 UUID into `apps/server/wrangler.jsonc`; never commit the all-zero placeholder for a deployable project. Configure these GitHub repository variables:
 

@@ -1,7 +1,7 @@
-import { createContextFactory } from "@better-t-app-template/api/context";
-import { appRouter } from "@better-t-app-template/api/routers/index";
-import { createDb } from "@better-t-app-template/db";
 import { trpcServer } from "@hono/trpc-server";
+import { createContextFactory } from "@mine/api/context";
+import { appRouter } from "@mine/api/routers/index";
+import { createDb } from "@mine/db";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 

@@ -1,4 +1,4 @@
-import type { Database } from "@better-t-app-template/db";
+import type { Database } from "@mine/db";
 
 export interface Context extends Record<string, unknown> {
 	db: Database;
