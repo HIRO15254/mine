@@ -11,10 +11,13 @@
   },
   "dependencies": {
     "@mine/db": "workspace:*",
-    "@trpc/server": "catalog:"
+    "@trpc/server": "catalog:",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@mine/config": "workspace:*",
+    "@types/bun": "catalog:",
     "typescript": "catalog:",
     "vitest": "4.1.2"
   }

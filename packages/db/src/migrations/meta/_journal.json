@@ -8,6 +8,13 @@
       "when": 1793855288788,
       "tag": "0000_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793858792072,
+      "tag": "0001_calendar_preference",
+      "breakpoints": true
     }
   ]
 }

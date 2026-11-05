@@ -7,10 +7,12 @@ import {
 	userRelations,
 	verification,
 } from "./schema/auth";
+import { calendarPreference } from "./schema/calendar";
 
 export const schema = {
 	account,
 	accountRelations,
+	calendarPreference,
 	session,
 	sessionRelations,
 	user,
