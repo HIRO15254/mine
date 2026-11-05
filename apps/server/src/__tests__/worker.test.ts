@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-
+import type { Bindings } from "../bindings";
 import { app } from "../worker";
 
-const bindings = {
+const bindings: Bindings = {
+	ALLOWED_EMAILS: "me@example.com",
+	BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret",
+	BETTER_AUTH_URL: "https://api.example.test",
 	CORS_ORIGIN: "https://web.example.test",
 	DB: {} as D1Database,
+	GOOGLE_CLIENT_ID: "client-id",
+	GOOGLE_CLIENT_SECRET: "client-secret",
 };
 
 describe("worker", () => {
@@ -35,5 +40,14 @@ describe("worker", () => {
 		expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
 			bindings.CORS_ORIGIN
 		);
+		expect(response.headers.get("Access-Control-Allow-Credentials")).toBe(
+			"true"
+		);
+	});
+
+	it("rejects a protected procedure without a session cookie", async () => {
+		const response = await app.request("/trpc/me", {}, bindings);
+
+		expect(response.status).toBe(401);
 	});
 });

@@ -1,5 +1,5 @@
 # Database migrations
 
-The template intentionally starts with an empty application schema. Add tables
-under `packages/db/src/schema.ts`, then run `bun run db:generate` to create the
-first migration in this directory.
+Tables live under `packages/db/src/schema/`. After changing them, run
+`bun run db:generate` from the repository root to create the next migration in
+this directory.

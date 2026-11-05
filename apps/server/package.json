@@ -9,9 +9,10 @@
     "dev": "wrangler dev"
   },
   "dependencies": {
-    "@mine/api": "workspace:*",
-    "@mine/db": "workspace:*",
     "@hono/trpc-server": "^0.4.2",
+    "@mine/api": "workspace:*",
+    "@mine/auth": "workspace:*",
+    "@mine/db": "workspace:*",
     "@trpc/server": "catalog:",
     "hono": "catalog:"
   },

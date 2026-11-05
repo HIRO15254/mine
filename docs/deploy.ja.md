@@ -18,11 +18,33 @@ GitHub Actions secretとして`CLOUDFLARE_API_TOKEN`を設定します。token�
 
 `wrangler.jsonc`を変更した後は`bun run cf:typegen`を実行し、生成されたbinding型をcommitします。
 
+## 認証（Google ログイン）
+
+ログインは Better Auth の Google ログインだけで、`ALLOWED_EMAILS` に載っているメールアドレス以外はアカウントを作成できません。空のままだと誰もログインできません。
+
+1. Google Cloud Console で OAuth クライアント（ウェブアプリケーション）を作成し、承認済みのリダイレクト URI に次を登録します。
+   - ローカル: `http://localhost:8787/api/auth/callback/google`
+   - 本番: `<PRODUCTION_API_URL>/api/auth/callback/google`
+2. OAuth 同意画面の公開ステータスを「本番」にします。「テスト」のままだと、後の段階で使うリフレッシュトークンが7日で失効します。
+3. 本番 Worker に secret を設定します（deploy をまたいで保持されます）。
+
+   ```sh
+   cd apps/server
+   bunx wrangler secret put BETTER_AUTH_SECRET    # openssl rand -base64 32 などで生成
+   bunx wrangler secret put GOOGLE_CLIENT_ID
+   bunx wrangler secret put GOOGLE_CLIENT_SECRET
+   bunx wrangler secret put ALLOWED_EMAILS        # カンマ区切り
+   ```
+
+`BETTER_AUTH_URL` は deploy 時に `PRODUCTION_API_URL` から自動で設定されます。ローカルでは `apps/server/.dev.vars.example` を `.dev.vars` にコピーして値を入れます。
+
+Web（Pages）と API（Worker）は別ドメインなので、セッション cookie は `SameSite=None; Secure` のサードパーティ cookie になります。Safari などで弾かれる場合は、両方を同じ独自ドメインのサブドメインに置いてください。PR preview の Worker には secret が無いため、preview ではログインできません。
+
 ## 本番
 
 `master`へのpushでCI、D1 migration、Worker deploy、Pages build/deployの順に実行します。本番D1 UUIDがplaceholderのままならdeployは停止します。
 
-初期テンプレートにはSQL migrationがありません。この状態ではmigrationコマンドはD1へ接続せず正常終了します。最初の派生機能でtableを追加するとき、その機能が最初の実migrationを生成してcommitします。
+migration は `packages/db/src/migrations` にあり、deploy 前に本番 D1 へ適用されます。
 
 ## Pull request preview
 

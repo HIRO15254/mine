@@ -1,0 +1,5 @@
+BETTER_AUTH_SECRET=replace-with-a-random-32-byte-string
+BETTER_AUTH_URL=http://localhost:8787
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+ALLOWED_EMAILS=you@example.com

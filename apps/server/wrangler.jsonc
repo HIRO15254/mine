@@ -2,7 +2,8 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "mine-api",
   "main": "src/worker.ts",
-  "compatibility_date": "2026-09-11",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "CORS_ORIGIN": "http://localhost:3001"
   },

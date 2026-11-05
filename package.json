@@ -13,7 +13,8 @@
       "hono": "4.12.12",
       "@trpc/server": "11.16.0",
       "@trpc/client": "11.16.0",
-      "drizzle-orm": "0.45.2"
+      "drizzle-orm": "0.45.2",
+      "better-auth": "1.6.0"
     }
   },
   "type": "module",
