@@ -25,7 +25,10 @@ Sign-in is Better Auth with Google only. Only the addresses listed in `ALLOWED_E
 1. In Google Cloud Console, create an OAuth client (web application) and add these authorized redirect URIs:
    - Local: `http://localhost:8787/api/auth/callback/google`
    - Production: `<PRODUCTION_API_URL>/api/auth/callback/google`
-2. Set the OAuth consent screen's publishing status to "In production". In "Testing", the refresh tokens used by later phases expire after 7 days.
+2. Set the OAuth consent screen's publishing status to "In production". In "Testing", the refresh tokens used for the calendar integration expire after 7 days.
+   - Enable the "Google Calendar API" in the same project (APIs & Services → Library).
+   - Sign-in requests `https://www.googleapis.com/auth/calendar.readonly` and offline access. Because the app is not verified, Google shows a "Google hasn't verified this app" screen; for a personal app you can continue from "Advanced".
+   - If you signed in before the scope was added, use "カレンダーを連携" in the app once to grant it.
 3. Set the production Worker secrets (they persist across deploys):
 
    ```sh

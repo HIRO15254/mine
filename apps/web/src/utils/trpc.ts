@@ -9,7 +9,13 @@ export const queryClient = new QueryClient({
 });
 
 export const trpcClient = createTRPCClient<AppRouter>({
-	links: [httpBatchLink({ url: `${env.VITE_SERVER_URL}/trpc` })],
+	links: [
+		httpBatchLink({
+			url: `${env.VITE_SERVER_URL}/trpc`,
+			// The API lives on another site, so the session cookie must be sent explicitly.
+			fetch: (input, init) => fetch(input, { ...init, credentials: "include" }),
+		}),
+	],
 });
 
 export const trpc = createTRPCOptionsProxy<AppRouter>({
