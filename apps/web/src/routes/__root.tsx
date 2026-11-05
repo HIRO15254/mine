@@ -5,6 +5,8 @@ import {
 	Outlet,
 } from "@tanstack/react-router";
 
+import { ThemeProvider } from "@/components/theme-provider/theme-provider";
+import { Toaster } from "@/components/ui/sonner/sonner";
 import type { trpc } from "@/utils/trpc";
 
 import "../index.css";
@@ -19,10 +21,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({
 		meta: [
 			{ title: "Mine" },
-			{
-				name: "description",
-				content: "A Cloudflare-ready TypeScript application template",
-			},
+			{ name: "description", content: "予定・タスク・時間の記録をひとつに" },
 		],
 		links: [{ rel: "icon", href: "/logo.png" }],
 	}),
@@ -30,9 +29,15 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootComponent() {
 	return (
-		<>
+		<ThemeProvider
+			attribute="class"
+			defaultTheme="system"
+			disableTransitionOnChange
+			enableSystem
+		>
 			<HeadContent />
 			<Outlet />
-		</>
+			<Toaster />
+		</ThemeProvider>
 	);
 }
