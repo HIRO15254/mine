@@ -21,6 +21,9 @@ import { ComingSoon } from "@/components/placeholder/coming-soon";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { TaskList } from "@/components/tasks/task-list";
 import { useTaskContext } from "@/components/tasks/use-tasks";
+import { useEntryEditor } from "@/components/time/entry-editor";
+import { TimerBar } from "@/components/time/timer-bar";
+import { WeekSummary } from "@/components/time/week-summary";
 import {
 	Card,
 	CardContent,
@@ -28,8 +31,14 @@ import {
 	CardTitle,
 } from "@/components/ui/card/card";
 import { Spinner } from "@/components/ui/spinner/spinner";
-import { eventsOnDay, rangeOfDays, startOfDay } from "@/lib/calendar-time";
+import {
+	eventsOnDay,
+	rangeOfDays,
+	startOfDay,
+	startOfWeek,
+} from "@/lib/calendar-time";
 import { groupTasks, todayKey } from "@/lib/tasks";
+import { currentTimeZone, weekRange } from "@/lib/time";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_app/")({ component: TodayPage });
@@ -57,10 +66,17 @@ function TodayPage() {
 				<Card>
 					<CardHeader>
 						<IconPlayerPlay aria-hidden />
-						<CardTitle>計測中</CardTitle>
+						<CardTitle>計測</CardTitle>
+						<Link
+							className="inline-flex items-center gap-0.5 text-primary-text text-xs no-underline hover:underline"
+							to="/time"
+						>
+							記録
+							<IconChevronRight aria-hidden className="size-3.5" />
+						</Link>
 					</CardHeader>
 					<CardContent>
-						<ComingSoon description="計測していません" icon={IconPlayerPlay} />
+						<TodayTimer />
 					</CardContent>
 				</Card>
 				<Card>
@@ -85,10 +101,7 @@ function TodayPage() {
 						<CardTitle>今週の時間配分</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<ComingSoon
-							description="記録がまだありません"
-							icon={IconChartBar}
-						/>
+						<ThisWeek />
 					</CardContent>
 				</Card>
 			</div>
@@ -162,5 +175,57 @@ function TodayTasks() {
 			)}
 			{editor}
 		</>
+	);
+}
+
+function TodayTimer() {
+	const { projects } = useTaskContext();
+	const { editor, openEdit } = useEntryEditor(projects);
+	return (
+		<>
+			<TimerBar onEdit={openEdit} projects={projects} />
+			{editor}
+		</>
+	);
+}
+
+function ThisWeek() {
+	const weekStart = useMemo(() => startOfWeek(new Date()), []);
+	const range = useMemo(() => weekRange(weekStart), [weekStart]);
+	const { projects } = useTaskContext();
+	const summary = useQuery(
+		trpc.time.summary.queryOptions({ ...range, timeZone: currentTimeZone() })
+	);
+	if (summary.isPending) {
+		return (
+			<div className="flex justify-center py-8 text-muted-foreground">
+				<Spinner />
+			</div>
+		);
+	}
+	if (summary.isError) {
+		return (
+			<ComingSoon
+				description="集計を読み込めませんでした"
+				icon={IconAlertTriangle}
+			/>
+		);
+	}
+	if (summary.data.durationMs === 0) {
+		return (
+			<ComingSoon
+				description="今週の記録はまだありません"
+				icon={IconChartBar}
+			/>
+		);
+	}
+	return (
+		<div className="desk:max-w-[560px]">
+			<WeekSummary
+				projects={projects}
+				summary={summary.data}
+				weekStart={weekStart}
+			/>
+		</div>
 	);
 }

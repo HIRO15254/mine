@@ -22,12 +22,15 @@ export interface Context extends Record<string, unknown> {
 	db: Database;
 	fetch: FetchLike;
 	getGoogleAccessToken: GoogleAccessTokenResolver;
+	/** Current time in epoch milliseconds; injectable for tests. */
+	now: () => number;
 	resolveSession: SessionResolver;
 }
 
 export interface ContextOptions {
 	fetch?: FetchLike;
 	getGoogleAccessToken?: GoogleAccessTokenResolver;
+	now?: () => number;
 }
 
 const noSession: SessionResolver = () => Promise.resolve(null);
@@ -43,6 +46,7 @@ export function createContextFactory(
 			db,
 			fetch: options.fetch ?? ((input, init) => fetch(input, init)),
 			getGoogleAccessToken: options.getGoogleAccessToken ?? noGoogleToken,
+			now: options.now ?? Date.now,
 			resolveSession,
 		});
 }

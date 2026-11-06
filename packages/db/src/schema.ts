@@ -20,6 +20,12 @@ import {
 	taskLabelRelations,
 	taskRelations,
 } from "./schema/tasks";
+import {
+	projectRate,
+	projectRateRelations,
+	timeEntry,
+	timeEntryRelations,
+} from "./schema/time";
 
 export const schema = {
 	account,
@@ -28,6 +34,8 @@ export const schema = {
 	label,
 	labelRelations,
 	project,
+	projectRate,
+	projectRateRelations,
 	projectRelations,
 	session,
 	sessionRelations,
@@ -37,6 +45,8 @@ export const schema = {
 	taskLabel,
 	taskLabelRelations,
 	taskRelations,
+	timeEntry,
+	timeEntryRelations,
 	user,
 	userRelations,
 	verification,

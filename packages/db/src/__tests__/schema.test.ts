@@ -44,3 +44,10 @@ describe("task schema", () => {
 		]);
 	});
 });
+
+describe("time schema", () => {
+	it("registers the time tracking tables", () => {
+		expect(getTableName(schema.timeEntry)).toBe("time_entry");
+		expect(getTableName(schema.projectRate)).toBe("project_rate");
+	});
+});

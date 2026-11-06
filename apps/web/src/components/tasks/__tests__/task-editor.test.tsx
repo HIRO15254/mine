@@ -2,16 +2,16 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("./trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
 
+import { renderWithQuery, useDesktopLayout } from "../../../__tests__/render";
 import {
 	makeLabel,
 	makeProject,
 	makeTask,
 } from "../../../__tests__/task-fixtures";
+import { trpcMock } from "../../../__tests__/trpc-mock";
 import { TaskEditor } from "../task-editor";
-import { renderWithQuery, useDesktopLayout } from "./render";
-import { trpcMock } from "./trpc-mock";
 
 const projects = [makeProject({ id: "lab", name: "研究" })];
 const TITLE = /タイトル/;

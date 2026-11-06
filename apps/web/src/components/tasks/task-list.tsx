@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { useStartTimer } from "@/components/time/use-time";
 import type { Project, Task, TaskGroup } from "@/lib/tasks";
 
 import { TaskRow } from "./task-row";
@@ -17,6 +19,7 @@ export function TaskList({
 	today: string;
 }) {
 	const complete = useCompleteTask();
+	const start = useStartTimer();
 	return (
 		<div className="flex flex-col gap-4">
 			{groups.map((group) => (
@@ -42,6 +45,17 @@ export function TaskList({
 									}
 									onComplete={(item) => complete.mutate(completeInput(item.id))}
 									onOpen={onOpen}
+									onStartTimer={(item) =>
+										start.mutate(
+											{ taskId: item.id },
+											{
+												onSuccess: () =>
+													toast.success("計測を始めました", {
+														description: item.title,
+													}),
+											}
+										)
+									}
 									projects={projects}
 									showProject={showProject}
 									task={task}

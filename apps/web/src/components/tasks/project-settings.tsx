@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
+import { ProjectRates } from "@/components/time/project-rates";
 import { Button } from "@/components/ui/button/button";
 import { Field, FieldError } from "@/components/ui/field/field";
 import { Input } from "@/components/ui/input/input";
@@ -253,6 +254,9 @@ function ProjectEditor({
 				)}
 				{error && <FieldError>{error}</FieldError>}
 			</form>
+			{project && (
+				<ProjectRates hasParent={Boolean(parentId)} projectId={project.id} />
+			)}
 		</FormSheet>
 	);
 }

@@ -1,0 +1,74 @@
+import { dayKey } from "@/lib/calendar-time";
+import { combineDayAndTime, formatClock, type TimeEntry } from "@/lib/time";
+
+const DAY = 86_400_000;
+const FIVE_MINUTES = 300_000;
+
+export interface EntryDraft {
+	billable: boolean;
+	day: string;
+	description: string;
+	end: string;
+	projectId: string;
+	/** A running entry has no end time to edit. */
+	running: boolean;
+	start: string;
+}
+
+/** A new entry defaults to the half hour before now, on 5-minute marks. */
+export function draftFromEntry(
+	entry: TimeEntry | null,
+	now: number,
+	defaults: { projectId?: string | null } = {}
+): EntryDraft {
+	if (entry) {
+		return {
+			billable: entry.billable,
+			day: dayKey(new Date(entry.startedAt)),
+			description: entry.description,
+			end: entry.endedAt === null ? "" : formatClock(entry.endedAt),
+			projectId: entry.projectId ?? "",
+			running: entry.endedAt === null,
+			start: formatClock(entry.startedAt),
+		};
+	}
+	const end = Math.floor(now / FIVE_MINUTES) * FIVE_MINUTES;
+	const start = end - 6 * FIVE_MINUTES;
+	return {
+		billable: true,
+		day: dayKey(new Date(start)),
+		description: "",
+		end: formatClock(end),
+		projectId: defaults.projectId ?? "",
+		running: false,
+		start: formatClock(start),
+	};
+}
+
+export type DraftTimes =
+	| { endedAt: number | null; error?: undefined; startedAt: number }
+	| { error: string };
+
+/**
+ * Reads the start and end. An end at or before the start is taken to be on
+ * the next day, so 23:00–01:00 works.
+ */
+export function draftTimes(draft: EntryDraft, now: number): DraftTimes {
+	const startedAt = combineDayAndTime(draft.day, draft.start);
+	if (startedAt === null) {
+		return { error: "開始の日時を入力してください" };
+	}
+	if (draft.running) {
+		return startedAt > now
+			? { error: "開始を未来にはできません" }
+			: { endedAt: null, startedAt };
+	}
+	let endedAt = combineDayAndTime(draft.day, draft.end);
+	if (endedAt === null) {
+		return { error: "終了の時刻を入力してください" };
+	}
+	if (endedAt <= startedAt) {
+		endedAt += DAY;
+	}
+	return { endedAt, startedAt };
+}

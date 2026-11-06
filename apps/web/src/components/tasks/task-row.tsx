@@ -3,9 +3,11 @@ import {
 	IconCheck,
 	IconFlag,
 	IconHourglass,
+	IconPlayerPlay,
 	IconRepeat,
 } from "@tabler/icons-react";
 
+import { IconButton } from "@/components/ui/icon-button/icon-button";
 import {
 	dueTone,
 	formatDay,
@@ -29,6 +31,7 @@ export function TaskRow({
 	isCompleting = false,
 	onComplete,
 	onOpen,
+	onStartTimer,
 	projects,
 	showProject = true,
 	task,
@@ -37,6 +40,8 @@ export function TaskRow({
 	isCompleting?: boolean;
 	onComplete: (task: Task) => void;
 	onOpen: (task: Task) => void;
+	/** Starts the timer on this task; the button is hidden without it. */
+	onStartTimer?: (task: Task) => void;
 	projects: Project[];
 	showProject?: boolean;
 	task: Task;
@@ -129,6 +134,15 @@ export function TaskRow({
 					</span>
 				)}
 			</button>
+			{onStartTimer && (
+				<IconButton
+					className="-my-1 shrink-0 desk:opacity-0 desk:focus-visible:opacity-100 desk:group-hover/task:opacity-100"
+					label={`「${task.title}」を計測`}
+					onClick={() => onStartTimer(task)}
+				>
+					<IconPlayerPlay aria-hidden />
+				</IconButton>
+			)}
 		</div>
 	);
 }

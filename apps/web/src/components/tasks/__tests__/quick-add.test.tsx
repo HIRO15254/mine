@@ -2,12 +2,12 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("./trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
 
+import { renderWithQuery } from "../../../__tests__/render";
 import { makeProject } from "../../../__tests__/task-fixtures";
+import { trpcMock } from "../../../__tests__/trpc-mock";
 import { QuickAdd } from "../quick-add";
-import { renderWithQuery } from "./render";
-import { trpcMock } from "./trpc-mock";
 
 const projects = [makeProject({ id: "lab", name: "研究" })];
 
