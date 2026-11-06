@@ -50,4 +50,19 @@ describe("worker", () => {
 
 		expect(response.status).toBe(401);
 	});
+
+	it("requires an API token for the app API", async () => {
+		const missing = await app.request("/v1/timer", {}, bindings);
+		const wrongScheme = await app.request(
+			"/v1/timer/stop",
+			{ headers: { Authorization: "Bearer not-a-mine-token" }, method: "POST" },
+			bindings
+		);
+
+		expect(missing.status).toBe(401);
+		await expect(missing.json()).resolves.toEqual({
+			error: "API token required",
+		});
+		expect(wrongScheme.status).toBe(401);
+	});
 });

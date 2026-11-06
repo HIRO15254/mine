@@ -15,6 +15,7 @@ import {
 } from "@/components/calendar/calendar-status";
 import { LabelSettings } from "@/components/tasks/label-settings";
 import { ProjectSettings } from "@/components/tasks/project-settings";
+import { ApiTokenSettings } from "@/components/tokens/api-token-settings";
 import { Button } from "@/components/ui/button/button";
 import {
 	Item,
@@ -86,6 +87,10 @@ function SettingsPage() {
 				<section className="flex flex-col gap-2">
 					<h2 className="m-0 font-semibold text-sm">表示するカレンダー</h2>
 					<CalendarSettings />
+				</section>
+				<section className="flex flex-col gap-2">
+					<h2 className="m-0 font-semibold text-sm">APIトークン</h2>
+					<ApiTokenSettings />
 				</section>
 				<section className="flex flex-col gap-2">
 					<h2 className="m-0 font-semibold text-sm">アカウント</h2>

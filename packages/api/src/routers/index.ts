@@ -7,6 +7,7 @@ import { projectRouter } from "./project";
 import { rateRouter } from "./rate";
 import { taskRouter } from "./task";
 import { timeRouter } from "./time";
+import { tokenRouter } from "./token";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => "OK" as const),
@@ -17,6 +18,7 @@ export const appRouter = router({
 	rate: rateRouter,
 	task: taskRouter,
 	time: timeRouter,
+	token: tokenRouter,
 });
 
 export type AppRouter = typeof appRouter;

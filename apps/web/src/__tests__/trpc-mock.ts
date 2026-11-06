@@ -19,10 +19,21 @@ export function createTrpcMock() {
 		timeCreate: vi.fn<Fn>((input) => Promise.resolve(input)),
 		timeStart: vi.fn<Fn>((input) => Promise.resolve(input)),
 		timeStop: vi.fn<Fn>(() => Promise.resolve(null)),
+		tokenCreate: vi.fn<Fn>((input) =>
+			Promise.resolve({
+				...(input as object),
+				id: "t1",
+				prefix: "mine_abcdef",
+				token: "mine_abcdef-secret",
+			})
+		),
 		update: vi.fn<Fn>((input) => Promise.resolve(input)),
 	};
 	/** What `time.current` returns; tests may replace it. */
-	const state: { current: unknown } = { current: null };
+	const state: { current: unknown; tokens: unknown[] } = {
+		current: null,
+		tokens: [],
+	};
 	const trpc = {
 		label: { pathKey: () => [["label"]] },
 		project: { pathKey: () => [["project"]] },
@@ -47,6 +58,17 @@ export function createTrpcMock() {
 			start: mutation(calls.timeStart),
 			stop: mutation(calls.timeStop),
 			update: mutation(calls.update),
+		},
+		token: {
+			create: mutation(calls.tokenCreate),
+			delete: mutation(calls.remove),
+			list: {
+				queryOptions: () => ({
+					queryFn: () => Promise.resolve(state.tokens),
+					queryKey: [["token", "list"]],
+				}),
+			},
+			pathKey: () => [["token"]],
 		},
 	};
 	return { calls, state, trpc };

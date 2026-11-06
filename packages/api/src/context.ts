@@ -11,6 +11,8 @@ export interface SessionUser {
 
 export interface Session {
 	user: SessionUser;
+	/** Set when the request was authenticated with a personal API token. */
+	via?: "token";
 }
 
 export type SessionResolver = () => Promise<Session | null>;

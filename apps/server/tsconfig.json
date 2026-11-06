@@ -4,5 +4,8 @@
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
-  "include": ["src", "worker-configuration.d.ts"]
+  "include": ["src", "worker-configuration.d.ts"],
+  // Uses the API package's node:sqlite D1 stand-in, which needs Node types
+  // the Worker must not see. Vitest still runs it.
+  "exclude": ["src/__tests__/app-api.test.ts"]
 }

@@ -13,3 +13,14 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 	}
 	return next({ ctx: { ...ctx, session } });
 });
+
+/** Signed in through the browser, not with an API token (e.g. token admin). */
+export const browserProcedure = protectedProcedure.use(({ ctx, next }) => {
+	if (ctx.session.via === "token") {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message: "API tokens cannot manage tokens",
+		});
+	}
+	return next();
+});

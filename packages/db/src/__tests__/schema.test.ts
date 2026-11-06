@@ -51,3 +51,9 @@ describe("time schema", () => {
 		expect(getTableName(schema.projectRate)).toBe("project_rate");
 	});
 });
+
+describe("token schema", () => {
+	it("registers the API token table", () => {
+		expect(getTableName(schema.apiToken)).toBe("api_token");
+	});
+});

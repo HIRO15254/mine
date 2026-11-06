@@ -26,9 +26,11 @@ import {
 	timeEntry,
 	timeEntryRelations,
 } from "./schema/time";
+import { apiToken } from "./schema/token";
 
 export const schema = {
 	account,
+	apiToken,
 	accountRelations,
 	calendarPreference,
 	label,

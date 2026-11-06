@@ -53,5 +53,5 @@ export function createTestDb() {
 	};
 
 	const d1 = { prepare } as unknown as D1Database;
-	return { db: createDb(d1), sqlite };
+	return { d1, db: createDb(d1), sqlite };
 }
