@@ -307,8 +307,10 @@ app.get("/oauth/authorize", async (context) => {
 });
 
 app.post("/oauth/authorize", async (context) => {
+	// The form's token is the real check; this only turns away other sites
+	// that announce themselves. Some privacy settings send "null".
 	const sentFrom = context.req.header("Origin");
-	if (sentFrom && sentFrom !== origin(context)) {
+	if (sentFrom && sentFrom !== "null" && sentFrom !== origin(context)) {
 		return htmlPage(errorPage("別のサイトからの送信は受け付けません"), 403);
 	}
 	const db = createDb(context.env.DB);

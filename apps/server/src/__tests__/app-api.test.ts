@@ -364,7 +364,13 @@ describe("OAuth consent page", () => {
 			).status
 		).toBe(403);
 
-		const denied = await post({ csrf, decision: "deny" });
+		expect(page.headers.get("Referrer-Policy")).toBe("same-origin");
+		expect(
+			(await post({ csrf: "forged", decision: "allow" }, { Origin: "null" }))
+				.status
+		).toBe(403);
+
+		const denied = await post({ csrf, decision: "deny" }, { Origin: "null" });
 		expect(denied.status).toBe(303);
 		expect(denied.headers.get("Location")).toBe(
 			`${CLAUDE}?error=access_denied&state=st`

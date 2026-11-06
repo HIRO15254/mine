@@ -24,7 +24,8 @@ export const PAGE_HEADERS = {
 	"Content-Security-Policy":
 		"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'",
 	"Content-Type": "text/html; charset=utf-8",
-	"Referrer-Policy": "no-referrer",
+	// "no-referrer" would make the browser send `Origin: null` with the form.
+	"Referrer-Policy": "same-origin",
 	"X-Frame-Options": "DENY",
 };
 
