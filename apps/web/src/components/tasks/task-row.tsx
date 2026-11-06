@@ -7,16 +7,16 @@ import {
 	IconRepeat,
 	IconSparkles,
 } from "@tabler/icons-react";
+import type { CSSProperties } from "react";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
+
 import {
 	dueTone,
 	formatDay,
 	formatRecurrence,
 	PRIORITY_RING,
-	PROJECT_COLOR_CLASS,
 	type Project,
-	projectPath,
 	type Task,
 } from "@/lib/tasks";
 
@@ -24,6 +24,8 @@ import {
 const NEXT_LABEL = "next";
 
 import { cn } from "@/lib/utils";
+
+import { ProjectName } from "./project-name";
 
 const TONE_CLASS = {
 	overdue: "text-destructive-text",
@@ -65,16 +67,25 @@ export function TaskRow({
 			<button
 				aria-label={`「${task.title}」を完了にする`}
 				className={cn(
-					"mt-0.5 flex size-[18px] shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] bg-transparent p-0 outline-none transition-colors hover:bg-accent focus-visible:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)] disabled:opacity-50",
-					PRIORITY_RING[task.priority]
+					"mt-0.5 flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] bg-transparent p-0 outline-none transition-[background-color,transform] duration-200 ease-[var(--ease-spring)] hover:scale-110 hover:bg-accent focus-visible:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]",
+					PRIORITY_RING[task.priority],
+					isCompleting && "check-done"
 				)}
 				disabled={isCompleting}
 				onClick={() => onComplete(task)}
+				style={
+					project
+						? ({ "--c": `var(--${project.color})` } as CSSProperties)
+						: undefined
+				}
 				type="button"
 			>
 				<IconCheck
 					aria-hidden
-					className="size-3 opacity-0 transition-opacity group-hover/task:opacity-60"
+					className={cn(
+						"size-3 opacity-0 transition-opacity group-hover/task:opacity-60",
+						isCompleting && "opacity-100"
+					)}
 				/>
 			</button>
 			<button
@@ -135,16 +146,7 @@ export function TaskRow({
 							)
 						)}
 						{showProject && project && (
-							<span className="inline-flex items-center gap-1">
-								<span
-									aria-hidden
-									className={cn(
-										"size-2 rounded-full",
-										PROJECT_COLOR_CLASS[project.color]
-									)}
-								/>
-								{projectPath(projects, project.id)}
-							</span>
+							<ProjectName project={project} projects={projects} />
 						)}
 					</span>
 				)}

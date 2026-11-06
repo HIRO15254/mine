@@ -4,19 +4,14 @@ import {
 } from "@tabler/icons-react";
 import { type FormEvent, useId, useState } from "react";
 
+import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
 import { Input } from "@/components/ui/input/input";
 import { NativeSelect } from "@/components/ui/native-select/native-select";
 import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
-import {
-	flattenProjects,
-	PROJECT_COLOR_CLASS,
-	type Project,
-	projectPath,
-} from "@/lib/tasks";
+import { flattenProjects, type Project } from "@/lib/tasks";
 import { formatElapsed, type TimeEntry } from "@/lib/time";
-import { cn } from "@/lib/utils";
 
 import {
 	useNow,
@@ -64,6 +59,7 @@ export function TimerOrbit({ ratio, size }: { ratio: number; size: number }) {
 	const radius = size / 2 - 4;
 	const circumference = 2 * Math.PI * radius;
 	const center = size / 2;
+	const prism = useId();
 	return (
 		<span
 			aria-hidden
@@ -78,6 +74,15 @@ export function TimerOrbit({ ratio, size }: { ratio: number; size: number }) {
 				viewBox={`0 0 ${size} ${size}`}
 				width={size}
 			>
+				<defs>
+					<linearGradient id={prism} x1="0" x2="1" y1="0" y2="1">
+						<stop offset="0%" stopColor="var(--chart-1)" />
+						<stop offset="30%" stopColor="var(--chart-2)" />
+						<stop offset="55%" stopColor="var(--chart-3)" />
+						<stop offset="80%" stopColor="var(--chart-4)" />
+						<stop offset="100%" stopColor="var(--chart-5)" />
+					</linearGradient>
+				</defs>
 				<circle
 					cx={center}
 					cy={center}
@@ -91,7 +96,7 @@ export function TimerOrbit({ ratio, size }: { ratio: number; size: number }) {
 					cy={center}
 					fill="none"
 					r={radius}
-					stroke="currentColor"
+					stroke={`url(#${CSS.escape(prism)})`}
 					strokeDasharray={`${circumference * Math.min(ratio, 1)} ${circumference}`}
 					strokeLinecap="round"
 					strokeWidth="2"
@@ -135,18 +140,9 @@ export function RunningTimer({
 			<span className="truncate font-medium desk:text-sm text-[length:var(--m-text-body)]">
 				{entry.description || "説明なし"}
 			</span>
-			<span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+			<span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
 				{project ? (
-					<>
-						<span
-							aria-hidden
-							className={cn(
-								"size-2 shrink-0 rounded-full",
-								PROJECT_COLOR_CLASS[project.color]
-							)}
-						/>
-						{projectPath(projects, project.id)}
-					</>
+					<ProjectName project={project} projects={projects} />
 				) : (
 					"プロジェクトなし"
 				)}

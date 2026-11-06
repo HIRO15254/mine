@@ -5,7 +5,7 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const iconButtonVariants = cva(
-	"hover:layer-accent active:layer-accent-pressed inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent p-0 outline-none transition-[background-color,color] hover:text-foreground focus-visible:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+	"press hover:layer-accent active:layer-accent-pressed inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent p-0 outline-none hover:text-foreground focus-visible:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 	{
 		variants: {
 			variant: {

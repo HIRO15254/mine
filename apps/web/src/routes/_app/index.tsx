@@ -65,7 +65,7 @@ function TodayPage() {
 						<TodayEvents />
 					</CardContent>
 				</Card>
-				<Card className="has-[[data-running]]:shadow-[var(--glow)]">
+				<Card className="has-[[data-running]]:prism-edge has-[[data-running]]:shadow-[var(--glow)]">
 					<CardHeader>
 						<IconPlayerPlay aria-hidden />
 						<CardTitle>計測</CardTitle>

@@ -25,9 +25,9 @@ function SidebarLink({
 			<Link
 				aria-current={active ? "page" : undefined}
 				className={cn(
-					"flex h-[var(--control-md)] items-center gap-2.5 rounded-md px-2.5 font-medium text-sm no-underline outline-none transition-[background-color,color] focus-visible:shadow-[0_0_0_2px_var(--ring)]",
+					"press relative flex h-[var(--control-md)] items-center gap-2.5 rounded-md px-2.5 font-medium text-sm no-underline outline-none focus-visible:shadow-[0_0_0_2px_var(--ring)]",
 					active
-						? "bg-primary-soft text-primary-text shadow-[var(--glow)]"
+						? "bg-primary-soft text-primary-text shadow-[var(--glow)] before:absolute before:top-[7px] before:bottom-[7px] before:-left-2 before:w-[3px] before:rounded-r-[3px] before:bg-[image:var(--prism)]"
 						: "hover:layer-accent active:layer-accent-pressed text-muted-foreground hover:text-foreground"
 				)}
 				to={item.to}
@@ -51,7 +51,7 @@ function TabBarLink({
 			<Link
 				aria-current={active ? "page" : undefined}
 				className={cn(
-					"flex h-12 flex-col items-center justify-center gap-[3px] font-medium text-[length:var(--m-text-tab)] no-underline",
+					"press flex h-12 flex-col items-center justify-center gap-[3px] font-medium text-[length:var(--m-text-tab)] no-underline",
 					active
 						? "text-primary-text drop-shadow-[0_0_6px_rgba(205,220,245,0.45)]"
 						: "text-muted-foreground"

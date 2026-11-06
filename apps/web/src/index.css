@@ -74,7 +74,16 @@
 	/* The page light: Mine Design System, Surfaces. None in light. */
 	--page-light: none;
 
-	--radius: 8px;
+	--radius: 16px;
+	/* The prism: the five project hues in a row, for lines that mark the app as Mine. */
+	--prism: linear-gradient(
+		90deg,
+		var(--chart-1),
+		var(--chart-2),
+		var(--chart-3),
+		var(--chart-4),
+		var(--chart-5)
+	);
 
 	--font-sans:
 		"Noto Sans JP Variable", "Hiragino Sans", "Yu Gothic UI", ui-sans-serif,
@@ -114,13 +123,14 @@
 	--m-text-caption: 0.75rem;
 	--m-text-tab: 0.625rem;
 	--m-leading-body: 1.4;
-	--m-sheet-radius: 12px;
+	--m-sheet-radius: 20px;
 
 	--sidebar-width: 244px;
 	--content-max: 1024px;
 
 	--ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 	--ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+	--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 	--duration-fast: 100ms;
 	--duration-base: 160ms;
 	--duration-slow: 250ms;
@@ -248,10 +258,10 @@
 	--color-card: var(--card);
 	--color-foreground: var(--foreground);
 	--color-background: var(--background);
-	--radius-sm: calc(var(--radius) - 4px);
-	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 10px);
+	--radius-md: calc(var(--radius) - 6px);
 	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) + 4px);
+	--radius-xl: calc(var(--radius) + 6px);
 	--radius-2xl: calc(var(--radius) + 8px);
 	--radius-3xl: calc(var(--radius) + 12px);
 	--radius-4xl: calc(var(--radius) + 16px);
@@ -296,4 +306,122 @@
 
 @theme {
 	--breakpoint-desk: 45rem;
+}
+
+/* Play: the few moving parts of Mine Design System. Each one marks a moment
+   (something live, something done, a press) and stops for reduced motion. */
+@property --prism-angle {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 0deg;
+}
+
+@keyframes prism-turn {
+	to {
+		--prism-angle: 360deg;
+	}
+}
+
+@keyframes check-pop {
+	0% {
+		transform: scale(0.6);
+	}
+	60% {
+		transform: scale(1.2);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes check-burst {
+	0% {
+		opacity: 1;
+		transform: scale(0.4);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(1.6);
+	}
+}
+
+/* A running thing gets a prism edge that slowly turns. */
+@utility prism-edge {
+	background:
+		linear-gradient(var(--card), var(--card)) padding-box,
+		conic-gradient(
+			from var(--prism-angle),
+			var(--chart-1),
+			var(--chart-2),
+			var(--chart-3),
+			var(--chart-4),
+			var(--chart-5),
+			var(--chart-1)
+		)
+		border-box;
+	border-color: transparent;
+	animation: prism-turn 6s linear infinite;
+	@media (prefers-reduced-motion: reduce) {
+		animation: none;
+	}
+}
+
+@layer components {
+	/* The completion circle fills with the project hue and gives off a burst. */
+	.check-done {
+		position: relative;
+		color: var(--background) !important;
+		background: var(--c, var(--primary));
+		border-color: var(--c, var(--primary)) !important;
+		animation: check-pop 0.5s var(--ease-spring);
+	}
+	.check-done::after {
+		position: absolute;
+		inset: 50%;
+		width: 4px;
+		height: 4px;
+		margin: -2px;
+		pointer-events: none;
+		content: "";
+		border-radius: 50%;
+		box-shadow:
+			0 -16px 0 var(--chart-1),
+			15px -5px 0 var(--chart-2),
+			10px 13px 0 var(--chart-3),
+			-10px 13px 0 var(--chart-4),
+			-15px -5px 0 var(--chart-5);
+		animation: check-burst 0.6s var(--ease-out) forwards;
+	}
+	/* Pressing sinks a control a little and lets it spring back. */
+	.press {
+		transition-timing-function:
+			var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-spring);
+		transition-duration:
+			var(--duration-fast), var(--duration-fast), var(--duration-fast), 250ms;
+		transition-property: background-color, color, border-color, transform;
+	}
+	.press:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+	/* A raised card lifts a little under the pointer. */
+	.lift {
+		transition:
+			transform 300ms var(--ease-spring),
+			box-shadow 300ms var(--ease-out);
+	}
+	@media (hover: hover) {
+		.lift:hover {
+			transform: translateY(-2px);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.check-done,
+		.check-done::after {
+			animation: none;
+		}
+		.press:active:not(:disabled),
+		.lift:hover {
+			transform: none;
+		}
+	}
 }

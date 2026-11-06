@@ -100,7 +100,7 @@ function TimePage() {
 			title={`記録 ${formatWeekLabel(weekStart)}`}
 		>
 			<div className="flex flex-col gap-4">
-				<div className="rounded-lg border border-border bg-card p-3">
+				<div className="has-[[data-running]]:prism-edge rounded-lg border border-border bg-card p-3 has-[[data-running]]:shadow-[var(--glow)]">
 					<TimerBar onEdit={openEdit} projects={projects} />
 				</div>
 				<div className="grid desk:grid-cols-[minmax(0,1fr)_300px] items-start gap-4">
