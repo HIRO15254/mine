@@ -23,7 +23,10 @@ This file is the source of truth for every coding agent working in this reposito
 - `bun run cf:typegen`: regenerate Cloudflare binding types after changing `wrangler.jsonc`
 - `bun run db:generate`: generate a D1 migration after changing the schema
 - `bun run db:migrate:local`: apply migrations to the local D1 database
+- `bun run check:design-tokens`: compare the app's tokens with the Cryst snapshot in `design/cryst/`
+- `bun run screens`: screenshot every screen with sample data into `test-results/screens/`
 - `$better-t-app-setup`: use the bundled repository skill for template renaming and command-line Cloudflare deployment setup
+- `$ui-design`: use the bundled repository skill to design on the Mine UI canvas and to apply the canvas or Cryst changes to `apps/web`
 
 ## Package boundaries
 
@@ -54,3 +57,9 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 - The layout switches at the `desk` breakpoint (720px): sidebar and 13px desktop scale above it, bottom tab bar, `m-*` sizes and `xl` controls below it.
 - Icons come from `@tabler/icons-react` only. No emoji.
 - UI copy is Japanese, short and in plain form; sentence case for any English.
+
+## Design workflow
+
+- The Mine UI canvas (Claude Design) is the source of truth for the look; `apps/web` copies it. `docs/design-workflow.ja.md` describes the flow and `design/sources.json` links the canvas and Cryst.
+- Apply canvas or Cryst changes with the `ui-design` skill, compare with `bun run screens`, and record deviations from Cryst in `docs/design/cryst-exceptions.md`.
+- `design/canvas/` and `design/cryst/` are verbatim snapshots: overwrite them from the source, never edit them by hand.

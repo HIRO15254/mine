@@ -35,3 +35,5 @@ bun run build
 ```
 
 See the [deployment guide](./docs/deploy.md) for Cloudflare and Google sign-in setup.
+
+Screens are designed on a Claude Design canvas first and then implemented; see the [design workflow](./docs/design-workflow.ja.md) (Japanese).

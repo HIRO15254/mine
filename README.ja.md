@@ -37,3 +37,5 @@ bun run build
 ```
 
 Cloudflare と Google ログインの初期設定は[デプロイガイド](./docs/deploy.ja.md)を参照してください。
+
+画面のデザインは Claude Design のキャンバスで決めてから実装します。進め方は[デザインの進め方](./docs/design-workflow.ja.md)を参照してください。

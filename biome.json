@@ -25,7 +25,9 @@
       "!**/.source",
       "!**/convex/_generated",
       "!**/coverage",
-      "!**/test-results"
+      "!**/test-results",
+      "!design/canvas",
+      "!design/cryst"
     ]
   },
   "formatter": {

@@ -35,6 +35,8 @@
     "test:ci": "vitest run --reporter=verbose",
     "test:coverage": "vitest run --coverage",
     "check:test-discovery": "bun scripts/check-test-discovery.ts",
+    "check:design-tokens": "bun scripts/design-tokens.ts",
+    "screens": "bun apps/web/screens/capture.ts",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "template:init": "bun scripts/template-init.ts",
