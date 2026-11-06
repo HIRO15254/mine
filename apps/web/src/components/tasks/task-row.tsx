@@ -61,7 +61,7 @@ export function TaskRow({
 		(showProject && project) ||
 		task.estimateMinutes;
 	return (
-		<div className="group/task flex min-h-[var(--m-list-row)] items-start gap-2.5 rounded-md px-2 desk:py-1.5 py-2">
+		<div className="group/task flex min-h-[var(--m-list-row)] items-start gap-2.5 rounded-md px-2 desk:py-2.5 py-3">
 			<button
 				aria-label={`「${task.title}」を完了にする`}
 				className={cn(
@@ -78,7 +78,7 @@ export function TaskRow({
 				/>
 			</button>
 			<button
-				className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 border-0 bg-transparent p-0 text-left text-foreground outline-none focus-visible:shadow-[0_0_0_2px_var(--ring)]"
+				className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1.5 border-0 bg-transparent p-0 text-left text-foreground outline-none focus-visible:shadow-[0_0_0_2px_var(--ring)]"
 				onClick={() => onOpen(task)}
 				type="button"
 			>
