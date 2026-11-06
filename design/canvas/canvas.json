@@ -1,0 +1,48 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-06T07:30:00Z" },
+  "title": "Mine UI",
+  "launch": { "view": "canvas", "page": "guide" },
+  "pages": [
+    { "id": "guide", "name": "ガイド" },
+    { "id": "today", "name": "今日" },
+    { "id": "tasks", "name": "タスク" },
+    { "id": "time", "name": "記録" }
+  ],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 760, "h": 700, "title": "Mine UI の使い方", "page": "guide" },
+    "today.desk.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 1240, "title": "today · desk", "page": "today", "expand": "fill" },
+    "today.mobile.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 1560, "title": "today · mobile", "page": "today" },
+    "tasks.desk.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 860, "title": "tasks · desk", "page": "tasks", "expand": "fill" },
+    "tasks.mobile.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 844, "title": "tasks · mobile", "page": "tasks" },
+    "time.desk.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 860, "title": "time · desk", "page": "time", "expand": "fill" },
+    "time.mobile.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 1060, "title": "time · mobile", "page": "time" }
+  },
+  "order": [
+    "Main.dc.html",
+    "today.desk.dc.html",
+    "today.mobile.dc.html",
+    "tasks.desk.dc.html",
+    "tasks.mobile.dc.html",
+    "time.desk.dc.html",
+    "time.mobile.dc.html"
+  ],
+  "notes": {
+    "todayTitle": { "x": 0, "y": -300, "text": "今日", "kind": "title1", "maxW": 1750, "page": "today" },
+    "tasksTitle": { "x": 0, "y": -300, "text": "タスク", "kind": "title1", "maxW": 1750, "page": "tasks" },
+    "timeTitle": { "x": 0, "y": -300, "text": "記録", "kind": "title1", "maxW": 1750, "page": "time" },
+    "guideNote": {
+      "x": 840, "y": 0, "w": 360, "fill": "blue", "page": "guide",
+      "text": "2026-11-06 時点の実装を写したボードです。\n新しい案は上書きせず、隣に -v2 などを付けたボードで作ってください。\nカレンダー・設定・タスク編集のボードは、必要になったら足します。"
+    }
+  },
+  "designSystems": [
+    {
+      "title": "Cryst Design System",
+      "namespace": "cryst",
+      "artifact": "https://claude.ai/artifact/TXKBwjMEB9xMt52GBbERVs",
+      "version": "1793122689-abbc",
+      "copiedAt": "2026-11-06T07:30:00Z"
+    }
+  ]
+}

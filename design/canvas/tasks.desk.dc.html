@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>タスク · desk</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/cryst/tokens.css">
+<link rel="stylesheet" href="ds/cryst/components/bundle.css">
+<script src="ds/cryst/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)}
+</style>
+</helmet>
+<div class="{{themeClass}}" data-theme="{{theme}}" style="min-height: 860px; display: flex; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.5">
+
+<aside aria-label="メニュー" style="flex: none; width: 244px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; border-right: 1px solid var(--border)">
+<div style="padding: 4px 8px 20px; font-size: 15px; font-weight: 600">Mine</div>
+<sc-for list="{{nav}}" as="item" hint-placeholder-count="4">
+<a href="{{item.href}}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: {{item.color}}; background: {{item.bg}}"><x-import component-from-global-scope="Cryst.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
+</sc-for>
+<div style="flex: 1"></div>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--foreground)"><x-import component-from-global-scope="Cryst.Icon" name="settings"></x-import>設定</a>
+</aside>
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="height: 48px; flex: none; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border)">
+<h1 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: var(--tracking-heading)">タスク</h1>
+</header>
+
+<main style="width: 100%; max-width: 720px; box-sizing: border-box; margin: 0 auto; padding: 24px 0; display: flex; flex-direction: column; gap: 14px">
+<x-import component-from-global-scope="Cryst.ToggleGroup" options="{{views}}" default-value="today" label="表示" size="lg"></x-import>
+<div style="display: flex; gap: 6px; align-items: center">
+<x-import component-from-global-scope="Cryst.Input" placeholder="タスクを追加（p1 #プロジェクト @ラベル 明日）" style="flex: 1"></x-import>
+<x-import component-from-global-scope="Cryst.Button" size="icon" aria-label="追加"><x-import component-from-global-scope="Cryst.Icon" name="plus"></x-import></x-import>
+<x-import component-from-global-scope="Cryst.IconButton" icon="adjustments-horizontal" label="詳しく入力"></x-import>
+</div>
+
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{groups}}" as="group" hint-placeholder-count="2">
+<div style="display: flex; align-items: baseline; gap: 6px; padding: 10px 8px 6px; border-bottom: 1px solid var(--border)"><span style="font-weight: 600">{{group.label}}</span><span style="font-size: 11px; color: var(--muted-foreground)">{{group.count}}</span></div>
+<sc-for list="{{group.tasks}}" as="task" hint-placeholder-count="2">
+<div style="display: flex; align-items: flex-start; gap: 10px; padding: 7px 8px; border-bottom: 1px solid var(--border-subtle)">
+<span style="flex: none; width: 15px; height: 15px; margin-top: 2px; border-radius: 50%; border: 1.5px solid {{task.ring}}"></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span>{{task.title}}</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted-foreground)">
+<sc-for list="{{task.meta}}" as="m" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; gap: 3px; color: {{m.color}}"><sc-if value="{{m.icon}}" hint-placeholder-val="{{yes}}"><x-import component-from-global-scope="Cryst.Icon" name="{{m.icon}}" size="{{i12}}" color="{{m.iconColor}}"></x-import></sc-if>{{m.text}}</span></sc-for>
+</span>
+</div>
+<x-import component-from-global-scope="Cryst.IconButton" icon="player-play" label="計測を始める" size="sm"></x-import>
+</div>
+</sc-for>
+</sc-for>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+renderVals() {
+const theme = this.props.theme ?? 'dark';
+const muted = 'var(--muted-foreground)';
+const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--foreground)', bg: active ? 'var(--primary-soft)' : 'transparent' });
+const meta = (icon, text, color, iconColor) => ({ icon: icon, text: text, color: color || muted, iconColor: iconColor || 'currentColor' });
+const project = (name, chart) => meta('point-filled', name, muted, 'var(--' + chart + ')');
+return {
+theme: theme,
+themeClass: theme === 'dark' ? 'dark' : 'light',
+yes: true, i12: 12,
+nav: [
+nav('今日', 'home', 'today.desk.dc.html', false),
+nav('タスク', 'checklist', 'tasks.desk.dc.html', true),
+nav('記録', 'clock-hour-4', 'time.desk.dc.html', false),
+nav('カレンダー', 'calendar', '#', false)
+],
+views: [
+{ value: 'today', label: '今日' },
+{ value: 'upcoming', label: '近日' },
+{ value: 'inbox', label: 'インボックス' },
+{ value: 'open', label: 'すべて' }
+],
+groups: [
+{ label: '期限切れ', count: 1, tasks: [
+{ title: '燃えるゴミを出す', ring: muted, meta: [
+meta('calendar-event', '昨日', 'var(--destructive-text)'),
+meta('repeat', '毎週 月・木'),
+meta('', '@家'),
+project('生活', 'chart-3')
+] }
+] },
+{ label: '今日', count: 3, tasks: [
+{ title: 'ゼミ発表のスライドを仕上げる', ring: 'var(--destructive-text)', meta: [
+meta('flag', '今日まで', 'var(--success-text)'),
+meta('hourglass', '90分'),
+meta('', '@PC'),
+project('大学 / 研究', 'chart-1')
+] },
+{ title: 'Mine のデザインをキャンバスに起こす', ring: 'var(--warning-text)', meta: [
+meta('', 'next'),
+meta('', '@PC'),
+project('個人開発', 'chart-4')
+] },
+{ title: '週次レポートを送る', ring: 'var(--primary-text)', meta: [
+meta('calendar-event', '今日', 'var(--success-text)'),
+meta('repeat', '毎週 火'),
+project('仕事', 'chart-2')
+] }
+] }
+]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Mine UI の使い方</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/cryst/tokens.css">
+<link rel="stylesheet" href="ds/cryst/components/bundle.css">
+<script src="ds/cryst/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:var(--primary-text)}a:hover{color:var(--foreground)}
+</style>
+</helmet>
+<div class="{{themeClass}}" data-theme="{{theme}}" style="width: 760px; height: 700px; box-sizing: border-box; padding: 40px 48px; display: flex; flex-direction: column; gap: 24px; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.6">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 600; letter-spacing: var(--tracking-heading)">Mine UI</h1>
+<p style="margin: 0; color: var(--muted-foreground)">Mine の画面のデザインの正本。ここで決めてから、コードに反映する。</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">ボード</h2>
+<div style="border: 1px solid var(--border); border-radius: 8px; background: var(--card); overflow: hidden">
+<sc-for list="{{screens}}" as="row" hint-placeholder-count="7">
+<div style="display: grid; grid-template-columns: 120px 120px minmax(0, 1fr); gap: 12px; padding: 9px 14px; border-top: 1px solid var(--border-subtle)">
+<span style="font-family: var(--font-mono); font-size: 12px">{{row.name}}</span>
+<span>{{row.label}}</span>
+<span style="color: var(--muted-foreground)">{{row.route}}</span>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; color: var(--muted-foreground)">ファイル名は <span style="font-family: var(--font-mono); font-size: 12px">画面.desk.dc.html</span> と <span style="font-family: var(--font-mono); font-size: 12px">画面.mobile.dc.html</span>。状態違いは <span style="font-family: var(--font-mono); font-size: 12px">tasks-empty.mobile.dc.html</span> のように付ける。desk は幅 1280px、mobile は幅 390px。</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">決まり</h2>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px">
+<li>部品は Cryst のものを使う。Cryst にないものは付箋に理由を書く。</li>
+<li>新しい案は上書きせず、隣に別のボードで作る。</li>
+<li>サンプルの内容は画面写真のサンプルデータと同じにする（2026-11-10 火 14:20 の想定）。</li>
+<li>反映するときは、プロジェクトで「Mine UI の〇〇を実装に反映して」と頼む。</li>
+</ul>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":760,"height":700}}'>
+class Component extends DCLogic {
+renderVals() {
+const theme = this.props.theme ?? 'dark';
+return {
+theme: theme,
+themeClass: theme === 'dark' ? 'dark' : 'light',
+screens: [
+{ name: 'today', label: '今日', route: '/' },
+{ name: 'tasks', label: 'タスク', route: '/tasks' },
+{ name: 'task-editor', label: 'タスクの編集', route: '/tasks（行を開いた状態）' },
+{ name: 'time', label: '記録', route: '/time' },
+{ name: 'calendar', label: 'カレンダー', route: '/calendar' },
+{ name: 'settings', label: '設定', route: '/settings' },
+{ name: 'login', label: 'ログイン', route: '/login' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

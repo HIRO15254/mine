@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>記録 · mobile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/cryst/tokens.css">
+<link rel="stylesheet" href="ds/cryst/components/bundle.css">
+<script src="ds/cryst/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)}
+</style>
+</helmet>
+<div class="{{themeClass}}" data-theme="{{theme}}" style="width: 390px; height: 1060px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: var(--m-text-secondary); line-height: 1.4">
+
+<header style="flex: none; height: 44px; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 14px; border-bottom: 1px solid var(--border)">
+<h1 style="flex: 1; margin: 0; font-size: var(--m-text-title); font-weight: 600; letter-spacing: var(--tracking-heading)">記録 11月9日〜15日</h1>
+<x-import component-from-global-scope="Cryst.Button" variant="outline" size="sm">今週</x-import>
+<x-import component-from-global-scope="Cryst.IconButton" icon="chevron-left" label="前の週" size="xl"></x-import>
+<x-import component-from-global-scope="Cryst.IconButton" icon="chevron-right" label="次の週" size="xl"></x-import>
+</header>
+
+<main style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 14px">
+<x-import component-from-global-scope="Cryst.Card">
+<x-import component-from-global-scope="Cryst.CardContent">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-size: var(--m-text-body); font-weight: 600">ゼミ発表のスライド</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground)"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--chart-1)"></span>大学 / 研究</span>
+</div>
+<span style="font-family: var(--font-mono); font-size: 18px">1:15:00</span>
+<x-import component-from-global-scope="Cryst.Button" variant="destructive" size="xl" aria-label="止める"><x-import component-from-global-scope="Cryst.Icon" name="player-stop" filled="{{yes}}"></x-import></x-import>
+</div>
+</x-import>
+</x-import>
+
+<x-import component-from-global-scope="Cryst.Card">
+<x-import component-from-global-scope="Cryst.CardHeader">
+<x-import component-from-global-scope="Cryst.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Cryst.Icon" name="clock-hour-4"></x-import>この週の合計</span></x-import>
+</x-import>
+<x-import component-from-global-scope="Cryst.CardContent">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 26px; font-weight: 600; letter-spacing: var(--tracking-heading)">12時間25分</span><span style="font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">¥11,250</span></div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 110px; border-bottom: 1px solid var(--border)">
+<sc-for list="{{week}}" as="d" hint-placeholder-count="7"><div style="height: {{d.height}}; margin: 0 8px; border-radius: 3px 3px 0 0; background: var(--primary)"></div></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; text-align: center; font-size: 12px; color: var(--muted-foreground)">
+<sc-for list="{{week}}" as="d" hint-placeholder-count="7"><span>{{d.label}}</span></sc-for>
+</div>
+<sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="flex: 1">{{p.name}}</span><span style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground)">{{p.amount}}</span><span style="font-family: var(--font-mono); font-size: 12px">{{p.time}}</span></div>
+<div style="height: 6px; border-radius: 999px; background: var(--muted)"><div style="height: 6px; border-radius: 999px; width: {{p.width}}; background: {{p.color}}"></div></div>
+</div>
+</sc-for>
+</div>
+</x-import>
+</x-import>
+
+<div><x-import component-from-global-scope="Cryst.Button" variant="secondary" size="xl" icon="plus">記録を追加</x-import></div>
+
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{days}}" as="day" hint-placeholder-count="2">
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding: 10px 8px 6px; border-bottom: 1px solid var(--border)"><span style="font-weight: 600">{{day.label}}</span><span style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground)">{{day.total}}</span></div>
+<sc-for list="{{day.entries}}" as="e" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 48px; box-sizing: border-box; padding: 6px 8px; border-bottom: 1px solid var(--border-subtle)">
+<span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: {{e.color}}"></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-size: var(--m-text-body)">{{e.title}}</span>
+<span style="font-size: 12px; color: var(--muted-foreground)">{{e.project}}</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end">
+<span style="font-family: var(--font-mono); color: {{e.durationColor}}">{{e.duration}}</span>
+<span style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground)">{{e.span}}</span>
+</div>
+<x-import component-from-global-scope="Cryst.IconButton" icon="player-play" label="もう一度始める"></x-import>
+</div>
+</sc-for>
+</sc-for>
+</div>
+</main>
+
+<nav aria-label="メニュー" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 4px 0 10px; background: var(--background); border-top: 1px solid var(--border)">
+<sc-for list="{{tabs}}" as="tab" hint-placeholder-count="5">
+<a href="{{tab.href}}" style="height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--m-text-tab); font-weight: 500; color: {{tab.color}}"><x-import component-from-global-scope="Cryst.Icon" name="{{tab.icon}}" size="{{i24}}"></x-import>{{tab.label}}</a>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":390,"height":1060}}'>
+class Component extends DCLogic {
+renderVals() {
+const theme = this.props.theme ?? 'dark';
+const muted = 'var(--muted-foreground)';
+const tab = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : muted });
+const entry = (title, project, chart, duration, span, running) => ({ title: title, project: project, color: 'var(--' + chart + ')', duration: duration, span: span, durationColor: running ? 'var(--success-text)' : 'var(--foreground)' });
+return {
+theme: theme,
+themeClass: theme === 'dark' ? 'dark' : 'light',
+yes: true, i24: 24,
+tabs: [
+tab('今日', 'home', 'today.mobile.dc.html', false),
+tab('タスク', 'checklist', 'tasks.mobile.dc.html', false),
+tab('記録', 'clock-hour-4', 'time.mobile.dc.html', true),
+tab('カレンダー', 'calendar', '#', false),
+tab('設定', 'settings', '#', false)
+],
+days: [
+{ label: '今日', total: '3時間45分', entries: [
+entry('ゼミ発表のスライド', '大学 / 研究', 'chart-1', '1時間15分', '13:05–計測中', true),
+entry('実験データの整理', '大学 / 研究', 'chart-1', '2時間30分', '09:15–11:45', false)
+] },
+{ label: '昨日', total: '8時間40分', entries: [
+entry('タスク画面の手直し', '個人開発・請求なし', 'chart-4', '1時間40分', '21:30–23:10', false),
+entry('API の実装', '仕事', 'chart-2', '3時間30分', '15:10–18:40', false),
+entry('定例ミーティング', '仕事', 'chart-2', '1時間', '14:00–15:00', false),
+entry('論文を読む', '大学 / 研究', 'chart-1', '2時間30分', '09:30–12:00', false)
+] }
+],
+week: [
+{ label: '月', height: '100%' }, { label: '火', height: '45%' }, { label: '水', height: '0%' }, { label: '木', height: '0%' },
+{ label: '金', height: '0%' }, { label: '土', height: '0%' }, { label: '日', height: '0%' }
+],
+projects: [
+{ name: '大学 / 研究', time: '6時間15分', amount: '', width: '100%', color: 'var(--chart-1)' },
+{ name: '仕事', time: '4時間30分', amount: '¥11,250', width: '72%', color: 'var(--chart-2)' },
+{ name: '個人開発', time: '1時間40分', amount: '', width: '27%', color: 'var(--chart-4)' }
+]
+};
+}
+}
+</script>
+</body>
+</html>
