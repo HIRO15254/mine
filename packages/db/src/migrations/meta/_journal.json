@@ -43,6 +43,13 @@
       "when": 1793942575240,
       "tag": "0005_oauth",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793943330776,
+      "tag": "0006_claude_threads",
+      "breakpoints": true
     }
   ]
 }

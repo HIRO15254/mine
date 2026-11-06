@@ -8,6 +8,7 @@ import {
 	verification,
 } from "./schema/auth";
 import { calendarPreference } from "./schema/calendar";
+import { claudeThread, claudeThreadRelations } from "./schema/claude";
 import {
 	oauthClient,
 	oauthCode,
@@ -39,6 +40,8 @@ export const schema = {
 	apiToken,
 	accountRelations,
 	calendarPreference,
+	claudeThread,
+	claudeThreadRelations,
 	label,
 	labelRelations,
 	oauthClient,

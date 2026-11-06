@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { findProject, startTimer, stopTimer, timerStatus } from "../rest/timer";
 import type { appRouter } from "../routers/index";
+import { threadUrl } from "../routers/thread";
 import { addDays, isDayKey } from "../tasks/dates";
 import { recurrenceSchema } from "../tasks/recurrence";
 import { TASK_VIEWS } from "../tasks/views";
@@ -541,6 +542,78 @@ const listEvents = defineTool({
 	},
 });
 
+const THREAD_STATUS_TEXT = {
+	done: "完了",
+	waiting: "あなた待ち",
+	working: "作業中",
+} as const;
+
+const reportThread = defineTool({
+	name: "report_thread_status",
+	title: "スレッドの状況を記録",
+	description:
+		"Records what this Claude conversation or session is doing, so the user can see all their threads in Mine. Report when substantial work starts (working), when you need the user (waiting, with nextAction saying exactly what they must do), and when finished (done). Pass the id from your previous report to update the same thread, and the conversation URL if you know it. Write title, summary and nextAction in short Japanese.",
+	annotations: { idempotentHint: true },
+	input: z.object({
+		id: z
+			.string()
+			.min(1)
+			.optional()
+			.describe("The id returned by your previous report"),
+		nextAction: z.string().trim().max(1000).optional(),
+		project: projectRef.optional(),
+		status: z.enum(["working", "waiting", "done"]),
+		summary: z
+			.string()
+			.trim()
+			.max(2000)
+			.optional()
+			.describe("One or two sentences on the current state"),
+		title: z.string().trim().min(1).max(200),
+		url: threadUrl.optional(),
+	}),
+	run: async (input, env) => {
+		const { project, ...fields } = input;
+		const projectId = project
+			? resolveProject(await env.caller.project.list(), project).id
+			: undefined;
+		const thread = await env.caller.thread.report({ ...fields, projectId });
+		return {
+			id: thread.id,
+			text: `記録しました: ${thread.title}（${THREAD_STATUS_TEXT[thread.status]}）`,
+		};
+	},
+});
+
+const listThreads = defineTool({
+	name: "list_threads",
+	title: "スレッドを見る",
+	description:
+		"Lists the Claude threads that reported to Mine, newest first: what each is doing and which are waiting for the user.",
+	annotations: { readOnlyHint: true },
+	input: z.object({ includeDone: z.boolean().default(false) }),
+	run: async (input, env) => {
+		const [threads, projects] = await Promise.all([
+			env.caller.thread.list({ includeDone: input.includeDone }),
+			env.caller.project.list(),
+		]);
+		return {
+			threads: threads.map((thread) =>
+				compact({
+					id: thread.id,
+					nextAction: thread.nextAction,
+					project: projectPath(projects, thread.projectId),
+					status: thread.status,
+					summary: thread.summary,
+					title: thread.title,
+					updated: localTime(thread.updatedAt, env.timeZone),
+					url: thread.url,
+				})
+			),
+		};
+	},
+});
+
 export const TOOLS: Tool[] = [
 	listTasks,
 	addTask,
@@ -554,4 +627,6 @@ export const TOOLS: Tool[] = [
 	addTimeEntry,
 	timeReport,
 	listEvents,
+	reportThread,
+	listThreads,
 ];

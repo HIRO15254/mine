@@ -258,3 +258,80 @@ describe("MCP tools", () => {
 		expect(events.text).toBe("GOOGLE_CALENDAR_NOT_CONNECTED");
 	});
 });
+
+describe("Claude threads", () => {
+	it("reports, updates and lists threads", async () => {
+		const { call } = await setup();
+		const first = await call("report_thread_status", {
+			project: "研究",
+			status: "working",
+			summary: "論文の要約を作っています",
+			title: "論文の要約",
+			url: "https://claude.ai/chat/abc",
+		});
+		expect(first.data.text).toBe("記録しました: 論文の要約（作業中）");
+		const id = first.data.id as string;
+
+		const waiting = await call("report_thread_status", {
+			id,
+			nextAction: "要約の長さを決めてください",
+			status: "waiting",
+			title: "論文の要約",
+		});
+		expect(waiting.data.id).toBe(id);
+
+		// The same URL updates the same thread even without the id.
+		const again = await call("report_thread_status", {
+			nextAction: "要約の長さを決めてください",
+			status: "waiting",
+			title: "論文の要約",
+			url: "https://claude.ai/chat/abc",
+		});
+		expect(again.data.id).toBe(id);
+
+		const list = await call("list_threads");
+		expect(list.data.threads).toEqual([
+			{
+				id,
+				nextAction: "要約の長さを決めてください",
+				project: "大学 / 研究",
+				status: "waiting",
+				summary: "論文の要約を作っています",
+				title: "論文の要約",
+				updated: "2026-11-06 10:00",
+				url: "https://claude.ai/chat/abc",
+			},
+		]);
+
+		await call("report_thread_status", {
+			id,
+			status: "done",
+			title: "論文の要約",
+		});
+		expect((await call("list_threads")).data.threads).toEqual([]);
+		const all = await call("list_threads", { includeDone: true });
+		expect(all.data.threads[0]).not.toHaveProperty("nextAction");
+	});
+
+	it("refuses script links and other users' threads", async () => {
+		const { call } = await setup();
+		const script = await call("report_thread_status", {
+			status: "working",
+			title: "x",
+			url: "javascript:alert(1)",
+		});
+		expect(script.isError).toBe(true);
+		const plain = await call("report_thread_status", {
+			status: "working",
+			title: "x",
+			url: "http://claude.ai/chat/1",
+		});
+		expect(plain.isError).toBe(true);
+		const missing = await call("report_thread_status", {
+			id: "someone-else",
+			status: "working",
+			title: "x",
+		});
+		expect(missing).toMatchObject({ isError: true, text: "Thread not found" });
+	});
+});

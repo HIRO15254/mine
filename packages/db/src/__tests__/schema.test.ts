@@ -65,3 +65,9 @@ describe("oauth schema", () => {
 		expect(getTableName(schema.oauthGrant)).toBe("oauth_grant");
 	});
 });
+
+describe("claude schema", () => {
+	it("registers the Claude thread table", () => {
+		expect(getTableName(schema.claudeThread)).toBe("claude_thread");
+	});
+});

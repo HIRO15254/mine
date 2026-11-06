@@ -39,15 +39,27 @@ export function createTrpcMock() {
 		client: unknown;
 		connections: unknown[];
 		current: unknown;
+		projects: unknown[];
+		threads: unknown[];
 		tokens: unknown[];
 	} = {
 		client: { name: "Claude", redirectHost: "claude.ai" },
 		connections: [],
 		current: null,
+		projects: [],
+		threads: [],
 		tokens: [],
 	};
 	const trpc = {
-		label: { pathKey: () => [["label"]] },
+		label: {
+			list: {
+				queryOptions: () => ({
+					queryFn: () => Promise.resolve([]),
+					queryKey: [["label", "list"]],
+				}),
+			},
+			pathKey: () => [["label"]],
+		},
 		oauth: {
 			approve: mutation(calls.approve),
 			client: {
@@ -69,7 +81,15 @@ export function createTrpcMock() {
 			pathKey: () => [["oauth"]],
 			revoke: mutation(calls.remove),
 		},
-		project: { pathKey: () => [["project"]] },
+		project: {
+			list: {
+				queryOptions: () => ({
+					queryFn: () => Promise.resolve(state.projects),
+					queryKey: [["project", "list"]],
+				}),
+			},
+			pathKey: () => [["project"]],
+		},
 		task: {
 			complete: mutation(calls.update),
 			create: mutation(calls.create),
@@ -77,6 +97,16 @@ export function createTrpcMock() {
 			pathKey: () => [["task"]],
 			uncomplete: mutation(calls.update),
 			update: mutation(calls.update),
+		},
+		thread: {
+			list: {
+				queryOptions: () => ({
+					queryFn: () => Promise.resolve(state.threads),
+					queryKey: [["thread", "list"]],
+				}),
+			},
+			pathKey: () => [["thread"]],
+			setStatus: mutation(calls.update),
 		},
 		time: {
 			create: mutation(calls.timeCreate),

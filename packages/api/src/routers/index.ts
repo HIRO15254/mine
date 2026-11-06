@@ -7,6 +7,7 @@ import { oauthRouter } from "./oauth";
 import { projectRouter } from "./project";
 import { rateRouter } from "./rate";
 import { taskRouter } from "./task";
+import { threadRouter } from "./thread";
 import { timeRouter } from "./time";
 import { tokenRouter } from "./token";
 
@@ -19,6 +20,7 @@ export const appRouter = router({
 	project: projectRouter,
 	rate: rateRouter,
 	task: taskRouter,
+	thread: threadRouter,
 	time: timeRouter,
 	token: tokenRouter,
 });

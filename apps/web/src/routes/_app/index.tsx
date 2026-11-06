@@ -5,6 +5,7 @@ import {
 	IconChecklist,
 	IconChevronRight,
 	IconCircleCheck,
+	IconMessages,
 	IconPlayerPlay,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import { ComingSoon } from "@/components/placeholder/coming-soon";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { TaskList } from "@/components/tasks/task-list";
 import { useTaskContext } from "@/components/tasks/use-tasks";
+import { ThreadList } from "@/components/threads/thread-list";
 import { useEntryEditor } from "@/components/time/entry-editor";
 import { TimerBar } from "@/components/time/timer-bar";
 import { WeekSummary } from "@/components/time/week-summary";
@@ -93,6 +95,15 @@ function TodayPage() {
 					</CardHeader>
 					<CardContent>
 						<TodayTasks />
+					</CardContent>
+				</Card>
+				<Card className="desk:col-span-3">
+					<CardHeader>
+						<IconMessages aria-hidden />
+						<CardTitle>Claude のスレッド</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<ThreadList />
 					</CardContent>
 				</Card>
 				<Card className="desk:col-span-3">
