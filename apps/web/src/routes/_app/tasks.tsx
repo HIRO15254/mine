@@ -127,7 +127,6 @@ function TasksPage() {
 			<div className="mx-auto flex w-full max-w-[720px] flex-col gap-3.5">
 				<ToggleGroup
 					aria-label="表示"
-					className="desk:gap-1.5 gap-1"
 					onValueChange={(value) => {
 						if (value) {
 							navigate({

@@ -384,7 +384,6 @@ function RepeatFields({
 			{draft.repeat === "schedule" && draft.unit === "week" && (
 				<ToggleGroup
 					aria-label="曜日"
-					className="gap-1"
 					onValueChange={(value) => set("weekdays", value.map(Number))}
 					type="multiple"
 					value={draft.weekdays.map(String)}
