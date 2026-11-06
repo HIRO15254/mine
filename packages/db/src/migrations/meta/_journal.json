@@ -15,6 +15,13 @@
       "when": 1793858792072,
       "tag": "0001_calendar_preference",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793860276925,
+      "tag": "0002_tasks",
+      "breakpoints": true
     }
   ]
 }

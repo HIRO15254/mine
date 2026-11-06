@@ -13,6 +13,8 @@ import {
 	CalendarError,
 	CalendarLoading,
 } from "@/components/calendar/calendar-status";
+import { LabelSettings } from "@/components/tasks/label-settings";
+import { ProjectSettings } from "@/components/tasks/project-settings";
 import { Button } from "@/components/ui/button/button";
 import {
 	Item,
@@ -72,6 +74,14 @@ function SettingsPage() {
 							端末に合わせる
 						</ToggleGroupItem>
 					</ToggleGroup>
+				</section>
+				<section className="flex flex-col gap-2">
+					<h2 className="m-0 font-semibold text-sm">プロジェクト</h2>
+					<ProjectSettings />
+				</section>
+				<section className="flex flex-col gap-2">
+					<h2 className="m-0 font-semibold text-sm">ラベル</h2>
+					<LabelSettings />
 				</section>
 				<section className="flex flex-col gap-2">
 					<h2 className="m-0 font-semibold text-sm">表示するカレンダー</h2>

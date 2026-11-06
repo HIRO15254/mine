@@ -25,3 +25,22 @@ describe("calendar schema", () => {
 		expect(getTableName(schema.calendarPreference)).toBe("calendar_preference");
 	});
 });
+
+describe("task schema", () => {
+	it("registers the task tables", () => {
+		const tables = [
+			schema.project,
+			schema.label,
+			schema.task,
+			schema.taskLabel,
+			schema.taskCompletion,
+		];
+		expect(tables.map((table) => getTableName(table))).toEqual([
+			"project",
+			"label",
+			"task",
+			"task_label",
+			"task_completion",
+		]);
+	});
+});
