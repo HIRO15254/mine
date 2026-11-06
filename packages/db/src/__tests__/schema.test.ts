@@ -57,3 +57,11 @@ describe("token schema", () => {
 		expect(getTableName(schema.apiToken)).toBe("api_token");
 	});
 });
+
+describe("oauth schema", () => {
+	it("registers the OAuth tables", () => {
+		expect(getTableName(schema.oauthClient)).toBe("oauth_client");
+		expect(getTableName(schema.oauthCode)).toBe("oauth_code");
+		expect(getTableName(schema.oauthGrant)).toBe("oauth_grant");
+	});
+});

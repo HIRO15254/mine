@@ -82,3 +82,7 @@ Authorization: Bearer mine_xxxxxxxx…
 ## Tasker など
 
 ほかのアプリでも、上のヘッダーを付けて同じ URL を呼べば使えます。Tasker なら「HTTP Request」アクションで `GET /timer` を呼び、`text` を通知に出せば、計測中の表示を常に出しておくこともできます。
+
+## Claude から使う
+
+Claude からは MCP で操作できます。設定方法は [claude-mcp.ja.md](claude-mcp.ja.md) を見てください。

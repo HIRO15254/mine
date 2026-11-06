@@ -14,6 +14,11 @@ function mutation(fn: Fn) {
 /** A stand-in for the tRPC options proxy with spy-able mutations. */
 export function createTrpcMock() {
 	const calls = {
+		approve: vi.fn<Fn>(() =>
+			Promise.resolve({
+				redirectUrl: "https://claude.ai/api/mcp/auth_callback?code=c",
+			})
+		),
 		create: vi.fn<Fn>((input) => Promise.resolve(input)),
 		remove: vi.fn<Fn>((input) => Promise.resolve(input)),
 		timeCreate: vi.fn<Fn>((input) => Promise.resolve(input)),
@@ -30,12 +35,40 @@ export function createTrpcMock() {
 		update: vi.fn<Fn>((input) => Promise.resolve(input)),
 	};
 	/** What `time.current` returns; tests may replace it. */
-	const state: { current: unknown; tokens: unknown[] } = {
+	const state: {
+		client: unknown;
+		connections: unknown[];
+		current: unknown;
+		tokens: unknown[];
+	} = {
+		client: { name: "Claude", redirectHost: "claude.ai" },
+		connections: [],
 		current: null,
 		tokens: [],
 	};
 	const trpc = {
 		label: { pathKey: () => [["label"]] },
+		oauth: {
+			approve: mutation(calls.approve),
+			client: {
+				queryOptions: (_input: unknown, options: object = {}) => ({
+					...options,
+					queryFn: () =>
+						state.client
+							? Promise.resolve(state.client)
+							: Promise.reject(new Error("BAD_REQUEST")),
+					queryKey: [["oauth", "client"]],
+				}),
+			},
+			connections: {
+				queryOptions: () => ({
+					queryFn: () => Promise.resolve(state.connections),
+					queryKey: [["oauth", "connections"]],
+				}),
+			},
+			pathKey: () => [["oauth"]],
+			revoke: mutation(calls.remove),
+		},
 		project: { pathKey: () => [["project"]] },
 		task: {
 			complete: mutation(calls.update),

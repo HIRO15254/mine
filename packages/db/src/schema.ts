@@ -9,6 +9,12 @@ import {
 } from "./schema/auth";
 import { calendarPreference } from "./schema/calendar";
 import {
+	oauthClient,
+	oauthCode,
+	oauthGrant,
+	oauthGrantRelations,
+} from "./schema/oauth";
+import {
 	label,
 	labelRelations,
 	project,
@@ -35,6 +41,10 @@ export const schema = {
 	calendarPreference,
 	label,
 	labelRelations,
+	oauthClient,
+	oauthCode,
+	oauthGrant,
+	oauthGrantRelations,
 	project,
 	projectRate,
 	projectRateRelations,

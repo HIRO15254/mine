@@ -3,6 +3,7 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { calendarRouter } from "./calendar";
 import { labelRouter } from "./label";
+import { oauthRouter } from "./oauth";
 import { projectRouter } from "./project";
 import { rateRouter } from "./rate";
 import { taskRouter } from "./task";
@@ -14,6 +15,7 @@ export const appRouter = router({
 	me: protectedProcedure.query(({ ctx }) => ctx.session.user),
 	calendar: calendarRouter,
 	label: labelRouter,
+	oauth: oauthRouter,
 	project: projectRouter,
 	rate: rateRouter,
 	task: taskRouter,
