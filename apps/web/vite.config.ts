@@ -15,12 +15,34 @@ export default defineConfig({
 		VitePWA({
 			registerType: "autoUpdate",
 			manifest: {
+				id: "/",
 				name: "Mine",
 				short_name: "Mine",
 				description: "予定・タスク・時間の記録をひとつに",
 				theme_color: "#08090a",
 				background_color: "#08090a",
 				lang: "ja",
+				categories: ["productivity"],
+				shortcuts: [
+					{
+						name: "タスクを追加",
+						short_name: "追加",
+						url: "/tasks?add=",
+						icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
+					},
+					{
+						name: "時間の記録",
+						short_name: "記録",
+						url: "/time",
+						icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }],
+					},
+				],
+				// Android's share sheet opens the task box with the shared text.
+				share_target: {
+					action: "/tasks",
+					method: "GET",
+					params: { title: "title", text: "text", url: "url" },
+				},
 			},
 			pwaAssets: { disabled: false, config: true },
 			workbox: {

@@ -54,4 +54,29 @@ describe("QuickAdd", () => {
 		expect(trpcMock.calls.create).not.toHaveBeenCalled();
 		expect(onOpenEditor).toHaveBeenCalledOnce();
 	});
+
+	it("starts with shared text, focused, and reports the add", async () => {
+		const onAdded = vi.fn();
+		renderWithQuery(
+			<QuickAdd
+				autoFocus
+				initialText="あとで読む https://example.com/a"
+				labels={[]}
+				onAdded={onAdded}
+				onOpenEditor={vi.fn()}
+				projects={projects}
+			/>
+		);
+		const input = screen.getByLabelText("タスクを追加");
+		expect(input).toHaveFocus();
+		expect(input).toHaveValue("あとで読む https://example.com/a");
+
+		await userEvent.type(input, "{Enter}");
+
+		await waitFor(() => expect(onAdded).toHaveBeenCalledOnce());
+		expect(trpcMock.calls.create).toHaveBeenCalledWith(
+			expect.objectContaining({ title: "あとで読む https://example.com/a" }),
+			expect.anything()
+		);
+	});
 });

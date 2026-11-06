@@ -10,6 +10,7 @@ import {
 	PRIMARY_ITEMS,
 	SETTINGS_ITEM,
 } from "./navigation";
+import { OfflineBanner } from "./offline-banner";
 
 function SidebarLink({
 	active,
@@ -91,6 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 				</nav>
 			</aside>
 			<div className="flex min-w-0 flex-1 flex-col">
+				<OfflineBanner />
 				<div className="min-h-0 flex-1 overflow-auto">{children}</div>
 				<nav
 					aria-label="メイン"

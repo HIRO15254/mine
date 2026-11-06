@@ -18,24 +18,33 @@ import { useInvalidateTasks } from "./use-tasks";
  * "今日/明日/明後日". Tokens it does not recognise stay in the title.
  */
 export function QuickAdd({
+	autoFocus,
 	defaults,
+	initialText,
 	labels,
+	onAdded,
 	onOpenEditor,
 	projects,
 }: {
+	autoFocus?: boolean;
 	defaults?: DraftDefaults;
+	initialText?: string;
 	labels: Label[];
+	onAdded?: () => void;
 	onOpenEditor: () => void;
 	projects: Project[];
 }) {
 	const id = useId();
 	const isDesk = useIsDesk();
-	const [text, setText] = useState("");
+	const [text, setText] = useState(initialText ?? "");
 	const invalidate = useInvalidateTasks();
 	const create = useMutation(
 		trpc.task.create.mutationOptions({
 			onSettled: invalidate,
-			onSuccess: () => setText(""),
+			onSuccess: () => {
+				setText("");
+				onAdded?.();
+			},
 			onError: () => toast.error("追加できませんでした"),
 		})
 	);
@@ -66,6 +75,8 @@ export function QuickAdd({
 			</label>
 			<Input
 				autoComplete="off"
+				// Opened from a shortcut or a share: the box is why the page is open.
+				autoFocus={autoFocus}
 				disabled={create.isPending}
 				enterKeyHint="done"
 				id={id}

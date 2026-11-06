@@ -29,6 +29,7 @@ import {
 	ToggleGroupItem,
 } from "@/components/ui/toggle-group/toggle-group";
 import { useIsDesk } from "@/hooks/use-media-query";
+import { quickAddText } from "@/lib/share";
 import {
 	flattenProjects,
 	groupTasks,
@@ -39,6 +40,8 @@ import {
 import { trpc } from "@/utils/trpc";
 
 interface TasksSearch {
+	/** Text to start the quick-add box with, from a shortcut or a share. */
+	add?: string;
 	project?: string;
 	view?: TaskView;
 }
@@ -46,14 +49,18 @@ interface TasksSearch {
 const VIEWS = new Set<string>(TASK_VIEW_OPTIONS.map((option) => option.value));
 
 export const Route = createFileRoute("/_app/tasks")({
-	validateSearch: (search: Record<string, unknown>): TasksSearch => ({
-		...(typeof search.view === "string" && VIEWS.has(search.view)
-			? { view: search.view as TaskView }
-			: {}),
-		...(typeof search.project === "string" && search.project
-			? { project: search.project }
-			: {}),
-	}),
+	validateSearch: (search: Record<string, unknown>): TasksSearch => {
+		const add = quickAddText(search);
+		return {
+			...(add === undefined ? {} : { add }),
+			...(typeof search.view === "string" && VIEWS.has(search.view)
+				? { view: search.view as TaskView }
+				: {}),
+			...(typeof search.project === "string" && search.project
+				? { project: search.project }
+				: {}),
+		};
+	},
 	component: TasksPage,
 });
 
@@ -167,8 +174,19 @@ function TasksPage() {
 					</NativeSelect>
 				)}
 				<QuickAdd
+					autoFocus={search.add !== undefined}
 					defaults={defaults}
+					initialText={search.add}
+					key={search.add ?? ""}
 					labels={labels}
+					onAdded={() => {
+						if (search.add !== undefined) {
+							navigate({
+								replace: true,
+								search: ({ add: _add, ...rest }) => rest,
+							});
+						}
+					}}
 					onOpenEditor={() => openNew(defaults)}
 					projects={projects}
 				/>
