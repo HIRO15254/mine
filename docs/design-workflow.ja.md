@@ -20,7 +20,7 @@ Mine の見た目は、Claude Design のキャンバス「Mine UI」で決めて
 | ボードの名前 | `<画面>.<desk か mobile>.dc.html`。状態違いは `<画面>-<状態>.<desk か mobile>.dc.html`（例: `tasks-empty.mobile.dc.html`） |
 | 画面の名前 | `today` `tasks` `task-editor` `time` `calendar` `settings` `login`。画面写真の名前と同じ |
 | 大きさ | desk は幅 1280px、mobile は 390×844px |
-| 部品 | Mine Design System の部品（`window.Mine`）を使う。ないものを作るときはメモに理由を書く |
+| 部品 | Mine Design System の部品（`window.Mine`）を使う。システムにはアプリが使う部品だけを置いている。ないものが要るときは、Cryst から取り込むか、メモに理由を書いて作る |
 | メモ | 意図や「ここは仮」などは付箋で書く。実装するときに Claude が読みます |
 
 ボードの中身は、コードと同じ部品・同じ文言にそろえます。サンプルの内容は画面写真のサンプルデータ（`apps/web/screens/fixtures.ts`）と同じものを使うと、見比べやすくなります。
