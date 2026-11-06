@@ -24,14 +24,14 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 <aside aria-label="メニュー" style="flex: none; width: 244px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; border-right: 1px solid var(--border)">
 <div style="display: flex; align-items: center; gap: 10px; padding: 2px 8px 20px"><img class="mark" src="assets/mine-icon.png" alt="" width="28" height="28" style="border-radius: 7px"><span style="font-size: 15px; font-weight: 600; letter-spacing: .02em">Mine</span></div>
 <sc-for list="{{nav}}" as="item" hint-placeholder-count="4">
-<a href="{{item.href}}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: {{item.color}}; background: {{item.bg}}; box-shadow: {{item.shadow}}"><x-import component-from-global-scope="Mine.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
+<a href="{{item.href}}" style="position: relative; display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-md); color: {{item.color}}; background: {{item.bg}}; box-shadow: {{item.shadow}}"><span style="position: absolute; top: 7px; bottom: 7px; left: -8px; width: 3px; border-radius: 0 3px 3px 0; background: {{item.bar}}"></span><x-import component-from-global-scope="Mine.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
 </sc-for>
 <div style="flex: 1"></div>
-<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--foreground)"><x-import component-from-global-scope="Mine.Icon" name="settings"></x-import>設定</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: var(--radius-md); color: var(--foreground)"><x-import component-from-global-scope="Mine.Icon" name="settings"></x-import>設定</a>
 </aside>
 
 <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
-<header style="height: 48px; flex: none; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border)">
+<header style="position: relative; height: 48px; flex: none; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border)"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; opacity: .8; background: linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5))"></div>
 <h1 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: var(--tracking-heading)">今日</h1>
 </header>
 
@@ -57,7 +57,7 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </x-import>
 
 <div style="flex: 1 1 300px; max-width: 314px; display: flex; flex-direction: column; gap: 16px">
-<x-import component-from-global-scope="Mine.Card" style="box-shadow: var(--glow)">
+<x-import component-from-global-scope="Mine.Card" style="box-shadow: var(--glow); border: 1px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, conic-gradient(from 210deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)) border-box">
 <x-import component-from-global-scope="Mine.CardHeader">
 <x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="player-play"></x-import>計測</span></x-import>
 <x-import component-from-global-scope="Mine.CardAction"><a href="time.desk.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 12px">記録<x-import component-from-global-scope="Mine.Icon" name="chevron-right" size="{{i14}}"></x-import></a></x-import>
@@ -151,7 +151,7 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 class Component extends DCLogic {
 renderVals() {
 const theme = this.props.theme ?? 'dark';
-const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--muted-foreground)', bg: active ? 'var(--primary-soft)' : 'transparent', shadow: active ? 'var(--glow)' : 'none' });
+const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--muted-foreground)', bg: active ? 'var(--primary-soft)' : 'transparent', shadow: active ? 'var(--glow)' : 'none', bar: active ? 'linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5))' : 'transparent' });
 const muted = 'var(--muted-foreground)';
 return {
 theme: theme,

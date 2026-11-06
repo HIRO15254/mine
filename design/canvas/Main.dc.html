@@ -25,7 +25,7 @@ a{color:var(--primary-text)}a:hover{color:var(--foreground)}
 
 <div style="display: flex; flex-direction: column; gap: 8px">
 <h2 style="margin: 0; font-size: 15px; font-weight: 600">ボード</h2>
-<div style="border: 1px solid var(--border); border-radius: 8px; background: var(--card); overflow: hidden">
+<div style="border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--card); overflow: hidden">
 <sc-for list="{{screens}}" as="row" hint-placeholder-count="7">
 <div style="display: grid; grid-template-columns: 120px 120px minmax(0, 1fr); gap: 12px; padding: 9px 14px; border-top: 1px solid var(--border-subtle)">
 <span style="font-family: var(--font-mono); font-size: 12px">{{row.name}}</span>

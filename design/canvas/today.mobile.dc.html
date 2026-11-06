@@ -21,7 +21,7 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </helmet>
 <div class="{{themeClass}}" data-theme="{{theme}}" style="width: 390px; height: 1560px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--background); background-image: {{sky}}; color: var(--foreground); font-family: var(--font-sans); font-size: var(--m-text-secondary); line-height: 1.4">
 
-<header style="flex: none; height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--border)">
+<header style="position: relative; flex: none; height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--border)"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; opacity: .8; background: linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5))"></div>
 <img class="mark" src="assets/mine-icon.png" alt="" width="24" height="24" style="border-radius: 6px; margin-right: 10px">
 <h1 style="margin: 0; font-size: var(--m-text-title); font-weight: 600; letter-spacing: var(--tracking-heading)">今日</h1>
 </header>
@@ -46,7 +46,7 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </x-import>
 </x-import>
 
-<x-import component-from-global-scope="Mine.Card" style="box-shadow: var(--glow)">
+<x-import component-from-global-scope="Mine.Card" style="box-shadow: var(--glow); border: 1px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, conic-gradient(from 210deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)) border-box">
 <x-import component-from-global-scope="Mine.CardHeader">
 <x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="player-play"></x-import>計測</span></x-import>
 <x-import component-from-global-scope="Mine.CardAction"><a href="time.mobile.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 12px">記録<x-import component-from-global-scope="Mine.Icon" name="chevron-right" size="{{i14}}"></x-import></a></x-import>

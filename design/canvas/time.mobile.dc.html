@@ -21,7 +21,7 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </helmet>
 <div class="{{themeClass}}" data-theme="{{theme}}" style="width: 390px; height: 1060px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--background); background-image: {{sky}}; color: var(--foreground); font-family: var(--font-sans); font-size: var(--m-text-secondary); line-height: 1.4">
 
-<header style="flex: none; height: 44px; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 14px; border-bottom: 1px solid var(--border)">
+<header style="position: relative; flex: none; height: 44px; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 14px; border-bottom: 1px solid var(--border)"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; opacity: .8; background: linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5))"></div>
 <img class="mark" src="assets/mine-icon.png" alt="" width="24" height="24" style="border-radius: 6px; margin-right: 10px">
 <h1 style="flex: 1; margin: 0; font-size: var(--m-text-title); font-weight: 600; letter-spacing: var(--tracking-heading)">記録 11月9日〜15日</h1>
 <x-import component-from-global-scope="Mine.Button" variant="outline" size="sm">今週</x-import>

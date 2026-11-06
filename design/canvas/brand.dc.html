@@ -79,7 +79,7 @@ body{margin:0}
 <div>
 <p class="h">光の使いどころ</p>
 <div style="display: flex; flex-direction: column; gap: 12px">
-<div style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 6px; color: var(--primary-text); background: var(--primary-soft); box-shadow: var(--glow); width: 200px"><x-import component-from-global-scope="Mine.Icon" name="home"></x-import>今日 (選択中)</div>
+<div style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: var(--radius-md); color: var(--primary-text); background: var(--primary-soft); box-shadow: var(--glow); width: 200px"><x-import component-from-global-scope="Mine.Icon" name="home"></x-import>今日 (選択中)</div>
 <div style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--glow)">
 <span aria-hidden="true" style="flex: none; position: relative; width: 44px; height: 44px; color: var(--primary-text); filter: drop-shadow(0 0 6px rgba(205,220,245,.35))"><svg width="44" height="44" viewBox="0 0 44 44" style="position: absolute; inset: 0"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--border)" stroke-width="2"/><circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="94.2 113.1" transform="rotate(-90 22 22)"/></svg><svg width="14" height="14" viewBox="0 0 24 24" style="position: absolute; left: 15px; top: 15px"><path d="M12 1.5C12.9 8.3 15.7 11.1 22.5 12C15.7 12.9 12.9 15.7 12 22.5C11.1 15.7 8.3 12.9 1.5 12C8.3 11.1 11.1 8.3 12 1.5Z" fill="currentColor"/></svg></span>
 <span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 500">計測中</span><span style="font-size: 11px; color: var(--muted-foreground)">見積もりに対する進み具合を軌道の輪で表す</span></span>
@@ -138,7 +138,8 @@ diffs: [
 { what: '背景', how: 'ほぼ黒に、上からごく淡い光' },
 { what: '光', how: '選択中・計測中にだけ淡いグロー' },
 { what: 'ロゴ', how: 'サイドバーとスマホの見出しに置く (Cryst はロゴなし)' },
-{ what: '部品と寸法', how: 'Cryst のまま (ボタン・余白・文字の大きさ)' }
+{ what: '部品と寸法', how: 'Cryst 由来。角は丸め (8→16px)、行は広め、切り替えはつながったボタン列' },
+{ what: '遊び心', how: '見出しと選択中の項目にプリズムの線、計測中は回る虹の縁、完了でポンと弾ける。グラフの棒は角を丸めず、プロジェクトはピルにせず点＋名前' }
 ]
 };
 }
