@@ -1,6 +1,6 @@
 /**
- * Compares the Cryst tokens the app ships (apps/web/src/index.css) with the
- * snapshot of the design system's tokens.css (design/cryst/tokens.css).
+ * Compares the design-system tokens the app ships (apps/web/src/index.css) with the
+ * snapshot of the design system's tokens.css (design/mine/tokens.css).
  *
  * A token both define must resolve to the same value in each theme, and every
  * color the design system defines must exist in the app. Scale tokens the app
@@ -154,7 +154,7 @@ export function compareTokens(designCss: string, appCss: string): Drift {
 	return drift;
 }
 
-export const DESIGN_TOKENS = "design/cryst/tokens.css";
+export const DESIGN_TOKENS = "design/mine/tokens.css";
 export const APP_TOKENS = "apps/web/src/index.css";
 
 export async function checkRepository(root: string): Promise<Drift> {

@@ -5,6 +5,7 @@ import {
 	IconHourglass,
 	IconPlayerPlay,
 	IconRepeat,
+	IconSparkles,
 } from "@tabler/icons-react";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
@@ -18,6 +19,10 @@ import {
 	projectPath,
 	type Task,
 } from "@/lib/tasks";
+
+/** The label that marks a next action; it carries the light. */
+const NEXT_LABEL = "next";
+
 import { cn } from "@/lib/utils";
 
 const TONE_CLASS = {
@@ -116,9 +121,19 @@ export function TaskRow({
 								{task.estimateMinutes}分
 							</span>
 						)}
-						{task.labels.map((label) => (
-							<span key={label.id}>{label.name}</span>
-						))}
+						{task.labels.map((label) =>
+							label.name === NEXT_LABEL ? (
+								<span
+									className="inline-flex items-center gap-1 text-primary-text"
+									key={label.id}
+								>
+									<IconSparkles aria-hidden className="size-3.5" />
+									{label.name}
+								</span>
+							) : (
+								<span key={label.id}>{label.name}</span>
+							)
+						)}
 						{showProject && project && (
 							<span className="inline-flex items-center gap-1">
 								<span

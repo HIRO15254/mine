@@ -1,25 +1,108 @@
 {
   "v": 3,
-  "createdOnFiles": { "v": 1, "at": "2026-11-06T07:30:00Z" },
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-06T07:30:00Z"
+  },
   "title": "Mine UI",
-  "launch": { "view": "canvas", "page": "guide" },
+  "launch": {
+    "view": "canvas",
+    "page": "guide"
+  },
   "pages": [
-    { "id": "guide", "name": "ガイド" },
-    { "id": "today", "name": "今日" },
-    { "id": "tasks", "name": "タスク" },
-    { "id": "time", "name": "記録" }
+    {
+      "id": "guide",
+      "name": "ガイド"
+    },
+    {
+      "id": "brand",
+      "name": "ブランド"
+    },
+    {
+      "id": "today",
+      "name": "今日"
+    },
+    {
+      "id": "tasks",
+      "name": "タスク"
+    },
+    {
+      "id": "time",
+      "name": "記録"
+    }
   ],
   "boards": {
-    "Main.dc.html": { "x": 0, "y": 0, "w": 760, "h": 700, "title": "Mine UI の使い方", "page": "guide" },
-    "today.desk.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 1240, "title": "today · desk", "page": "today", "expand": "fill" },
-    "today.mobile.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 1560, "title": "today · mobile", "page": "today" },
-    "tasks.desk.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 860, "title": "tasks · desk", "page": "tasks", "expand": "fill" },
-    "tasks.mobile.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 844, "title": "tasks · mobile", "page": "tasks" },
-    "time.desk.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 860, "title": "time · desk", "page": "time", "expand": "fill" },
-    "time.mobile.dc.html": { "x": 1360, "y": 0, "w": 390, "h": 1060, "title": "time · mobile", "page": "time" }
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 760,
+      "h": 700,
+      "title": "Mine UI の使い方",
+      "page": "guide"
+    },
+    "today.desk.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 1240,
+      "title": "today · desk",
+      "page": "today",
+      "expand": "fill"
+    },
+    "today.mobile.dc.html": {
+      "x": 1360,
+      "y": 0,
+      "w": 390,
+      "h": 1560,
+      "title": "today · mobile",
+      "page": "today"
+    },
+    "tasks.desk.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 860,
+      "title": "tasks · desk",
+      "page": "tasks",
+      "expand": "fill"
+    },
+    "tasks.mobile.dc.html": {
+      "x": 1360,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "tasks · mobile",
+      "page": "tasks"
+    },
+    "time.desk.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 860,
+      "title": "time · desk",
+      "page": "time",
+      "expand": "fill"
+    },
+    "time.mobile.dc.html": {
+      "x": 1360,
+      "y": 0,
+      "w": 390,
+      "h": 1060,
+      "title": "time · mobile",
+      "page": "time"
+    },
+    "brand.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 900,
+      "title": "ブランド · 白い光とプリズム",
+      "page": "brand"
+    }
   },
   "order": [
     "Main.dc.html",
+    "brand.dc.html",
     "today.desk.dc.html",
     "today.mobile.dc.html",
     "tasks.desk.dc.html",
@@ -28,21 +111,54 @@
     "time.mobile.dc.html"
   ],
   "notes": {
-    "todayTitle": { "x": 0, "y": -300, "text": "今日", "kind": "title1", "maxW": 1750, "page": "today" },
-    "tasksTitle": { "x": 0, "y": -300, "text": "タスク", "kind": "title1", "maxW": 1750, "page": "tasks" },
-    "timeTitle": { "x": 0, "y": -300, "text": "記録", "kind": "title1", "maxW": 1750, "page": "time" },
+    "todayTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "今日",
+      "kind": "title1",
+      "maxW": 1750,
+      "page": "today"
+    },
+    "tasksTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "タスク",
+      "kind": "title1",
+      "maxW": 1750,
+      "page": "tasks"
+    },
+    "timeTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "記録",
+      "kind": "title1",
+      "maxW": 1750,
+      "page": "time"
+    },
     "guideNote": {
-      "x": 840, "y": 0, "w": 360, "fill": "blue", "page": "guide",
-      "text": "2026-11-06 時点の実装を写したボードです。\n新しい案は上書きせず、隣に -v2 などを付けたボードで作ってください。\nカレンダー・設定・タスク編集のボードは、必要になったら足します。"
+      "x": 840,
+      "y": 0,
+      "w": 360,
+      "fill": "blue",
+      "page": "guide",
+      "text": "デザインシステムは Mine Design System (Cryst から分けた Mine 専用のもの) です。\n新しい案は上書きせず、隣に -v2 などを付けたボードで作ってください。\nカレンダー・設定・タスク編集のボードは、必要になったら足します。"
+    },
+    "brandTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "ブランド",
+      "kind": "title1",
+      "maxW": 1750,
+      "page": "brand"
     }
   },
   "designSystems": [
     {
-      "title": "Cryst Design System",
-      "namespace": "cryst",
-      "artifact": "https://claude.ai/artifact/TXKBwjMEB9xMt52GBbERVs",
-      "version": "1793122689-abbc",
-      "copiedAt": "2026-11-06T07:30:00Z"
+      "title": "Mine Design System",
+      "namespace": "mine",
+      "artifact": "https://claude.ai/artifact/3pGCs5VhPg4RzKHCpyByXB",
+      "version": "1793951231-c4e5",
+      "copiedAt": "2026-11-06T07:50:00Z"
     }
   ]
 }

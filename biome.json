@@ -27,7 +27,7 @@
       "!**/coverage",
       "!**/test-results",
       "!design/canvas",
-      "!design/cryst"
+      "!design/mine"
     ]
   },
   "formatter": {

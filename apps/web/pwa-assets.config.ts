@@ -15,12 +15,12 @@ export default defineConfig({
 		maskable: {
 			...preset.maskable,
 			padding: 0.15,
-			resizeOptions: { background: "#08090a" },
+			resizeOptions: { background: "#060709" },
 		},
 		apple: {
 			...preset.apple,
 			padding: 0,
-			resizeOptions: { background: "#08090a" },
+			resizeOptions: { background: "#060709" },
 		},
 	},
 	images: ["public/logo.png"],

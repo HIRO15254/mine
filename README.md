@@ -1,12 +1,12 @@
 # Mine
 
-A personal dashboard that brings schedule, tasks and time tracking together. It is a responsive PWA (a sidebar on desktop, a bottom tab bar on phones) built on the Cryst Design System.
+A personal dashboard that brings schedule, tasks and time tracking together. It is a responsive PWA (a sidebar on desktop, a bottom tab bar on phones) built on Mine Design System (forked from Cryst).
 
 [日本語](./README.ja.md)
 
 ## Layout
 
-- `apps/web`: React 19, Vite, TanStack Router/Query, tRPC, Tailwind CSS, Cryst components (shadcn/ui names on Radix UI)
+- `apps/web`: React 19, Vite, TanStack Router/Query, tRPC, Tailwind CSS, Mine Design System components (shadcn/ui names on Radix UI)
 - `apps/server`: Hono on Cloudflare Workers, serving tRPC and Better Auth
 - `packages/api`: tRPC procedures
 - `packages/auth`: Better Auth (Google sign-in, restricted by `ALLOWED_EMAILS`)

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>ブランド</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/mine/tokens.css">
+<link rel="stylesheet" href="ds/mine/components/bundle.css">
+<script src="ds/mine/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.mark{filter:drop-shadow(0 0 40px rgba(205,220,245,.25))}
+[data-theme="light"] .mark{filter:invert(1) drop-shadow(0 10px 30px rgba(20,22,26,.18))}
+.h{margin:0 0 12px;font-size:12px;font-weight:600;letter-spacing:var(--tracking-caps);color:var(--muted-foreground)}
+</style>
+</helmet>
+<div class="{{themeClass}}" data-theme="{{theme}}" style="width: 1280px; height: 900px; box-sizing: border-box; display: grid; grid-template-columns: 420px minmax(0, 1fr); background: var(--background); background-image: {{sky}}; color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.6">
+
+<section style="padding: 56px 48px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 28px">
+<img class="mark" src="assets/mine-icon.png" alt="Mine のアイコン" width="200" height="200" style="border-radius: 44px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 34px; font-weight: 600; letter-spacing: .02em; text-shadow: var(--glow-text)">Mine</span>
+<span style="font-size: 16px; font-weight: 500">白い光と、プリズム</span>
+</div>
+<p style="margin: 0; color: var(--muted-foreground)">アイコンの「黒地に光る白い結晶」をそのまま画面の基調にする案。ふだんは白と黒だけで静かに見せ、強調は「光る白」で示す。色を使うのはプロジェクトを見分けるときだけで、結晶を通って分かれた光のような 5 色にそろえる。</p>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+<div style="display: flex; gap: 10px; align-items: flex-start"><x-import component-from-global-scope="Mine.Icon" name="{{r.icon}}" color="var(--primary-text)"></x-import><span>{{r.text}}</span></div>
+</sc-for>
+</div>
+</section>
+
+<section style="padding: 48px 48px; display: flex; flex-direction: column; gap: 32px; min-width: 0">
+
+<div>
+<p class="h">基調の色</p>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{base}}" as="s" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="height: 64px; border-radius: var(--radius-md); background: var({{s.token}}); border: 1px solid var(--border); box-shadow: {{s.shadow}}"></div>
+<span style="font-weight: 500">{{s.name}}</span>
+<span style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground)">{{s.token}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div>
+<p class="h">プロジェクトの色 (プリズム)</p>
+<div style="display: flex; height: 40px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border)">
+<sc-for list="{{prism}}" as="p" hint-placeholder-count="5"><div style="flex: 1; background: var({{p.token}}); box-shadow: 0 0 18px -4px var({{p.token}})"></div></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 8px">
+<sc-for list="{{prism}}" as="p" hint-placeholder-count="5"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 50%; background: var({{p.token}}); box-shadow: 0 0 6px var({{p.token}})"></span>{{p.name}}</span></sc-for>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px">
+<div>
+<p class="h">ボタンとバッジ</p>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<x-import component-from-global-scope="Mine.Button">追加する</x-import>
+<x-import component-from-global-scope="Mine.Button" variant="secondary">あとで</x-import>
+<x-import component-from-global-scope="Mine.Button" variant="outline">編集</x-import>
+<x-import component-from-global-scope="Mine.Button" variant="destructive">削除</x-import>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+<x-import component-from-global-scope="Mine.Badge" variant="info">あなた待ち</x-import>
+<x-import component-from-global-scope="Mine.Badge" variant="neutral">作業中</x-import>
+</div>
+<div style="margin-top: 14px; max-width: 320px"><x-import component-from-global-scope="Mine.Input" placeholder="タスクを追加"></x-import></div>
+</div>
+
+<div>
+<p class="h">光の使いどころ</p>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 6px; color: var(--primary-text); background: var(--primary-soft); box-shadow: var(--glow); width: 200px"><x-import component-from-global-scope="Mine.Icon" name="home"></x-import>今日 (選択中)</div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--glow)">
+<span aria-hidden="true" style="flex: none; position: relative; width: 44px; height: 44px; color: var(--primary-text); filter: drop-shadow(0 0 6px rgba(205,220,245,.35))"><svg width="44" height="44" viewBox="0 0 44 44" style="position: absolute; inset: 0"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--border)" stroke-width="2"/><circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="94.2 113.1" transform="rotate(-90 22 22)"/></svg><svg width="14" height="14" viewBox="0 0 24 24" style="position: absolute; left: 15px; top: 15px"><path d="M12 1.5C12.9 8.3 15.7 11.1 22.5 12C15.7 12.9 12.9 15.7 12 22.5C11.1 15.7 8.3 12.9 1.5 12C8.3 11.1 11.1 8.3 12 1.5Z" fill="currentColor"/></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 500">計測中</span><span style="font-size: 11px; color: var(--muted-foreground)">見積もりに対する進み具合を軌道の輪で表す</span></span>
+<span style="font-family: var(--font-mono); font-size: 16px; text-shadow: var(--glow-text)">1:15:00</span>
+</div>
+<span style="display: inline-flex; align-items: center; gap: 4px; color: var(--primary-text)"><x-import component-from-global-scope="Mine.Icon" name="sparkles" size="{{i14}}"></x-import>next (次にやること)</span>
+</div>
+</div>
+</div>
+
+<div>
+<p class="h">Cryst から変えたところ</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 24px">
+<sc-for list="{{diffs}}" as="d" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border-subtle)"><span style="font-weight: 500">{{d.what}}</span><span style="color: var(--muted-foreground)">{{d.how}}</span></div>
+</sc-for>
+</div>
+</div>
+
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const theme = this.props.theme ?? 'dark';
+return {
+theme: theme,
+themeClass: theme === 'dark' ? 'dark' : 'light',
+sky: theme === 'dark' ? 'radial-gradient(900px 420px at 18% -8%, rgba(200,215,240,0.07), transparent 65%)' : 'none',
+i14: 14,
+rules: [
+{ icon: 'circle-half-2', text: '基調は白と黒。ダークを主に、ライトはその反転。' },
+{ icon: 'sparkles', text: '強調は「光る白」。選択中・計測中・次にやることに使う。' },
+{ icon: 'prism', text: '色はプロジェクトの見分けだけに使う。' },
+{ icon: 'diamond', text: 'カードの上辺に、結晶の面のような細いハイライト。' }
+],
+base: [
+{ name: '背景', token: '--background', shadow: 'none' },
+{ name: 'カード', token: '--card', shadow: 'var(--shadow-sm)' },
+{ name: '線', token: '--border', shadow: 'none' },
+{ name: '補助文字', token: '--muted-foreground', shadow: 'none' },
+{ name: '文字', token: '--foreground', shadow: 'none' },
+{ name: '強調', token: '--primary', shadow: 'var(--glow)' }
+],
+prism: [
+{ name: '大学', token: '--chart-1' },
+{ name: '仕事', token: '--chart-2' },
+{ name: '生活', token: '--chart-3' },
+{ name: '個人開発', token: '--chart-4' },
+{ name: '趣味', token: '--chart-5' }
+],
+diffs: [
+{ what: '強調の色', how: '青 → 光る白 (ライトでは墨色)' },
+{ what: 'プロジェクトの色', how: '原色寄り → 淡いプリズムの 5 色' },
+{ what: '背景', how: 'ほぼ黒に、上からごく淡い光' },
+{ what: '光', how: '選択中・計測中にだけ淡いグロー' },
+{ what: 'ロゴ', how: 'サイドバーとスマホの見出しに置く (Cryst はロゴなし)' },
+{ what: '部品と寸法', how: 'Cryst のまま (ボタン・余白・文字の大きさ)' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

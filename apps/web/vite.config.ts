@@ -19,8 +19,8 @@ export default defineConfig({
 				name: "Mine",
 				short_name: "Mine",
 				description: "予定・タスク・時間の記録をひとつに",
-				theme_color: "#08090a",
-				background_color: "#08090a",
+				theme_color: "#060709",
+				background_color: "#060709",
 				lang: "ja",
 				categories: ["productivity"],
 				shortcuts: [

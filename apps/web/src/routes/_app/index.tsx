@@ -40,7 +40,7 @@ import {
 	startOfWeek,
 } from "@/lib/calendar-time";
 import { groupTasks, todayKey } from "@/lib/tasks";
-import { currentTimeZone, weekRange } from "@/lib/time";
+import { currentTimeZone, type TimeEntry, weekRange } from "@/lib/time";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_app/")({ component: TodayPage });
@@ -65,7 +65,7 @@ function TodayPage() {
 						<TodayEvents />
 					</CardContent>
 				</Card>
-				<Card>
+				<Card className="has-[[data-running]]:shadow-[var(--glow)]">
 					<CardHeader>
 						<IconPlayerPlay aria-hidden />
 						<CardTitle>計測</CardTitle>
@@ -192,9 +192,16 @@ function TodayTasks() {
 function TodayTimer() {
 	const { projects } = useTaskContext();
 	const { editor, openEdit } = useEntryEditor(projects);
+	// Same query as TodayTasks, so the estimate comes from the cache.
+	const tasks = useQuery(
+		trpc.task.list.queryOptions({ today: todayKey(), view: "today" })
+	);
+	const estimateOf = (entry: TimeEntry) =>
+		tasks.data?.find((task) => task.id === entry.taskId)?.estimateMinutes ??
+		null;
 	return (
 		<>
-			<TimerBar onEdit={openEdit} projects={projects} />
+			<TimerBar estimateOf={estimateOf} onEdit={openEdit} projects={projects} />
 			{editor}
 		</>
 	);

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <title>タスク · desk</title>
 <script src="./support.js"></script>
-<link rel="stylesheet" href="ds/cryst/tokens.css">
-<link rel="stylesheet" href="ds/cryst/components/bundle.css">
-<script src="ds/cryst/components/bundle.js"></script>
+<link rel="stylesheet" href="ds/mine/tokens.css">
+<link rel="stylesheet" href="ds/mine/components/bundle.css">
+<script src="ds/mine/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
@@ -15,17 +15,19 @@
 <style>
 body{margin:0}
 a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)}
+.mark{flex:none}
+[data-theme="light"] .mark{filter:invert(1)}
 </style>
 </helmet>
-<div class="{{themeClass}}" data-theme="{{theme}}" style="min-height: 860px; display: flex; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.5">
+<div class="{{themeClass}}" data-theme="{{theme}}" style="min-height: 860px; display: flex; background: var(--background); background-image: {{sky}}; color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.5">
 
 <aside aria-label="メニュー" style="flex: none; width: 244px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; border-right: 1px solid var(--border)">
-<div style="padding: 4px 8px 20px; font-size: 15px; font-weight: 600">Mine</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 2px 8px 20px"><img class="mark" src="assets/mine-icon.png" alt="" width="28" height="28" style="border-radius: 7px"><span style="font-size: 15px; font-weight: 600; letter-spacing: .02em">Mine</span></div>
 <sc-for list="{{nav}}" as="item" hint-placeholder-count="4">
-<a href="{{item.href}}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: {{item.color}}; background: {{item.bg}}"><x-import component-from-global-scope="Cryst.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
+<a href="{{item.href}}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: {{item.color}}; background: {{item.bg}}; box-shadow: {{item.shadow}}"><x-import component-from-global-scope="Mine.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
 </sc-for>
 <div style="flex: 1"></div>
-<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--foreground)"><x-import component-from-global-scope="Cryst.Icon" name="settings"></x-import>設定</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--foreground)"><x-import component-from-global-scope="Mine.Icon" name="settings"></x-import>設定</a>
 </aside>
 
 <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
@@ -34,11 +36,11 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </header>
 
 <main style="width: 100%; max-width: 720px; box-sizing: border-box; margin: 0 auto; padding: 24px 0; display: flex; flex-direction: column; gap: 14px">
-<x-import component-from-global-scope="Cryst.ToggleGroup" options="{{views}}" default-value="today" label="表示" size="lg"></x-import>
+<x-import component-from-global-scope="Mine.ToggleGroup" options="{{views}}" default-value="today" label="表示" size="lg"></x-import>
 <div style="display: flex; gap: 6px; align-items: center">
-<x-import component-from-global-scope="Cryst.Input" placeholder="タスクを追加（p1 #プロジェクト @ラベル 明日）" style="flex: 1"></x-import>
-<x-import component-from-global-scope="Cryst.Button" size="icon" aria-label="追加"><x-import component-from-global-scope="Cryst.Icon" name="plus"></x-import></x-import>
-<x-import component-from-global-scope="Cryst.IconButton" icon="adjustments-horizontal" label="詳しく入力"></x-import>
+<x-import component-from-global-scope="Mine.Input" placeholder="タスクを追加（p1 #プロジェクト @ラベル 明日）" style="flex: 1"></x-import>
+<x-import component-from-global-scope="Mine.Button" size="icon" aria-label="追加"><x-import component-from-global-scope="Mine.Icon" name="plus"></x-import></x-import>
+<x-import component-from-global-scope="Mine.IconButton" icon="adjustments-horizontal" label="詳しく入力"></x-import>
 </div>
 
 <div style="display: flex; flex-direction: column">
@@ -50,10 +52,10 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
 <span>{{task.title}}</span>
 <span style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--muted-foreground)">
-<sc-for list="{{task.meta}}" as="m" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; gap: 3px; color: {{m.color}}"><sc-if value="{{m.icon}}" hint-placeholder-val="{{yes}}"><x-import component-from-global-scope="Cryst.Icon" name="{{m.icon}}" size="{{i12}}" color="{{m.iconColor}}"></x-import></sc-if>{{m.text}}</span></sc-for>
+<sc-for list="{{task.meta}}" as="m" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; gap: 3px; color: {{m.color}}"><sc-if value="{{m.icon}}" hint-placeholder-val="{{yes}}"><x-import component-from-global-scope="Mine.Icon" name="{{m.icon}}" size="{{i12}}" color="{{m.iconColor}}"></x-import></sc-if>{{m.text}}</span></sc-for>
 </span>
 </div>
-<x-import component-from-global-scope="Cryst.IconButton" icon="player-play" label="計測を始める" size="sm"></x-import>
+<x-import component-from-global-scope="Mine.IconButton" icon="player-play" label="計測を始める" size="sm"></x-import>
 </div>
 </sc-for>
 </sc-for>
@@ -67,12 +69,13 @@ class Component extends DCLogic {
 renderVals() {
 const theme = this.props.theme ?? 'dark';
 const muted = 'var(--muted-foreground)';
-const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--foreground)', bg: active ? 'var(--primary-soft)' : 'transparent' });
+const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--muted-foreground)', bg: active ? 'var(--primary-soft)' : 'transparent', shadow: active ? 'var(--glow)' : 'none' });
 const meta = (icon, text, color, iconColor) => ({ icon: icon, text: text, color: color || muted, iconColor: iconColor || 'currentColor' });
 const project = (name, chart) => meta('point-filled', name, muted, 'var(--' + chart + ')');
 return {
 theme: theme,
 themeClass: theme === 'dark' ? 'dark' : 'light',
+sky: theme === 'dark' ? 'radial-gradient(900px 420px at 18% -8%, rgba(200,215,240,0.07), transparent 65%)' : 'none',
 yes: true, i12: 12,
 nav: [
 nav('今日', 'home', 'today.desk.dc.html', false),

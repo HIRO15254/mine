@@ -1,12 +1,12 @@
 # Mine
 
-予定・タスク・時間の記録をひとつにまとめる、自分用のダッシュボードです。PC ではサイドバー、スマホではボトムタブで使えるレスポンシブな PWA で、UI は Cryst Design System に沿っています。
+予定・タスク・時間の記録をひとつにまとめる、自分用のダッシュボードです。PC ではサイドバー、スマホではボトムタブで使えるレスポンシブな PWA で、UI は Mine Design System（Cryst から分けた Mine 専用のもの）に沿っています。
 
 [English](./README.md)
 
 ## 構成
 
-- `apps/web`: React 19、Vite、TanStack Router/Query、tRPC、Tailwind CSS、Cryst のコンポーネント（shadcn/ui の名前と Radix UI）
+- `apps/web`: React 19、Vite、TanStack Router/Query、tRPC、Tailwind CSS、Mine Design System のコンポーネント（shadcn/ui の名前と Radix UI）
 - `apps/server`: Cloudflare Workers 上の Hono。tRPC と Better Auth を配信
 - `packages/api`: tRPC の手続き
 - `packages/auth`: Better Auth（Google ログイン、`ALLOWED_EMAILS` による利用者の限定）

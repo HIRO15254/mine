@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { checkRepository, compareTokens, normalize } from "../design-tokens";
 
 const design = `
-/* Cryst */
+/* Design system */
 :root, [data-theme="light"] {
   --background: #fcfcfd;
   --primary: #1961d2;
@@ -79,7 +79,7 @@ describe("design token check", () => {
 		expect(compareTokens(added, app).missing).toEqual(["--info-soft"]);
 	});
 
-	it("keeps the app in step with the Cryst snapshot", async () => {
+	it("keeps the app in step with the design-system snapshot", async () => {
 		const drift = await checkRepository(
 			path.resolve(import.meta.dirname, "../..")
 		);

@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <title>記録 · desk</title>
 <script src="./support.js"></script>
-<link rel="stylesheet" href="ds/cryst/tokens.css">
-<link rel="stylesheet" href="ds/cryst/components/bundle.css">
-<script src="ds/cryst/components/bundle.js"></script>
+<link rel="stylesheet" href="ds/mine/tokens.css">
+<link rel="stylesheet" href="ds/mine/components/bundle.css">
+<script src="ds/mine/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
@@ -15,44 +15,46 @@
 <style>
 body{margin:0}
 a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)}
+.mark{flex:none}
+[data-theme="light"] .mark{filter:invert(1)}
 </style>
 </helmet>
-<div class="{{themeClass}}" data-theme="{{theme}}" style="min-height: 860px; display: flex; background: var(--background); color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.5">
+<div class="{{themeClass}}" data-theme="{{theme}}" style="min-height: 860px; display: flex; background: var(--background); background-image: {{sky}}; color: var(--foreground); font-family: var(--font-sans); font-size: 13px; line-height: 1.5">
 
 <aside aria-label="メニュー" style="flex: none; width: 244px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 12px 8px; border-right: 1px solid var(--border)">
-<div style="padding: 4px 8px 20px; font-size: 15px; font-weight: 600">Mine</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 2px 8px 20px"><img class="mark" src="assets/mine-icon.png" alt="" width="28" height="28" style="border-radius: 7px"><span style="font-size: 15px; font-weight: 600; letter-spacing: .02em">Mine</span></div>
 <sc-for list="{{nav}}" as="item" hint-placeholder-count="4">
-<a href="{{item.href}}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: {{item.color}}; background: {{item.bg}}"><x-import component-from-global-scope="Cryst.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
+<a href="{{item.href}}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: {{item.color}}; background: {{item.bg}}; box-shadow: {{item.shadow}}"><x-import component-from-global-scope="Mine.Icon" name="{{item.icon}}"></x-import>{{item.label}}</a>
 </sc-for>
 <div style="flex: 1"></div>
-<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--foreground)"><x-import component-from-global-scope="Cryst.Icon" name="settings"></x-import>設定</a>
+<a href="#" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--foreground)"><x-import component-from-global-scope="Mine.Icon" name="settings"></x-import>設定</a>
 </aside>
 
 <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
 <header style="height: 48px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 24px; border-bottom: 1px solid var(--border)">
 <h1 style="flex: 1; margin: 0; font-size: 15px; font-weight: 600; letter-spacing: var(--tracking-heading)">記録 11月9日〜15日</h1>
-<x-import component-from-global-scope="Cryst.Button" variant="outline" size="sm">今週</x-import>
-<x-import component-from-global-scope="Cryst.IconButton" icon="chevron-left" label="前の週"></x-import>
-<x-import component-from-global-scope="Cryst.IconButton" icon="chevron-right" label="次の週"></x-import>
+<x-import component-from-global-scope="Mine.Button" variant="outline" size="sm">今週</x-import>
+<x-import component-from-global-scope="Mine.IconButton" icon="chevron-left" label="前の週"></x-import>
+<x-import component-from-global-scope="Mine.IconButton" icon="chevron-right" label="次の週"></x-import>
 </header>
 
 <main style="padding: 24px 30px; display: flex; flex-direction: column; gap: 16px">
-<x-import component-from-global-scope="Cryst.Card">
-<x-import component-from-global-scope="Cryst.CardContent">
+<x-import component-from-global-scope="Mine.Card">
+<x-import component-from-global-scope="Mine.CardContent">
 <div style="display: flex; align-items: center; gap: 12px">
 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
 <span style="font-weight: 600">ゼミ発表のスライド</span>
 <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted-foreground)"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--chart-1)"></span>大学 / 研究</span>
 </div>
 <span style="font-family: var(--font-mono); font-size: 16px">1:15:00</span>
-<x-import component-from-global-scope="Cryst.Button" variant="destructive" size="icon" aria-label="止める"><x-import component-from-global-scope="Cryst.Icon" name="player-stop" filled="{{yes}}"></x-import></x-import>
+<x-import component-from-global-scope="Mine.Button" variant="destructive" size="icon" aria-label="止める"><x-import component-from-global-scope="Mine.Icon" name="player-stop" filled="{{yes}}"></x-import></x-import>
 </div>
 </x-import>
 </x-import>
 
 <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
 <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
-<div><x-import component-from-global-scope="Cryst.Button" variant="secondary" icon="plus">記録を追加</x-import></div>
+<div><x-import component-from-global-scope="Mine.Button" variant="secondary" icon="plus">記録を追加</x-import></div>
 <sc-for list="{{days}}" as="day" hint-placeholder-count="2">
 <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 10px 8px 6px; border-bottom: 1px solid var(--border)"><span style="font-weight: 600">{{day.label}}</span><span style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground)">{{day.total}}</span></div>
 <sc-for list="{{day.entries}}" as="e" hint-placeholder-count="3">
@@ -66,18 +68,18 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 <span style="font-family: var(--font-mono); color: {{e.durationColor}}">{{e.duration}}</span>
 <span style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground)">{{e.span}}</span>
 </div>
-<x-import component-from-global-scope="Cryst.IconButton" icon="player-play" label="もう一度始める" size="sm"></x-import>
+<x-import component-from-global-scope="Mine.IconButton" icon="player-play" label="もう一度始める" size="sm"></x-import>
 </div>
 </sc-for>
 </sc-for>
 </div>
 
 <div style="flex: 1 1 280px; max-width: 300px">
-<x-import component-from-global-scope="Cryst.Card">
-<x-import component-from-global-scope="Cryst.CardHeader">
-<x-import component-from-global-scope="Cryst.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Cryst.Icon" name="clock-hour-4"></x-import>この週の合計</span></x-import>
+<x-import component-from-global-scope="Mine.Card">
+<x-import component-from-global-scope="Mine.CardHeader">
+<x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="clock-hour-4"></x-import>この週の合計</span></x-import>
 </x-import>
-<x-import component-from-global-scope="Cryst.CardContent">
+<x-import component-from-global-scope="Mine.CardContent">
 <div style="display: flex; flex-direction: column; gap: 14px">
 <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 26px; font-weight: 600; letter-spacing: var(--tracking-heading)">12時間25分</span><span style="font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">¥11,250</span></div>
 <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; height: 96px; border-bottom: 1px solid var(--border)">
@@ -105,11 +107,12 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 class Component extends DCLogic {
 renderVals() {
 const theme = this.props.theme ?? 'dark';
-const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--foreground)', bg: active ? 'var(--primary-soft)' : 'transparent' });
+const nav = (label, icon, href, active) => ({ label: label, icon: icon, href: href, color: active ? 'var(--primary-text)' : 'var(--muted-foreground)', bg: active ? 'var(--primary-soft)' : 'transparent', shadow: active ? 'var(--glow)' : 'none' });
 const entry = (title, project, chart, duration, span, running) => ({ title: title, project: project, color: 'var(--' + chart + ')', duration: duration, span: span, durationColor: running ? 'var(--success-text)' : 'var(--foreground)' });
 return {
 theme: theme,
 themeClass: theme === 'dark' ? 'dark' : 'light',
+sky: theme === 'dark' ? 'radial-gradient(900px 420px at 18% -8%, rgba(200,215,240,0.07), transparent 65%)' : 'none',
 yes: true,
 nav: [
 nav('今日', 'home', 'today.desk.dc.html', false),

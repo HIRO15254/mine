@@ -21,7 +21,7 @@ function Switch({
 			data-slot="switch"
 			{...props}
 		>
-			<SwitchPrimitive.Thumb className="pointer-events-none block size-3 rounded-full bg-switch-thumb shadow-[var(--shadow-sm)] transition-transform duration-[var(--duration-base)] data-[state=checked]:translate-x-3 group-data-[size=xl]/switch:size-5 group-data-[size=xl]/switch:data-[state=checked]:translate-x-4" />
+			<SwitchPrimitive.Thumb className="pointer-events-none block size-3 rounded-full bg-switch-thumb shadow-[var(--shadow-sm)] transition-transform duration-[var(--duration-base)] data-[state=checked]:translate-x-3 data-[state=checked]:bg-primary-foreground group-data-[size=xl]/switch:size-5 group-data-[size=xl]/switch:data-[state=checked]:translate-x-4" />
 		</SwitchPrimitive.Root>
 	);
 }

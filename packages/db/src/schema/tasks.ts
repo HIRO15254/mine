@@ -11,7 +11,7 @@ import {
 
 import { user } from "./auth";
 
-/** Theme color keys a project may use; the web maps them to Cryst tokens. */
+/** Theme color keys a project may use; the web maps them to Mine Design System tokens. */
 export const PROJECT_COLORS = [
 	"chart-1",
 	"chart-2",

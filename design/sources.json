@@ -2,13 +2,18 @@
   "canvas": {
     "title": "Mine UI",
     "url": "https://claude.ai/artifact/1sijSnkLnkJyW1EoN2rSxR",
-    "version": "1793950100-e2d5",
+    "version": "1793951335-2918",
     "syncedAt": "2026-11-06"
   },
-  "cryst": {
-    "title": "Cryst Design System",
-    "url": "https://claude.ai/artifact/TXKBwjMEB9xMt52GBbERVs",
-    "version": "1793122689-abbc",
-    "syncedAt": "2026-11-06"
+  "designSystem": {
+    "title": "Mine Design System",
+    "url": "https://claude.ai/artifact/3pGCs5VhPg4RzKHCpyByXB",
+    "version": "1793951231-c4e5",
+    "syncedAt": "2026-11-06",
+    "forkedFrom": {
+      "title": "Cryst Design System",
+      "url": "https://claude.ai/artifact/TXKBwjMEB9xMt52GBbERVs",
+      "version": "1793122689-abbc"
+    }
   }
 }

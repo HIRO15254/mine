@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { BrandMark } from "@/components/app-shell/brand-mark";
 import { GoogleIcon } from "@/components/icons/google";
 import {
 	Alert,
@@ -44,6 +45,7 @@ function LoginPage() {
 		<main className="flex min-h-svh items-center justify-center bg-background px-3.5">
 			<div className="flex w-full max-w-[440px] flex-col gap-6">
 				<div className="flex flex-col gap-1.5">
+					<BrandMark className="mb-3" size={64} />
 					<h1 className="m-0 font-bold text-[length:var(--m-text-large-title)] tracking-[var(--tracking-heading)]">
 						Mine
 					</h1>

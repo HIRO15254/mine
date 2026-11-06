@@ -7,30 +7,30 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	--background: #fcfcfd;
-	--foreground: #282a30;
+	--background: #f6f7f9;
+	--foreground: #14161a;
 	--card: #ffffff;
-	--card-foreground: #282a30;
+	--card-foreground: #14161a;
 	--popover: #ffffff;
-	--popover-foreground: #282a30;
-	--primary: #1961d2;
+	--popover-foreground: #14161a;
+	--primary: #14161a;
 	--primary-foreground: #ffffff;
-	--secondary: rgba(40, 42, 48, 0.05);
-	--secondary-foreground: #282a30;
-	--muted: rgba(40, 42, 48, 0.05);
-	--muted-foreground: #646670;
-	--accent: rgba(40, 42, 48, 0.05);
-	--accent-foreground: #282a30;
+	--secondary: rgba(20, 22, 26, 0.05);
+	--secondary-foreground: #14161a;
+	--muted: rgba(20, 22, 26, 0.05);
+	--muted-foreground: #5c6370;
+	--accent: rgba(20, 22, 26, 0.05);
+	--accent-foreground: #14161a;
 	--destructive: #c33037;
 	--destructive-foreground: #ffffff;
-	--border: #e4e5e9;
-	--input: #d4d6dc;
-	--ring: #1961d2;
-	--chart-1: var(--primary);
-	--chart-2: var(--success);
-	--chart-3: var(--warning);
-	--chart-4: var(--destructive);
-	--chart-5: var(--muted-foreground);
+	--border: #e1e4e9;
+	--input: #d0d4db;
+	--ring: #3b4250;
+	--chart-1: #2f6fe0;
+	--chart-2: #0c8a63;
+	--chart-3: #b06a00;
+	--chart-4: #c8434f;
+	--chart-5: #7a52d6;
 	--sidebar: var(--background);
 	--sidebar-foreground: var(--foreground);
 	--sidebar-primary: var(--primary);
@@ -40,14 +40,14 @@
 	--sidebar-border: var(--border);
 	--sidebar-ring: var(--ring);
 
-	--subtle-foreground: #8e9099;
-	--border-subtle: rgba(40, 42, 48, 0.08);
-	--accent-pressed: rgba(40, 42, 48, 0.1);
-	--overlay: rgba(8, 9, 10, 0.4);
+	--subtle-foreground: #858b96;
+	--border-subtle: rgba(20, 22, 26, 0.08);
+	--accent-pressed: rgba(20, 22, 26, 0.1);
+	--overlay: rgba(6, 7, 9, 0.4);
 	--switch-thumb: #ffffff;
-	--primary-hover: #1553b5;
-	--primary-text: #1961d2;
-	--primary-soft: rgba(25, 97, 210, 0.12);
+	--primary-hover: #2a2d33;
+	--primary-text: #1f2a3c;
+	--primary-soft: rgba(20, 22, 26, 0.06);
 	--destructive-hover: #a8282e;
 	--destructive-text: #c33037;
 	--destructive-soft: rgba(195, 48, 55, 0.1);
@@ -67,7 +67,12 @@
 	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
 	--shadow-md: 0 3px 10px rgba(0, 0, 0, 0.08);
 	--shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.14);
-	--shadow-popover: 0 0 0 1px var(--border), 0 8px 24px rgba(0, 0, 0, 0.18);
+	--shadow-popover: 0 0 0 1px #e1e4e9, 0 8px 24px rgba(0, 0, 0, 0.16);
+
+	--glow: 0 0 0 1px rgba(20, 22, 26, 0.08), 0 6px 18px rgba(20, 22, 26, 0.07);
+	--glow-text: none;
+	/* The page light: Mine Design System, Surfaces. None in light. */
+	--page-light: none;
 
 	--radius: 8px;
 
@@ -124,34 +129,34 @@
 }
 
 .dark {
-	--background: #08090a;
-	--foreground: #f7f8f8;
-	--card: #141516;
-	--card-foreground: #f7f8f8;
-	--popover: #1e1f22;
-	--popover-foreground: #f7f8f8;
-	--primary: #4593f8;
-	--primary-foreground: #08090a;
-	--secondary: rgba(247, 248, 248, 0.06);
-	--secondary-foreground: #f7f8f8;
-	--muted: rgba(247, 248, 248, 0.06);
-	--muted-foreground: #9a9fa8;
-	--accent: rgba(247, 248, 248, 0.06);
-	--accent-foreground: #f7f8f8;
+	--background: #060709;
+	--foreground: #eef1f5;
+	--card: #0d0f13;
+	--card-foreground: #eef1f5;
+	--popover: #16181d;
+	--popover-foreground: #eef1f5;
+	--primary: #e9edf3;
+	--primary-foreground: #060709;
+	--secondary: rgba(230, 236, 245, 0.06);
+	--secondary-foreground: #eef1f5;
+	--muted: rgba(230, 236, 245, 0.06);
+	--muted-foreground: #98a0ad;
+	--accent: rgba(230, 236, 245, 0.06);
+	--accent-foreground: #eef1f5;
 	--destructive: #f2555a;
 	--destructive-foreground: #08090a;
-	--border: #26282d;
-	--input: #34363c;
-	--ring: #5ea1f9;
+	--border: #20232a;
+	--input: #2c3038;
+	--ring: #cfd9e8;
 
-	--subtle-foreground: #777b85;
-	--border-subtle: rgba(247, 248, 248, 0.08);
-	--accent-pressed: rgba(247, 248, 248, 0.12);
-	--overlay: rgba(0, 0, 0, 0.6);
-	--switch-thumb: #ffffff;
-	--primary-hover: #5ea1f9;
-	--primary-text: #5ea1f9;
-	--primary-soft: rgba(69, 147, 248, 0.2);
+	--subtle-foreground: #6f7682;
+	--border-subtle: rgba(230, 236, 245, 0.07);
+	--accent-pressed: rgba(230, 236, 245, 0.12);
+	--overlay: rgba(0, 0, 0, 0.65);
+	--switch-thumb: #eef1f5;
+	--primary-hover: #ffffff;
+	--primary-text: #dfe7f2;
+	--primary-soft: rgba(214, 226, 245, 0.1);
 	--destructive-hover: #f46d71;
 	--destructive-text: #ff6b70;
 	--destructive-soft: rgba(242, 85, 90, 0.18);
@@ -166,10 +171,24 @@
 	--warning-text: #f5a65b;
 	--warning-soft: rgba(242, 153, 74, 0.18);
 
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+	--shadow-sm:
+		inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.4);
 	--shadow-md: 0 3px 10px rgba(0, 0, 0, 0.45);
 	--shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.6);
-	--shadow-popover: 0 0 0 1px var(--border), 0 12px 32px rgba(0, 0, 0, 0.55);
+	--shadow-popover: 0 0 0 1px #20232a, 0 12px 32px rgba(0, 0, 0, 0.6);
+	--chart-1: #8fb4ff;
+	--chart-2: #6fd1b0;
+	--chart-3: #efb36d;
+	--chart-4: #f2828c;
+	--chart-5: #b49cff;
+	--glow:
+		0 0 0 1px rgba(220, 230, 245, 0.14), 0 0 22px rgba(200, 215, 240, 0.12);
+	--glow-text: 0 0 12px rgba(220, 232, 250, 0.45);
+	--page-light: radial-gradient(
+		900px 420px at 18% -8%,
+		rgba(200, 215, 240, 0.07),
+		transparent 65%
+	);
 	color-scheme: dark;
 }
 
@@ -265,6 +284,13 @@
 	}
 	html {
 		@apply font-sans;
+	}
+	/* The Mine mark is white on black; light themes show it inverted. */
+	.brand-mark {
+		filter: invert(1);
+	}
+	.dark .brand-mark {
+		filter: none;
 	}
 }
 

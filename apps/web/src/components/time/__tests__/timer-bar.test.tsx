@@ -10,6 +10,7 @@ import { trpcMock } from "../../../__tests__/trpc-mock";
 import { TimerBar } from "../timer-bar";
 
 const ELAPSED = /^0:01:0\d$/;
+const ESTIMATE = /見積もり/;
 const projects = [makeProject({ id: "work", name: "仕事" })];
 
 describe("TimerBar", () => {
@@ -61,5 +62,47 @@ describe("TimerBar", () => {
 		expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: "e" }));
 		await userEvent.click(screen.getByRole("button", { name: "計測を止める" }));
 		await waitFor(() => expect(trpcMock.calls.timeStop).toHaveBeenCalled());
+	});
+
+	it("draws the orbit against the task's estimate", async () => {
+		trpcMock.state.current = {
+			billable: true,
+			description: "スライド",
+			endedAt: null,
+			id: "e",
+			projectId: "work",
+			startedAt: Date.now() - 45 * 60_000,
+			taskId: "t",
+		};
+		const { container } = renderWithQuery(
+			<TimerBar
+				estimateOf={(entry) => (entry.taskId === "t" ? 90 : null)}
+				projects={projects}
+			/>
+		);
+
+		expect(await screen.findByText("見積もり 90分")).toBeInTheDocument();
+		expect(
+			container.querySelector('[data-slot="timer-orbit"]')
+		).toBeInTheDocument();
+	});
+
+	it("leaves the orbit out when the entry has no estimate", async () => {
+		trpcMock.state.current = {
+			billable: true,
+			description: "会議",
+			endedAt: null,
+			id: "e",
+			projectId: "work",
+			startedAt: Date.now() - 65_000,
+			taskId: null,
+		};
+		const { container } = renderWithQuery(<TimerBar projects={projects} />);
+
+		expect(await screen.findByText("会議")).toBeInTheDocument();
+		expect(screen.queryByText(ESTIMATE)).not.toBeInTheDocument();
+		expect(
+			container.querySelector('[data-slot="timer-orbit"]')
+		).not.toBeInTheDocument();
 	});
 });

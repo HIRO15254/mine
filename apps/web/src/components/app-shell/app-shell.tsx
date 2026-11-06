@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { BrandMark } from "./brand-mark";
 import {
 	isActive,
 	MOBILE_ITEMS,
@@ -26,7 +27,7 @@ function SidebarLink({
 				className={cn(
 					"flex h-[var(--control-md)] items-center gap-2.5 rounded-md px-2.5 font-medium text-sm no-underline outline-none transition-[background-color,color] focus-visible:shadow-[0_0_0_2px_var(--ring)]",
 					active
-						? "bg-primary-soft text-primary-text"
+						? "bg-primary-soft text-primary-text shadow-[var(--glow)]"
 						: "hover:layer-accent active:layer-accent-pressed text-muted-foreground hover:text-foreground"
 				)}
 				to={item.to}
@@ -51,7 +52,9 @@ function TabBarLink({
 				aria-current={active ? "page" : undefined}
 				className={cn(
 					"flex h-12 flex-col items-center justify-center gap-[3px] font-medium text-[length:var(--m-text-tab)] no-underline",
-					active ? "text-primary-text" : "text-muted-foreground"
+					active
+						? "text-primary-text drop-shadow-[0_0_6px_rgba(205,220,245,0.45)]"
+						: "text-muted-foreground"
 				)}
 				to={item.to}
 			>
@@ -66,9 +69,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 
 	return (
-		<div className="flex h-svh bg-background text-foreground">
+		<div className="flex h-svh bg-[image:var(--page-light)] bg-background text-foreground">
 			<aside className="desk:flex hidden w-[var(--sidebar-width)] shrink-0 flex-col border-border border-r">
-				<div className="flex h-12 items-center px-4">
+				<div className="flex h-12 items-center gap-2.5 px-4">
+					<BrandMark size={28} />
 					<span className="font-semibold text-[15px] tracking-[var(--tracking-heading)]">
 						Mine
 					</span>

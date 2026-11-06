@@ -32,9 +32,9 @@ export const PROJECT_COLOR_CLASS: Record<ProjectColor, string> = {
 export const PROJECT_COLOR_LABEL: Record<ProjectColor, string> = {
 	"chart-1": "青",
 	"chart-2": "緑",
-	"chart-3": "橙",
-	"chart-4": "赤",
-	"chart-5": "灰",
+	"chart-3": "琥珀",
+	"chart-4": "ばら",
+	"chart-5": "紫",
 };
 
 export const PRIORITY_RING: Record<number, string> = {
