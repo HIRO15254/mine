@@ -16,7 +16,7 @@ Authorization: Bearer mine_xxxxxxxx…
 
 ## エンドポイント
 
-ベース URL は `<API の URL>/v1` です。本番では `https://mine-api.hiro15254.workers.dev/v1` です。
+ベース URL は `<API の URL>/v1` です。本番では `https://api.mine.hiro15254.com/v1` です。
 
 | メソッド | パス | 内容 |
 |---|---|---|
@@ -66,9 +66,9 @@ Authorization: Bearer mine_xxxxxxxx…
 
 1. **トークンを変数にする**: 「変数」で `mine_token` という定数の変数を作り、発行したトークンを入れます。
 2. **ショートカットを作る**: 「＋」→「通常のショートカット」で、次の3つを作ります。
-   - 計測状態: `GET https://mine-api.hiro15254.workers.dev/v1/timer`
-   - 停止: `POST https://mine-api.hiro15254.workers.dev/v1/timer/stop`
-   - 開始（よく使う作業ごとに）: `POST https://mine-api.hiro15254.workers.dev/v1/timer/start`、本文は JSON で `{"description": "論文を読む", "project": "大学 / 研究"}`
+   - 計測状態: `GET https://api.mine.hiro15254.com/v1/timer`
+   - 停止: `POST https://api.mine.hiro15254.com/v1/timer/stop`
+   - 開始（よく使う作業ごとに）: `POST https://api.mine.hiro15254.com/v1/timer/start`、本文は JSON で `{"description": "論文を読む", "project": "大学 / 研究"}`
 3. **ヘッダー**: どのショートカットにも `Authorization` ヘッダーを足し、値を `Bearer {mine_token}` にします（`{}` ボタンから変数を差し込みます）。
 4. **結果の表示**: 「スクリプト」の「成功したときに実行」に次を入れると、返ってきた1行だけがトーストで出ます。
    ```js

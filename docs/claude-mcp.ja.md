@@ -2,7 +2,7 @@
 
 Mine は MCP サーバーを持っているので、Claude（Web・デスクトップ・Android/iOS アプリ・Claude Code）からタスクやタイマーを操作できます。音声入力で話しかければ、そのままタスクを追加できます。
 
-MCP の URL: `https://mine-api.hiro15254.workers.dev/mcp`
+MCP の URL: `https://api.mine.hiro15254.com/mcp`
 
 ## できること
 
@@ -57,7 +57,7 @@ Mine をつないだ Claude は、長めの作業をするときに `report_thre
 OAuth でつなぐ場合:
 
 ```sh
-claude mcp add --transport http mine https://mine-api.hiro15254.workers.dev/mcp
+claude mcp add --transport http mine https://api.mine.hiro15254.com/mcp
 ```
 
 追加したあと Claude Code で `/mcp` を開き、Mine を選んで認証します（ブラウザで確認画面が開きます）。
@@ -65,7 +65,7 @@ claude mcp add --transport http mine https://mine-api.hiro15254.workers.dev/mcp
 API トークン（設定の「APIトークン」で発行）を使う場合は、ヘッダーで渡せます。
 
 ```sh
-claude mcp add --transport http mine https://mine-api.hiro15254.workers.dev/mcp \
+claude mcp add --transport http mine https://api.mine.hiro15254.com/mcp \
   --header "Authorization: Bearer <発行したトークン>"
 ```
 
