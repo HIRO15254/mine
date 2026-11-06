@@ -10,39 +10,21 @@ import {
 import { Button } from "@/components/ui/button/button";
 import { Spinner } from "@/components/ui/spinner/spinner";
 import { authClient } from "@/lib/auth-client";
-import { safeRedirectPath } from "@/lib/oauth";
-
-interface LoginSearch {
-	error?: string;
-	/** A path in this app to return to after signing in. */
-	redirect?: string;
-}
 
 export const Route = createFileRoute("/login")({
-	validateSearch: (search: Record<string, unknown>): LoginSearch => {
-		const result: LoginSearch = {};
-		if (typeof search.error === "string") {
-			result.error = search.error;
-		}
-		const back = safeRedirectPath(search.redirect);
-		if (back) {
-			result.redirect = back;
-		}
-		return result;
-	},
-	beforeLoad: async ({ search }) => {
+	validateSearch: (search: Record<string, unknown>): { error?: string } =>
+		typeof search.error === "string" ? { error: search.error } : {},
+	beforeLoad: async () => {
 		const { data } = await authClient.getSession();
 		if (data) {
-			throw search.redirect
-				? redirect({ href: search.redirect })
-				: redirect({ to: "/" });
+			throw redirect({ to: "/" });
 		}
 	},
 	component: LoginPage,
 });
 
 function LoginPage() {
-	const { error, redirect: back } = Route.useSearch();
+	const { error } = Route.useSearch();
 	const [isRedirecting, setIsRedirecting] = useState(false);
 
 	const signIn = async () => {
@@ -50,7 +32,7 @@ function LoginPage() {
 		const origin = window.location.origin;
 		const result = await authClient.signIn.social({
 			provider: "google",
-			callbackURL: `${origin}${back ?? "/"}`,
+			callbackURL: `${origin}/`,
 			errorCallbackURL: `${origin}/login`,
 		});
 		if (result.error) {

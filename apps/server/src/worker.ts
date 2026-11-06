@@ -6,7 +6,10 @@ import {
 } from "@mine/api/context";
 import { DEFAULT_TIME_ZONE, handleMcp } from "@mine/api/mcp/server";
 import {
+	approveAuthorization,
 	authorizationServerMetadata,
+	checkAuthorization,
+	deniedRedirect,
 	exchangeToken,
 	OAuthError,
 	protectedResourceMetadata,
@@ -29,6 +32,12 @@ import { Hono, type Context as HonoContext } from "hono";
 import { cors } from "hono/cors";
 
 import type { Bindings } from "./bindings";
+import {
+	consentPage,
+	consentToken,
+	errorPage,
+	PAGE_HEADERS,
+} from "./oauth-pages";
 
 function authFor(env: Bindings, db: Database) {
 	return createAuth(db, {
@@ -217,9 +226,7 @@ app.route("/v1", v1);
 const origin = (context: HonoContext) => new URL(context.req.url).origin;
 
 app.get("/.well-known/oauth-authorization-server", (context) =>
-	context.json(
-		authorizationServerMetadata(origin(context), context.env.CORS_ORIGIN)
-	)
+	context.json(authorizationServerMetadata(origin(context)))
 );
 
 app.get("/.well-known/oauth-protected-resource/*", (context) =>
@@ -245,6 +252,108 @@ function oauthFailure(context: HonoContext, error: unknown) {
 	}
 	throw error;
 }
+
+const htmlPage = (body: string, status: 200 | 400 | 403 = 200) =>
+	new Response(body, { headers: PAGE_HEADERS, status });
+
+/** Sends the user to Google, then back to the same authorize URL. */
+async function startSignIn(context: HonoContext<{ Bindings: Bindings }>) {
+	const auth = authFor(context.env, createDb(context.env.DB));
+	const response = await auth.api.signInSocial({
+		asResponse: true,
+		body: {
+			callbackURL: context.req.url,
+			disableRedirect: true,
+			errorCallbackURL: `${origin(context)}/oauth/sign-in-failed`,
+			provider: "google",
+		},
+		headers: context.req.raw.headers,
+	});
+	const { url } = (await response.json()) as { url?: string };
+	if (!url) {
+		return htmlPage(errorPage("ログインを始められませんでした"), 400);
+	}
+	const headers = new Headers({ "Cache-Control": "no-store", Location: url });
+	for (const cookie of response.headers.getSetCookie()) {
+		headers.append("Set-Cookie", cookie);
+	}
+	return new Response(null, { headers, status: 302 });
+}
+
+app.get("/oauth/authorize", async (context) => {
+	const db = createDb(context.env.DB);
+	const check = await checkAuthorization(db, context.req.query());
+	if (!check.ok) {
+		return htmlPage(errorPage(check.error), 400);
+	}
+	const session = await authFor(context.env, db).api.getSession({
+		headers: context.req.raw.headers,
+	});
+	if (!session) {
+		return startSignIn(context);
+	}
+	return htmlPage(
+		consentPage({
+			clientName: check.clientName,
+			csrf: await consentToken(
+				context.env.BETTER_AUTH_SECRET,
+				session.session.id,
+				check.request
+			),
+			email: session.user.email,
+			request: check.request,
+		})
+	);
+});
+
+app.post("/oauth/authorize", async (context) => {
+	const sentFrom = context.req.header("Origin");
+	if (sentFrom && sentFrom !== origin(context)) {
+		return htmlPage(errorPage("別のサイトからの送信は受け付けません"), 403);
+	}
+	const db = createDb(context.env.DB);
+	const form = Object.fromEntries(
+		new URLSearchParams(await context.req.text())
+	);
+	const check = await checkAuthorization(db, form);
+	if (!check.ok) {
+		return htmlPage(errorPage(check.error), 400);
+	}
+	const session = await authFor(context.env, db).api.getSession({
+		headers: context.req.raw.headers,
+	});
+	const expected = session
+		? await consentToken(
+				context.env.BETTER_AUTH_SECRET,
+				session.session.id,
+				check.request
+			)
+		: null;
+	if (!(session && expected === form.csrf)) {
+		return htmlPage(
+			errorPage("確認画面の有効期限が切れました。もう一度接続してください"),
+			403
+		);
+	}
+	const location =
+		form.decision === "allow"
+			? await approveAuthorization(
+					db,
+					{ ...check.request, userId: session.user.id },
+					Date.now()
+				)
+			: deniedRedirect(check.request.redirectUri, check.request.state);
+	return context.redirect(location, 303);
+});
+
+app.get("/oauth/sign-in-failed", () =>
+	htmlPage(
+		errorPage(
+			"Google でログインできませんでした。許可されたアカウントで、もう一度接続してください"
+		),
+		403
+	)
+);
 
 app.post("/oauth/register", async (context) => {
 	try {

@@ -66,10 +66,14 @@ export function isAllowedRedirectUri(uri: string): boolean {
 	}
 }
 
-export function authorizationServerMetadata(issuer: string, webUrl: string) {
+/**
+ * The consent screen is served by the API itself, so every cookie it needs
+ * stays first-party (browsers such as Safari drop cross-site cookies).
+ */
+export function authorizationServerMetadata(issuer: string) {
 	return {
 		issuer,
-		authorization_endpoint: `${webUrl}/oauth/authorize`,
+		authorization_endpoint: `${issuer}/oauth/authorize`,
 		token_endpoint: `${issuer}/oauth/token`,
 		registration_endpoint: `${issuer}/oauth/register`,
 		response_types_supported: ["code"],
@@ -155,6 +159,60 @@ export async function findClient(db: Db, clientId: string) {
 		redirectUris: JSON.parse(row.redirectUris) as string[],
 		secretHash: row.secretHash,
 	};
+}
+
+const CHALLENGE = /^[\w-]{43}$/;
+
+export type PendingAuthorization = Omit<AuthorizationRequest, "userId">;
+
+/**
+ * Checks an authorize query before anything is shown. Messages are Japanese
+ * because they appear on the consent page.
+ */
+export async function checkAuthorization(
+	db: Db,
+	params: Record<string, string | undefined>
+): Promise<
+	| { error: string; ok: false }
+	| { clientName: string; ok: true; request: PendingAuthorization }
+> {
+	const client = params.client_id
+		? await findClient(db, params.client_id)
+		: null;
+	if (!(client && params.redirect_uri)) {
+		return { error: "このアプリは登録されていません", ok: false };
+	}
+	if (!client.redirectUris.includes(params.redirect_uri)) {
+		return { error: "戻り先が登録されたものと違います", ok: false };
+	}
+	if (
+		params.response_type !== "code" ||
+		params.code_challenge_method !== "S256" ||
+		!CHALLENGE.test(params.code_challenge ?? "")
+	) {
+		return { error: "このアプリの接続方式には対応していません", ok: false };
+	}
+	return {
+		clientName: client.name,
+		ok: true,
+		request: {
+			clientId: client.id,
+			codeChallenge: params.code_challenge ?? "",
+			redirectUri: params.redirect_uri,
+			scope: params.scope || undefined,
+			state: params.state || undefined,
+		},
+	};
+}
+
+/** Where to send the user when they decline. */
+export function deniedRedirect(redirectUri: string, state?: string): string {
+	const url = new URL(redirectUri);
+	url.searchParams.set("error", "access_denied");
+	if (state) {
+		url.searchParams.set("state", state);
+	}
+	return url.toString();
 }
 
 export interface AuthorizationRequest {

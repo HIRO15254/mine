@@ -48,7 +48,7 @@ async function setup() {
 		);
 	const raw = (path: string, init: RequestInit = {}) =>
 		app.request(path, init, bindings);
-	return { call, raw, sqlite };
+	return { bindings, call, raw, sqlite };
 }
 
 async function s256(verifier: string) {
@@ -140,7 +140,7 @@ describe("MCP over HTTP", () => {
 		});
 		const server = await raw("/.well-known/oauth-authorization-server");
 		await expect(server.json()).resolves.toMatchObject({
-			authorization_endpoint: "https://web.example.test/oauth/authorize",
+			authorization_endpoint: "http://localhost/oauth/authorize",
 			registration_endpoint: "http://localhost/oauth/register",
 			token_endpoint: "http://localhost/oauth/token",
 		});
@@ -256,5 +256,128 @@ describe("MCP over HTTP", () => {
 		await expect(reused.json()).resolves.toMatchObject({
 			error: "invalid_grant",
 		});
+	});
+});
+
+const CODE_FORMAT = /^mine_code_/;
+const HIDDEN_CSRF = /name="csrf" value="([^"]+)"/;
+const SESSION_COOKIE = "__Secure-better-auth.session_token";
+
+/** A Better Auth session cookie, signed the way better-call signs it. */
+async function sessionCookie(
+	sqlite: Awaited<ReturnType<typeof setup>>["sqlite"],
+	secret: string
+) {
+	const token = "session-token-for-tests";
+	const now = Math.floor(Date.now() / 1000);
+	sqlite
+		.prepare(
+			"insert into session (id, expires_at, token, created_at, updated_at, user_id) values (?, ?, ?, ?, ?, ?)"
+		)
+		.run("s1", now + 3600, token, now, now, "u1");
+	const key = await crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(secret),
+		{ hash: "SHA-256", name: "HMAC" },
+		false,
+		["sign"]
+	);
+	const signature = await crypto.subtle.sign(
+		"HMAC",
+		key,
+		new TextEncoder().encode(token)
+	);
+	const value = `${token}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
+	return `${SESSION_COOKIE}=${encodeURIComponent(value)}`;
+}
+
+describe("OAuth consent page", () => {
+	async function authorizeUrl(raw: Awaited<ReturnType<typeof setup>>["raw"]) {
+		const registered = await raw("/oauth/register", {
+			body: JSON.stringify({ client_name: "Claude", redirect_uris: [CLAUDE] }),
+			method: "POST",
+		});
+		const { client_id: clientId } = (await registered.json()) as {
+			client_id: string;
+		};
+		const query = new URLSearchParams({
+			client_id: clientId,
+			code_challenge: await s256("verifier-verifier-verifier-verifier-0"),
+			code_challenge_method: "S256",
+			redirect_uri: CLAUDE,
+			response_type: "code",
+			state: "st",
+		});
+		return { clientId, query, url: `/oauth/authorize?${query}` };
+	}
+
+	it("sends a signed-out user to Google with a first-party state cookie", async () => {
+		const { raw } = await setup();
+		const { url } = await authorizeUrl(raw);
+		const response = await raw(url);
+		expect(response.status).toBe(302);
+		expect(response.headers.get("Location")).toContain("accounts.google.com");
+		expect(response.headers.getSetCookie().join("\n")).toContain("state");
+
+		const broken = await raw("/oauth/authorize?client_id=nope");
+		expect(broken.status).toBe(400);
+		expect(await broken.text()).toContain("このアプリは登録されていません");
+	});
+
+	it("shows consent and issues a code only with the form's token", async () => {
+		const { bindings, raw, sqlite } = await setup();
+		const cookie = await sessionCookie(sqlite, bindings.BETTER_AUTH_SECRET);
+		const { query, url } = await authorizeUrl(raw);
+
+		const page = await raw(url, { headers: { Cookie: cookie } });
+		expect(page.status).toBe(200);
+		expect(page.headers.get("X-Frame-Options")).toBe("DENY");
+		const html = await page.text();
+		expect(html).toContain("Claude を接続");
+		expect(html).toContain("me@example.com");
+		const csrf = HIDDEN_CSRF.exec(html)?.[1] ?? "";
+		expect(csrf).not.toBe("");
+
+		const post = (fields: Record<string, string>, headers = {}) =>
+			raw("/oauth/authorize", {
+				body: new URLSearchParams({
+					...Object.fromEntries(query),
+					...fields,
+				}).toString(),
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+					Cookie: cookie,
+					...headers,
+				},
+				method: "POST",
+			});
+
+		expect((await post({ csrf: "forged", decision: "allow" })).status).toBe(
+			403
+		);
+		expect(
+			(
+				await post(
+					{ csrf, decision: "allow" },
+					{ Origin: "https://evil.example" }
+				)
+			).status
+		).toBe(403);
+
+		const denied = await post({ csrf, decision: "deny" });
+		expect(denied.status).toBe(303);
+		expect(denied.headers.get("Location")).toBe(
+			`${CLAUDE}?error=access_denied&state=st`
+		);
+
+		const allowed = await post(
+			{ csrf, decision: "allow" },
+			{ Origin: "http://localhost" }
+		);
+		expect(allowed.status).toBe(303);
+		const location = new URL(allowed.headers.get("Location") ?? "");
+		expect(location.origin + location.pathname).toBe(CLAUDE);
+		expect(location.searchParams.get("state")).toBe("st");
+		expect(location.searchParams.get("code")).toMatch(CODE_FORMAT);
 	});
 });

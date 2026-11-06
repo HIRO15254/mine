@@ -6,6 +6,8 @@ import {
 	approveAuthorization,
 	authorizationServerMetadata,
 	CODE_TTL_MS,
+	checkAuthorization,
+	deniedRedirect,
 	exchangeToken,
 	isAllowedRedirectUri,
 	OAuthError,
@@ -262,14 +264,52 @@ describe("authorization code flow", () => {
 	});
 
 	it("describes itself", () => {
-		expect(
-			authorizationServerMetadata("https://api.test", "https://web.test")
-		).toMatchObject({
-			authorization_endpoint: "https://web.test/oauth/authorize",
+		expect(authorizationServerMetadata("https://api.test")).toMatchObject({
+			authorization_endpoint: "https://api.test/oauth/authorize",
 			code_challenge_methods_supported: ["S256"],
 			issuer: "https://api.test",
 			token_endpoint: "https://api.test/oauth/token",
 		});
+	});
+});
+
+describe("checkAuthorization", () => {
+	it("accepts a registered client with an S256 challenge", async () => {
+		const { db } = setup();
+		const client = await registerClient(db, {
+			client_name: "Claude",
+			redirect_uris: [CLAUDE],
+		});
+		const params = {
+			client_id: client.client_id,
+			code_challenge: await challenge(VERIFIER),
+			code_challenge_method: "S256",
+			redirect_uri: CLAUDE,
+			response_type: "code",
+			state: "s",
+		};
+		await expect(checkAuthorization(db, params)).resolves.toMatchObject({
+			clientName: "Claude",
+			ok: true,
+			request: { clientId: client.client_id, state: "s" },
+		});
+		for (const broken of [
+			{ client_id: "nope" },
+			{ redirect_uri: "http://localhost:1/cb" },
+			{ code_challenge_method: "plain" },
+			{ response_type: "token" },
+			{ code_challenge: "short" },
+		]) {
+			await expect(
+				checkAuthorization(db, { ...params, ...broken })
+			).resolves.toMatchObject({ ok: false });
+		}
+	});
+
+	it("declines with access_denied and the state", () => {
+		expect(deniedRedirect(CLAUDE, "s")).toBe(
+			`${CLAUDE}?error=access_denied&state=s`
+		);
 	});
 });
 
@@ -286,7 +326,7 @@ describe("oauth router", () => {
 		};
 	}
 
-	it("approves, lists and revokes connections from the browser", async () => {
+	it("lists and revokes connections from the browser only", async () => {
 		const { db } = setup();
 		const { browser, token } = await callers(db);
 		const client = await registerClient(db, {
@@ -294,29 +334,19 @@ describe("oauth router", () => {
 			redirect_uris: [CLAUDE],
 		});
 
-		await expect(
-			browser.oauth.client({
-				clientId: client.client_id,
-				redirectUri: "http://localhost:1/cb",
-			})
-		).rejects.toMatchObject({ code: "BAD_REQUEST" });
-		await expect(
-			browser.oauth.client({
-				clientId: client.client_id,
-				redirectUri: CLAUDE,
-			})
-		).resolves.toEqual({ name: "Claude", redirectHost: "claude.ai" });
-
-		const input = {
-			clientId: client.client_id,
-			codeChallenge: await challenge(VERIFIER),
-			redirectUri: CLAUDE,
-			state: "s",
-		};
-		await expect(token.oauth.approve(input)).rejects.toMatchObject({
+		await expect(token.oauth.connections()).rejects.toMatchObject({
 			code: "FORBIDDEN",
 		});
-		const { redirectUrl } = await browser.oauth.approve(input);
+		const redirectUrl = await approveAuthorization(
+			db,
+			{
+				clientId: client.client_id,
+				codeChallenge: await challenge(VERIFIER),
+				redirectUri: CLAUDE,
+				userId: "u1",
+			},
+			Date.now()
+		);
 		const code = new URL(redirectUrl).searchParams.get("code") ?? "";
 		await exchangeToken(
 			db,

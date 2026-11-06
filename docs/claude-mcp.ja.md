@@ -71,7 +71,7 @@ claude mcp add --transport http mine https://mine-api.hiro15254.workers.dev/mcp 
 
 ## しくみ（メモ）
 
-- 認証は OAuth 2.1（動的クライアント登録、PKCE は S256 のみ）。確認画面は Web アプリの `/oauth/authorize` にあります。
+- 認証は OAuth 2.1（動的クライアント登録、PKCE は S256 のみ）。確認画面は API の `/oauth/authorize` が出します。Web アプリとはドメインが違うので、ログインの Cookie がドメインをまたがないよう API 側に置いています。
 - 戻り先として登録できるのは Claude のコールバック（`https://claude.ai/api/mcp/auth_callback` と `https://claude.com/api/mcp/auth_callback`）と、手元の `localhost` だけです。
 - アクセストークンは 1 時間、リフレッシュトークンは 90 日で切れ、使うたびに入れ替わります。どれもハッシュだけを保存しています。
 - MCP のトークンでは API トークンの発行や接続の許可はできません（ブラウザでのみ）。
