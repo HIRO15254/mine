@@ -33,6 +33,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card/card";
 import { Spinner } from "@/components/ui/spinner/spinner";
+import { useIsDesk } from "@/hooks/use-media-query";
 import {
 	eventsOnDay,
 	rangeOfDays,
@@ -46,8 +47,9 @@ import { trpc } from "@/utils/trpc";
 export const Route = createFileRoute("/_app/")({ component: TodayPage });
 
 function TodayPage() {
+	const isDesk = useIsDesk();
 	return (
-		<Page title="今日">
+		<Page className="flex flex-col gap-3.5" title="今日">
 			<div className="grid desk:grid-cols-3 desk:gap-4 gap-3.5">
 				<Card className="desk:col-span-2 desk:row-span-2">
 					<CardHeader>
@@ -65,22 +67,24 @@ function TodayPage() {
 						<TodayEvents />
 					</CardContent>
 				</Card>
-				<Card className="has-[[data-running]]:prism-edge has-[[data-running]]:shadow-[var(--glow)]">
-					<CardHeader>
-						<IconPlayerPlay aria-hidden />
-						<CardTitle>計測</CardTitle>
-						<Link
-							className="inline-flex items-center gap-0.5 text-primary-text text-xs no-underline hover:underline"
-							to="/time"
-						>
-							記録
-							<IconChevronRight aria-hidden className="size-3.5" />
-						</Link>
-					</CardHeader>
-					<CardContent>
-						<TodayTimer />
-					</CardContent>
-				</Card>
+				{isDesk ? (
+					<Card className="has-[[data-running]]:prism-edge has-[[data-running]]:shadow-[var(--glow)]">
+						<CardHeader>
+							<IconPlayerPlay aria-hidden />
+							<CardTitle>計測</CardTitle>
+							<Link
+								className="inline-flex items-center gap-0.5 text-primary-text text-xs no-underline hover:underline"
+								to="/time"
+							>
+								記録
+								<IconChevronRight aria-hidden className="size-3.5" />
+							</Link>
+						</CardHeader>
+						<CardContent>
+							<TodayTimer />
+						</CardContent>
+					</Card>
+				) : null}
 				<Card>
 					<CardHeader>
 						<IconChecklist aria-hidden />
@@ -116,6 +120,7 @@ function TodayPage() {
 					</CardContent>
 				</Card>
 			</div>
+			{isDesk ? null : <FloatingTimer />}
 		</Page>
 	);
 }
@@ -186,6 +191,23 @@ function TodayTasks() {
 			)}
 			{editor}
 		</>
+	);
+}
+
+/**
+ * On the phone the timer floats at the bottom of Today, above the tab bar,
+ * so it stays in reach while the page scrolls. The desk layout keeps it as a
+ * card beside the schedule.
+ */
+function FloatingTimer() {
+	return (
+		<section
+			aria-label="計測"
+			className="has-[[data-running]]:prism-edge sticky bottom-3 z-10 mt-auto rounded-xl border border-border bg-card p-3 text-card-foreground shadow-[var(--shadow-lg)] has-[[data-running]]:shadow-[var(--glow),var(--shadow-lg)]"
+			data-slot="floating-timer"
+		>
+			<TodayTimer />
+		</section>
 	);
 }
 

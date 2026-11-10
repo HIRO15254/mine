@@ -46,24 +46,6 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </x-import>
 </x-import>
 
-<x-import component-from-global-scope="Mine.Card" style="box-shadow: var(--glow); border: 1px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, conic-gradient(from 210deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)) border-box">
-<x-import component-from-global-scope="Mine.CardHeader">
-<x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="player-play"></x-import>計測</span></x-import>
-<x-import component-from-global-scope="Mine.CardAction"><a href="time.mobile.dc.html" style="display: inline-flex; align-items: center; gap: 2px; font-size: 12px">記録<x-import component-from-global-scope="Mine.Icon" name="chevron-right" size="{{i14}}"></x-import></a></x-import>
-</x-import>
-<x-import component-from-global-scope="Mine.CardContent">
-<div style="display: flex; align-items: center; gap: 12px">
-<span aria-hidden="true" style="flex: none; position: relative; width: 48px; height: 48px; color: var(--primary-text); filter: drop-shadow(0 0 6px rgba(205,220,245,.35))"><svg width="48" height="48" viewBox="0 0 48 48" style="position: absolute; inset: 0"><circle cx="24.0" cy="24.0" r="20.0" fill="none" stroke="var(--border)" stroke-width="2"/><circle cx="24.0" cy="24.0" r="20.0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="104.7 125.7" transform="rotate(-90 24.0 24.0)"/></svg><svg width="14" height="14" viewBox="0 0 24 24" style="position: absolute; left: 17.0px; top: 17.0px"><path d="M12 1.5C12.9 8.3 15.7 11.1 22.5 12C15.7 12.9 12.9 15.7 12 22.5C11.1 15.7 8.3 12.9 1.5 12C8.3 11.1 11.1 8.3 12 1.5Z" fill="currentColor"/></svg></span>
-<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
-<span style="font-size: var(--m-text-body); font-weight: 500">ゼミ発表のスライド</span>
-<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground)"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--chart-1)"></span>大学 / 研究</span>
-</div>
-<span style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: var(--font-mono); font-size: 18px; text-shadow: var(--glow-text)">1:15:00</span><span style="font-size: 11px; color: var(--muted-foreground)">見積もり 90分</span></span>
-<x-import component-from-global-scope="Mine.Button" variant="destructive" size="xl" aria-label="止める"><x-import component-from-global-scope="Mine.Icon" name="player-stop" filled="{{yes}}"></x-import></x-import>
-</div>
-</x-import>
-</x-import>
-
 <x-import component-from-global-scope="Mine.Card">
 <x-import component-from-global-scope="Mine.CardHeader">
 <x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="checklist"></x-import>今日やるタスク</span></x-import>
@@ -132,6 +114,18 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </div>
 </x-import>
 </x-import>
+
+<section aria-label="計測" style="position: sticky; bottom: 12px; z-index: 1; margin-top: auto; padding: 12px; border-radius: var(--radius-xl); color: var(--card-foreground); box-shadow: var(--glow), var(--shadow-lg); border: 1px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, conic-gradient(from 210deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)) border-box">
+<div style="display: flex; align-items: center; gap: 12px">
+<span aria-hidden="true" style="flex: none; position: relative; width: 48px; height: 48px; color: var(--primary-text); filter: drop-shadow(0 0 6px rgba(205,220,245,.35))"><svg width="48" height="48" viewBox="0 0 48 48" style="position: absolute; inset: 0"><circle cx="24.0" cy="24.0" r="20.0" fill="none" stroke="var(--border)" stroke-width="2"/><circle cx="24.0" cy="24.0" r="20.0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="104.7 125.7" transform="rotate(-90 24.0 24.0)"/></svg><svg width="14" height="14" viewBox="0 0 24 24" style="position: absolute; left: 17.0px; top: 17.0px"><path d="M12 1.5C12.9 8.3 15.7 11.1 22.5 12C15.7 12.9 12.9 15.7 12 22.5C11.1 15.7 8.3 12.9 1.5 12C8.3 11.1 11.1 8.3 12 1.5Z" fill="currentColor"/></svg></span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-size: var(--m-text-body); font-weight: 500">ゼミ発表のスライド</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted-foreground)"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--chart-1)"></span>大学 / 研究</span>
+</div>
+<span style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: var(--font-mono); font-size: 18px; text-shadow: var(--glow-text)">1:15:00</span><span style="font-size: 11px; color: var(--muted-foreground)">見積もり 90分</span></span>
+<x-import component-from-global-scope="Mine.Button" variant="destructive" size="xl" aria-label="止める"><x-import component-from-global-scope="Mine.Icon" name="player-stop" filled="{{yes}}"></x-import></x-import>
+</div>
+</section>
 </main>
 
 <nav aria-label="メニュー" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 4px 0 10px; background: var(--background); border-top: 1px solid var(--border)">
