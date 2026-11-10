@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>記録していない予定 · mobile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/mine/tokens.css">
+<link rel="stylesheet" href="ds/mine/components/bundle.css">
+<script src="ds/mine/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)}
+.mark{flex:none}
+[data-theme="light"] .mark{filter:invert(1)}
+.hours{background-image:linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px)}
+</style>
+</helmet>
+<div class="{{themeClass}}" data-theme="{{theme}}" style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; background: var(--background); background-image: {{sky}}; color: var(--foreground); font-family: var(--font-sans); font-size: var(--m-text-secondary); line-height: 1.4">
+
+<header style="position: relative; flex: none; height: 44px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--border)"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; opacity: .8; background: linear-gradient(90deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5))"></div>
+<img class="mark" src="assets/mine-icon.png" alt="" width="24" height="24" style="border-radius: 6px; margin-right: 10px">
+<h1 style="margin: 0; font-size: var(--m-text-title); font-weight: 600; letter-spacing: var(--tracking-heading)">今日</h1>
+</header>
+
+<main style="position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 14px; padding: 14px">
+<x-import component-from-global-scope="Mine.Card">
+<x-import component-from-global-scope="Mine.CardHeader">
+<x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="calendar-time"></x-import>今日の予定</span></x-import>
+</x-import>
+<x-import component-from-global-scope="Mine.CardContent">
+<div style="display: flex; flex-direction: column; gap: 14px"><div style="display: grid; grid-template-columns: 8px 92px minmax(0, 1fr); gap: 10px; align-items: baseline"><span style="width: 7px; height: 7px; border-radius: 50%; background: #4593f8"></span><span style="font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">10:00–11:00</span><span style="font-size: var(--m-text-body)">研究室ミーティング</span></div><div style="display: grid; grid-template-columns: 8px 92px minmax(0, 1fr); gap: 10px; align-items: baseline"><span style="width: 7px; height: 7px; border-radius: 50%; background: #e67c73"></span><span style="font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">14:00–15:00</span><span style="font-size: var(--m-text-body)">オンライン面談</span></div><div style="display: grid; grid-template-columns: 8px 92px minmax(0, 1fr); gap: 10px; align-items: baseline"><span style="width: 7px; height: 7px; border-radius: 50%; background: #4593f8"></span><span style="font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">16:30–18:00</span><span style="font-size: var(--m-text-body)">ゼミ発表</span></div><div style="display: grid; grid-template-columns: 8px 92px minmax(0, 1fr); gap: 10px; align-items: baseline"><span style="width: 7px; height: 7px; border-radius: 50%; background: #f6bf26"></span><span style="font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">19:00–19:30</span><span style="font-size: var(--m-text-body)">夕食の買い出し</span></div></div>
+</x-import>
+</x-import>
+<x-import component-from-global-scope="Mine.Card">
+<x-import component-from-global-scope="Mine.CardHeader">
+<x-import component-from-global-scope="Mine.CardTitle"><span style="display: inline-flex; align-items: center; gap: 8px"><x-import component-from-global-scope="Mine.Icon" name="checklist"></x-import>今日やるタスク</span></x-import>
+</x-import>
+<x-import component-from-global-scope="Mine.CardContent"><div style="height: 220px"></div></x-import>
+</x-import>
+
+<section aria-label="計測" style="position: absolute; left: 14px; right: 14px; bottom: 12px; z-index: 2; padding: 12px; border-radius: var(--radius-xl); border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow-lg)">
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 4px 4px 4px 10px; border-radius: var(--radius-md); background: color-mix(in srgb, #e67c73 14%, transparent); font-size: var(--m-text-body)"><span style="flex: none; width: 8px; height: 8px; border-radius: 50%; background: #e67c73"></span><span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">オンライン面談</span><span style="flex: none; font-family: var(--font-mono); font-size: 12px; color: var(--muted-foreground)">14:00–15:00</span><x-import component-from-global-scope="Mine.Button" size="sm" variant="secondary"><x-import component-from-global-scope="Mine.Icon" name="player-play"></x-import>記録</x-import><x-import component-from-global-scope="Mine.IconButton" icon="x" label="今回は記録しない" size="sm"></x-import></div>
+<div style="display: flex; align-items: center; gap: 6px">
+<div style="flex: 1; min-width: 0; height: var(--m-control); box-sizing: border-box; display: flex; align-items: center; padding: 0 10px; border-radius: var(--radius-lg); border: 1px solid var(--input); background: var(--card); font-size: var(--m-text-body); color: var(--muted-foreground)">何をしていますか</div>
+<x-import component-from-global-scope="Mine.Button" size="xl" aria-label="計測を始める"><x-import component-from-global-scope="Mine.Icon" name="player-play"></x-import></x-import>
+</div>
+</section>
+</main>
+
+<nav aria-label="メニュー" style="flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 4px 0 10px; background: var(--background); border-top: 1px solid var(--border)">
+<a href="today.mobile.dc.html" style="height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--m-text-tab); font-weight: 500; color: var(--primary-text)"><x-import component-from-global-scope="Mine.Icon" name="home" size="{{i24}}"></x-import>今日</a><a href="tasks.mobile.dc.html" style="height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--m-text-tab); font-weight: 500; color: var(--muted-foreground)"><x-import component-from-global-scope="Mine.Icon" name="checklist" size="{{i24}}"></x-import>タスク</a><a href="time.mobile.dc.html" style="height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--m-text-tab); font-weight: 500; color: var(--muted-foreground)"><x-import component-from-global-scope="Mine.Icon" name="clock-hour-4" size="{{i24}}"></x-import>記録</a><a href="calendar.mobile.dc.html" style="height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--m-text-tab); font-weight: 500; color: var(--muted-foreground)"><x-import component-from-global-scope="Mine.Icon" name="calendar" size="{{i24}}"></x-import>カレンダー</a><a href="#" style="height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--m-text-tab); font-weight: 500; color: var(--muted-foreground)"><x-import component-from-global-scope="Mine.Icon" name="settings" size="{{i24}}"></x-import>設定</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const theme = this.props.theme ?? 'dark';
+return {
+theme: theme,
+themeClass: theme === 'dark' ? 'dark' : 'light',
+sky: theme === 'dark' ? 'radial-gradient(900px 420px at 18% -8%, rgba(200,215,240,0.07), transparent 65%)' : 'none',
+yes: true, i12: 12, i14: 14, i16: 16, i24: 24
+};
+}
+}
+</script>
+</body>
+</html>

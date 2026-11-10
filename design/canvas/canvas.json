@@ -127,6 +127,14 @@
       "h": 844,
       "title": "計測の入力 · mobile",
       "page": "today"
+    },
+    "event-nudge.mobile.dc.html": {
+      "x": 2690,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "記録していない予定 · mobile",
+      "page": "today"
     }
   },
   "order": [
@@ -140,7 +148,8 @@
     "time.mobile.dc.html",
     "calendar.desk.dc.html",
     "calendar.mobile.dc.html",
-    "timer-input.mobile.dc.html"
+    "timer-input.mobile.dc.html",
+    "event-nudge.mobile.dc.html"
   ],
   "notes": {
     "todayTitle": {
@@ -206,6 +215,14 @@
       "fill": "yellow",
       "page": "calendar",
       "text": "時間軸のカレンダー (2026-11-10 実装)。\n・予定は時刻の位置に、重なると横に並ぶ。今の時刻にプリズムの線。\n・「タスクを置く」からドラッグで、その日のその時刻に置く (15分刻み、長さは見積もり、なければ30分)。PC のボードはドラッグ中の様子 (水 13:00)。\n・終日の行に落とすと日付だけ、トレイに戻すと時刻だけ外れる。\n・スマホは1日ずつ、曜日の列で切り替え。長押しでドラッグ。トレイの行は見出しの下に残る。"
+    },
+    "eventNudgeNote": {
+      "x": 2690,
+      "y": 880,
+      "w": 390,
+      "fill": "yellow",
+      "page": "today",
+      "text": "計測が止まっていて、いま進行中の予定に記録がないとき、入力欄の上に予定を出します（予定の色の点つき）。\n「記録」でその予定の開始時刻から計測。× でその予定は出さない。\n予定の色は Google カレンダーで予定ごとに付けた色、なければカレンダーの色。"
     }
   },
   "designSystems": [
