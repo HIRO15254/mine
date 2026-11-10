@@ -13,7 +13,9 @@ export default defineConfig({
 		tanstackRouter({ target: "react", autoCodeSplitting: true }),
 		react(),
 		VitePWA({
-			registerType: "autoUpdate",
+			// A new deploy waits until the person taps 更新 (UpdateBanner).
+			registerType: "prompt",
+			injectRegister: false,
 			manifest: {
 				id: "/",
 				name: "Mine",
