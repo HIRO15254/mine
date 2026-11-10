@@ -29,6 +29,10 @@
     {
       "id": "time",
       "name": "記録"
+    },
+    {
+      "id": "calendar",
+      "name": "カレンダー"
     }
   ],
   "boards": {
@@ -98,6 +102,31 @@
       "h": 900,
       "title": "ブランド · 白い光とプリズム",
       "page": "brand"
+    },
+    "calendar.desk.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 900,
+      "title": "calendar · desk",
+      "page": "calendar",
+      "expand": "fill"
+    },
+    "calendar.mobile.dc.html": {
+      "x": 1360,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "calendar · mobile",
+      "page": "calendar"
+    },
+    "timer-input.mobile.dc.html": {
+      "x": 1820,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "計測の入力 · mobile",
+      "page": "today"
     }
   },
   "order": [
@@ -108,7 +137,10 @@
     "tasks.desk.dc.html",
     "tasks.mobile.dc.html",
     "time.desk.dc.html",
-    "time.mobile.dc.html"
+    "time.mobile.dc.html",
+    "calendar.desk.dc.html",
+    "calendar.mobile.dc.html",
+    "timer-input.mobile.dc.html"
   ],
   "notes": {
     "todayTitle": {
@@ -141,7 +173,7 @@
       "w": 360,
       "fill": "blue",
       "page": "guide",
-      "text": "デザインシステムは Mine Design System (Cryst から分けた Mine 専用のもの) です。\n新しい案は上書きせず、隣に -v2 などを付けたボードで作ってください。\n設定・タスク編集のボードは、必要になったら足します。\nカレンダーは 2026-11-10 に時間軸 (現在時刻の線、タスクをドラッグして時刻に置く、スマホは1日ずつ) で実装済み。ボードはまだ描いていません。"
+      "text": "デザインシステムは Mine Design System (Cryst から分けた Mine 専用のもの) です。\n新しい案は上書きせず、隣に -v2 などを付けたボードで作ってください。\n設定・タスク編集のボードは、必要になったら足します。"
     },
     "brandTitle": {
       "x": 0,
@@ -152,12 +184,28 @@
       "page": "brand"
     },
     "todayTimerNote": {
-      "x": 1820,
+      "x": 2290,
       "y": 0,
       "w": 320,
       "fill": "yellow",
       "page": "today",
-      "text": "計測していないときの入力は1行 (2026-11-10 実装)。\n「論文を読む #研究」で #プロジェクト を割り当て、その色でハイライト。\n入力中はタスク・前の計測・今日の予定から候補、空のときは今の前後の予定と最近の計測。\nスマホの今日では計測が下に浮かび、候補は上に開く。"
+      "text": "計測していないときの入力は1行 (2026-11-10 実装、右隣のボード)。\n「レポート #仕事」で #プロジェクト を割り当て、その色でハイライト。# を打つとプロジェクトの候補。\n入力中はタスク・前の計測 (30日)・今日の予定から候補、空のときは今の前後1時間の予定と最近の計測。\nスマホの今日では計測が下に浮かび、候補は上に開く。PC の今日はカード、記録ページは上の枠で同じ入力。"
+    },
+    "calendarTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "カレンダー",
+      "kind": "title1",
+      "maxW": 1750,
+      "page": "calendar"
+    },
+    "calendarNote": {
+      "x": 1830,
+      "y": 0,
+      "w": 340,
+      "fill": "yellow",
+      "page": "calendar",
+      "text": "時間軸のカレンダー (2026-11-10 実装)。\n・予定は時刻の位置に、重なると横に並ぶ。今の時刻にプリズムの線。\n・「タスクを置く」からドラッグで、その日のその時刻に置く (15分刻み、長さは見積もり、なければ30分)。PC のボードはドラッグ中の様子 (水 13:00)。\n・終日の行に落とすと日付だけ、トレイに戻すと時刻だけ外れる。\n・スマホは1日ずつ、曜日の列で切り替え。長押しでドラッグ。トレイの行は見出しの下に残る。"
     }
   },
   "designSystems": [
