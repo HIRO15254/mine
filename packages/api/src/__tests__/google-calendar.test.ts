@@ -27,6 +27,7 @@ describe("createGoogleCalendarClient", () => {
 						: {
 								items: [
 									{
+										colorId: "11",
 										id: "e1",
 										start: { date: "2026-11-05" },
 										end: { date: "2026-11-06" },
@@ -46,8 +47,8 @@ describe("createGoogleCalendarClient", () => {
 		});
 
 		expect(calendars.map((c) => c.name)).toEqual(["a", "B override"]);
-		expect(events.map((e) => [e.id, e.title, e.allDay])).toEqual([
-			["e1", "", true],
+		expect(events.map((e) => [e.id, e.title, e.allDay, e.color])).toEqual([
+			["e1", "", true, "#d50000"],
 		]);
 		expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
 			"/calendars/a%2Fb/events"

@@ -63,6 +63,30 @@ describe("time router", () => {
 		await expect(me.time.stop()).resolves.toBeNull();
 	});
 
+	it("backdates a start and ends the running entry there", async () => {
+		const { clock, me } = await setup();
+		await me.time.start({ description: "メール" });
+		clock.now += HOUR;
+
+		const seminar = await me.time.start({
+			description: "ゼミ",
+			startedAt: NOV5 + HOUR / 2,
+		});
+		expect(seminar).toMatchObject({
+			endedAt: null,
+			startedAt: NOV5 + HOUR / 2,
+		});
+		const entries = await me.time.list({ from: NOV5, to: NOV5 + 2 * HOUR });
+		expect(entries.map((entry) => [entry.description, entry.endedAt])).toEqual([
+			["ゼミ", null],
+			["メール", NOV5 + HOUR / 2],
+		]);
+
+		await expect(
+			me.time.start({ description: "未来", startedAt: clock.now + 1 })
+		).rejects.toThrow();
+	});
+
 	it("validates manual entries and edits", async () => {
 		const { me, other } = await setup();
 		const project = await me.project.create({ name: "仕事" });

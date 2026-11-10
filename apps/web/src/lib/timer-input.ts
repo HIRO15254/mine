@@ -276,3 +276,63 @@ export function suggestTimer({
 	add(dayEvents, 2);
 	return result.slice(0, MAX_SUGGESTIONS);
 }
+
+/** An entry that overlaps an event this long has recorded it. */
+const COVERED = 10 * 60_000;
+
+export interface UnrecordedEvent {
+	event: DisplayEvent;
+	/** Where recording it starts: the event's start, or the end of a short overlap. */
+	from: number;
+	/** The project its title was last recorded on. */
+	projectId: string | null;
+}
+
+/**
+ * The timed event under way now that no entry has recorded yet: none shares
+ * its title and none overlaps it for 10 minutes or more. When several run at
+ * once, the one that started last.
+ */
+export function unrecordedEvent({
+	entries,
+	events,
+	now,
+}: {
+	entries: TimeEntry[];
+	events: DisplayEvent[];
+	now: number;
+}): UnrecordedEvent | null {
+	const running = events
+		.filter((event) => {
+			if (event.allDay || !event.title) {
+				return false;
+			}
+			return Date.parse(event.start) <= now && Date.parse(event.end) > now;
+		})
+		.sort((a, b) => Date.parse(b.start) - Date.parse(a.start));
+	for (const event of running) {
+		const start = Date.parse(event.start);
+		const title = lower(event.title);
+		let from = start;
+		let covered = false;
+		for (const entry of entries) {
+			const overlap =
+				Math.min(entry.endedAt ?? now, now) - Math.max(entry.startedAt, start);
+			if (overlap <= 0) {
+				continue;
+			}
+			if (lower(entry.description) === title || overlap >= COVERED) {
+				covered = true;
+				break;
+			}
+			from = Math.max(from, entry.endedAt ?? now);
+		}
+		if (!covered) {
+			const past = distinctEntries(entries).find(
+				(entry) => lower(entry.description) === title
+			);
+			return { event, from, projectId: past?.projectId ?? null };
+		}
+	}
+	return null;
+}

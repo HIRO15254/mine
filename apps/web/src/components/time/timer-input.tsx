@@ -4,6 +4,7 @@ import {
 	IconHash,
 	IconHistory,
 	IconPlayerPlayFilled,
+	IconX,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -12,6 +13,7 @@ import {
 	type FormEvent,
 	type KeyboardEvent,
 	type ReactNode,
+	useEffect,
 	useId,
 	useMemo,
 	useRef,
@@ -20,6 +22,7 @@ import {
 
 import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
+import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { rangeOfDays, startOfDay } from "@/lib/calendar-time";
@@ -33,6 +36,8 @@ import {
 	suggestTimer,
 	type TimerSuggestion,
 	timerText,
+	type UnrecordedEvent,
+	unrecordedEvent,
 } from "@/lib/timer-input";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/utils/trpc";
@@ -56,7 +61,10 @@ const KIND_LABEL: Record<SuggestionKind, string> = {
 	task: "タスク",
 };
 
-/** Tasks, recent entries and today's events for the suggestions. */
+/**
+ * Tasks, recent entries and today's events for the suggestions. Entries and
+ * events load at once, for the event under way; tasks wait for `active`.
+ */
 function useSuggestionSources(active: boolean) {
 	const today = useMemo(() => startOfDay(new Date()), []);
 	const history = useMemo(() => {
@@ -70,12 +78,10 @@ function useSuggestionSources(active: boolean) {
 	});
 	const entries = useQuery({
 		...trpc.time.list.queryOptions(history),
-		enabled: active,
 		staleTime: 60_000,
 	});
 	const events = useQuery({
 		...trpc.calendar.events.queryOptions(rangeOfDays(today, 1)),
-		enabled: active,
 		retry: false,
 		staleTime: 60_000,
 	});
@@ -84,6 +90,79 @@ function useSuggestionSources(active: boolean) {
 		events: events.data?.events ?? [],
 		tasks: tasks.data ?? [],
 	};
+}
+
+/** The current time, refreshed every 30 seconds. */
+function useHalfMinute(): number {
+	const [now, setNow] = useState(() => Date.now());
+	useEffect(() => {
+		const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+		return () => window.clearInterval(timer);
+	}, []);
+	return now;
+}
+
+const clock = new Intl.DateTimeFormat("ja-JP", {
+	hour: "2-digit",
+	minute: "2-digit",
+});
+
+/** Events put aside with ×, for as long as the app stays open. */
+const dismissedEvents = new Set<string>();
+
+/**
+ * The event under way that nothing records yet, with one tap to record it
+ * from its start (or from where the last entry ended).
+ */
+function EventNudge({
+	busy,
+	item,
+	onDismiss,
+	onRecord,
+}: {
+	busy: boolean;
+	item: UnrecordedEvent;
+	onDismiss: () => void;
+	onRecord: () => void;
+}) {
+	const { event, from } = item;
+	const span = `${clock.format(from)}–${clock.format(Date.parse(event.end))}`;
+	return (
+		<div
+			className="@container flex min-w-0 items-center gap-2 rounded-md bg-[color-mix(in_srgb,var(--c)_14%,transparent)] py-1 pr-1 pl-2.5 desk:text-sm text-[length:var(--m-text-body)]"
+			data-slot="event-nudge"
+			style={{ "--c": event.color } as CSSProperties}
+		>
+			<span
+				aria-hidden
+				className="size-2 shrink-0 rounded-full bg-[var(--c)]"
+			/>
+			{/* The time drops under the title in a narrow card. */}
+			<span className="flex min-w-0 flex-1 @[20rem]:flex-row flex-col @[20rem]:items-center @[20rem]:gap-2">
+				<span className="min-w-0 @[20rem]:flex-1 truncate">
+					<span className="sr-only">記録していない予定: </span>
+					{event.title}
+				</span>
+				<span className="shrink-0 font-mono text-muted-foreground text-xs tabular-nums">
+					{span}
+				</span>
+			</span>
+			<Button
+				aria-label={`${event.title}を${clock.format(from)}から記録`}
+				disabled={busy}
+				onClick={onRecord}
+				size="sm"
+				type="button"
+				variant="secondary"
+			>
+				<IconPlayerPlayFilled aria-hidden />
+				記録
+			</Button>
+			<IconButton label="今回は記録しない" onClick={onDismiss} size="sm">
+				<IconX aria-hidden />
+			</IconButton>
+		</div>
+	);
 }
 
 /** The typed text with each "#プロジェクト" drawn in its project's hue. */
@@ -223,6 +302,21 @@ export function TimerInput({
 	const [touched, setTouched] = useState(false);
 	const start = useStartTimer();
 	const sources = useSuggestionSources(touched);
+	const now = useHalfMinute();
+	const [, setDismissed] = useState(0);
+	const unrecorded = useMemo(
+		() =>
+			unrecordedEvent({
+				entries: sources.entries,
+				events: sources.events,
+				now,
+			}),
+		[now, sources]
+	);
+	const eventKey = unrecorded
+		? `${unrecorded.event.calendarId}:${unrecorded.event.id}`
+		: null;
+	const nudge = eventKey && !dismissedEvents.has(eventKey) ? unrecorded : null;
 
 	const suggestions = useMemo(
 		() =>
@@ -332,7 +426,14 @@ export function TimerInput({
 	const listId = `${id}-list`;
 	const optionId = (index: number) => `${id}-option-${index}`;
 
-	return (
+	const recordEvent = (item: UnrecordedEvent) =>
+		start.mutate({
+			description: item.event.title,
+			projectId: item.projectId,
+			startedAt: item.from,
+		});
+
+	const form = (
 		<form className="relative flex items-center gap-1.5" onSubmit={submit}>
 			<label className="sr-only" htmlFor={id}>
 				何をしていますか
@@ -423,5 +524,22 @@ export function TimerInput({
 				))}
 			</div>
 		</form>
+	);
+	if (!(nudge && eventKey)) {
+		return form;
+	}
+	return (
+		<div className="flex flex-col gap-2">
+			<EventNudge
+				busy={start.isPending}
+				item={nudge}
+				onDismiss={() => {
+					dismissedEvents.add(eventKey);
+					setDismissed((count) => count + 1);
+				}}
+				onRecord={() => recordEvent(nudge)}
+			/>
+			{form}
+		</div>
 	);
 }

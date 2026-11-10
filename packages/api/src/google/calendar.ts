@@ -25,6 +25,8 @@ export interface GoogleCalendar {
 export interface CalendarEvent {
 	allDay: boolean;
 	calendarId: string;
+	/** The event's own color, when it has one; otherwise its calendar's. */
+	color?: string;
 	/** Exclusive end: an ISO date-time, or YYYY-MM-DD for all-day events. */
 	end: string;
 	htmlLink: string | null;
@@ -59,6 +61,7 @@ interface EventDateTime {
 
 interface EventsResponse {
 	items?: Array<{
+		colorId?: string;
 		end?: EventDateTime;
 		htmlLink?: string;
 		id: string;
@@ -71,6 +74,24 @@ interface EventsResponse {
 }
 
 const DEFAULT_COLOR = "#4285f4";
+
+/**
+ * Event colors as Google Calendar draws them today (Lavender … Tomato). The
+ * API's /colors endpoint still serves the older, paler palette.
+ */
+const EVENT_COLORS: Record<string, string> = {
+	"1": "#7986cb",
+	"2": "#33b679",
+	"3": "#8e24aa",
+	"4": "#e67c73",
+	"5": "#f6bf26",
+	"6": "#f4511e",
+	"7": "#039be5",
+	"8": "#616161",
+	"9": "#3f51b5",
+	"10": "#0b8043",
+	"11": "#d50000",
+};
 
 export function createGoogleCalendarClient(
 	accessToken: string,
@@ -176,9 +197,11 @@ function toCalendarEvent(
 	if (!(start && end)) {
 		return null;
 	}
+	const color = item.colorId ? EVENT_COLORS[item.colorId] : undefined;
 	return {
 		allDay: item.start?.dateTime === undefined,
 		calendarId,
+		...(color ? { color } : {}),
 		end,
 		htmlLink: item.htmlLink ?? null,
 		id: item.id,

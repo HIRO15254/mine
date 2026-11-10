@@ -118,7 +118,7 @@ export const calendarRouter = router({
 					(await client.listEvents(calendar.id, input)).map(
 						(event): CalendarEvent & { color: string } => ({
 							...event,
-							color: calendar.color,
+							color: event.color ?? calendar.color,
 						})
 					)
 				)

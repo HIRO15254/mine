@@ -155,9 +155,12 @@ export const timeRouter = router({
 		return row ? toEntry(row) : null;
 	}),
 
-	/** Starts the timer, stopping any running entry first. */
+	/**
+	 * Starts the timer, stopping any running entry first. `startedAt` backdates
+	 * it, e.g. to the start of an event already under way.
+	 */
 	start: protectedProcedure
-		.input(z.object(entryFields))
+		.input(z.object({ ...entryFields, startedAt: instant.optional() }))
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
 			let projectId = input.projectId ?? null;
@@ -171,14 +174,19 @@ export const timeRouter = router({
 				await assertProject(ctx, userId, projectId);
 			}
 			const now = ctx.now();
-			await stopRunning(ctx, userId, now);
+			const startedAt = input.startedAt ?? now;
+			if (startedAt > now || now - startedAt > MAX_ENTRY_SPAN) {
+				badRequest("startedAt must be in the past week");
+			}
+			// A backdated start also ends the running entry there.
+			await stopRunning(ctx, userId, startedAt);
 			const row = {
 				billable: input.billable ?? true,
 				description: text,
 				endedAt: null,
 				id: crypto.randomUUID(),
 				projectId,
-				startedAt: now,
+				startedAt,
 				taskId: input.taskId ?? null,
 				userId,
 			};

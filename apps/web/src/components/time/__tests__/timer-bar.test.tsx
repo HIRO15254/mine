@@ -14,6 +14,7 @@ const ESTIMATE = /見積もり/;
 const WORK = /仕事/;
 const REPORT = /週次レポートを送る/;
 const MEETING = /研究室ミーティング/;
+const RECORD_SEMINAR = /^ゼミ発表を\d\d:\d\dから記録$/;
 const projects = [makeProject({ color: "chart-2", id: "work", name: "仕事" })];
 
 describe("TimerBar", () => {
@@ -99,6 +100,62 @@ describe("TimerBar", () => {
 		await userEvent.click(await screen.findByLabelText("何をしていますか"));
 
 		expect(await screen.findByRole("option", { name: MEETING })).toBeVisible();
+	});
+
+	it("records the unrecorded event under way from its start", async () => {
+		const now = Date.now();
+		const start = now - 20 * 60_000;
+		trpcMock.state.events = [
+			{
+				allDay: false,
+				calendarId: "primary",
+				color: "#e67c73",
+				end: new Date(now + 40 * 60_000).toISOString(),
+				htmlLink: null,
+				id: "seminar",
+				location: null,
+				start: new Date(start).toISOString(),
+				title: "ゼミ発表",
+			},
+		];
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		await userEvent.click(
+			await screen.findByRole("button", { name: RECORD_SEMINAR })
+		);
+
+		await waitFor(() =>
+			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
+				{ description: "ゼミ発表", projectId: null, startedAt: start },
+				expect.anything()
+			)
+		);
+	});
+
+	it("puts the event aside with ×", async () => {
+		const now = Date.now();
+		trpcMock.state.events = [
+			{
+				allDay: false,
+				calendarId: "primary",
+				color: "#e67c73",
+				end: new Date(now + 40 * 60_000).toISOString(),
+				htmlLink: null,
+				id: "seminar-2",
+				location: null,
+				start: new Date(now - 20 * 60_000).toISOString(),
+				title: "ゼミ発表",
+			},
+		];
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		await userEvent.click(
+			await screen.findByRole("button", { name: "今回は記録しない" })
+		);
+
+		expect(
+			screen.queryByRole("button", { name: RECORD_SEMINAR })
+		).not.toBeInTheDocument();
 	});
 
 	it("shows the running entry and stops it", async () => {

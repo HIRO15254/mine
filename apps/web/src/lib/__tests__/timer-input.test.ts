@@ -7,6 +7,7 @@ import {
 	hashAtCaret,
 	parseTimerText,
 	suggestTimer,
+	unrecordedEvent,
 } from "../timer-input";
 
 const work = makeProject({ id: "work", name: "仕事" });
@@ -137,5 +138,67 @@ describe("suggestTimer", () => {
 		expect(items.map((item) => [item.kind, item.taskId])).toEqual([
 			["task", "t1"],
 		]);
+	});
+});
+
+describe("unrecordedEvent", () => {
+	const entry = (
+		description: string,
+		startedAt: number,
+		endedAt: number,
+		projectId: string | null = null
+	) => ({
+		billable: true,
+		description,
+		endedAt,
+		id: `${description}-${startedAt}`,
+		projectId,
+		startedAt,
+		taskId: null,
+	});
+	const seminar = event("ゼミ", NOW - 20 * MINUTE, NOW + 70 * MINUTE);
+
+	it("offers the event under way from its start, on its last project", () => {
+		const found = unrecordedEvent({
+			entries: [
+				entry(
+					"ゼミ",
+					NOW - 7 * 24 * 60 * MINUTE,
+					NOW - 7 * 24 * 60 * MINUTE + MINUTE,
+					"lab"
+				),
+			],
+			events: [event("昼食", NOW - 200 * MINUTE, NOW - 140 * MINUTE), seminar],
+			now: NOW,
+		});
+		expect(found).toEqual({
+			event: seminar,
+			from: NOW - 20 * MINUTE,
+			projectId: "lab",
+		});
+	});
+
+	it("starts after a short overlap and skips recorded events", () => {
+		expect(
+			unrecordedEvent({
+				entries: [entry("メール", NOW - 40 * MINUTE, NOW - 15 * MINUTE)],
+				events: [seminar],
+				now: NOW,
+			})?.from
+		).toBe(NOW - 15 * MINUTE);
+		expect(
+			unrecordedEvent({
+				entries: [entry("メール", NOW - 20 * MINUTE, NOW - 5 * MINUTE)],
+				events: [seminar],
+				now: NOW,
+			})
+		).toBeNull();
+		expect(
+			unrecordedEvent({
+				entries: [entry("ゼミ", NOW - 3 * MINUTE, NOW - MINUTE)],
+				events: [seminar],
+				now: NOW,
+			})
+		).toBeNull();
 	});
 });
