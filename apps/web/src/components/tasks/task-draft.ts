@@ -14,6 +14,7 @@ export interface TaskDraft {
 	projectId: string;
 	repeat: RepeatBasis;
 	scheduledDate: string;
+	scheduledTime: string;
 	startDate: string;
 	title: string;
 	unit: Recurrence["unit"];
@@ -41,6 +42,7 @@ export function draftFromTask(
 		projectId: (task ? task.projectId : defaults.projectId) ?? "",
 		repeat: rule?.basis ?? "none",
 		scheduledDate: (task ? task.scheduledDate : defaults.scheduledDate) ?? "",
+		scheduledTime: task?.scheduledTime ?? "",
 		startDate: task?.startDate ?? "",
 		title: task?.title ?? "",
 		unit: rule?.unit ?? "week",
@@ -89,6 +91,7 @@ export function draftToInput(draft: TaskDraft): TaskInput {
 		projectId: draft.projectId || null,
 		recurrence: draftRecurrence(draft),
 		scheduledDate: draft.scheduledDate || null,
+		scheduledTime: (draft.scheduledDate && draft.scheduledTime) || null,
 		startDate: draft.startDate || null,
 		title: draft.title.trim(),
 	};

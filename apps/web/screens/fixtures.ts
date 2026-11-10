@@ -111,6 +111,7 @@ const task = (fields: Partial<Task> & Pick<Task, "id" | "title">): Task => ({
 	projectId: null,
 	recurrence: null,
 	scheduledDate: null,
+	scheduledTime: null,
 	sortOrder: 0,
 	startDate: null,
 	...fields,
@@ -136,8 +137,10 @@ export const tasks: Task[] = [
 	task({
 		id: "t-3",
 		priority: 3,
+		estimateMinutes: 30,
 		projectId: "p-work",
 		scheduledDate: "2026-11-10",
+		scheduledTime: "15:00",
 		title: "週次レポートを送る",
 		recurrence: { basis: "schedule", interval: 1, unit: "week", weekdays: [2] },
 	}),

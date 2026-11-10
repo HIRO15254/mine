@@ -1,0 +1,1 @@
+ALTER TABLE `task` ADD `scheduled_time` text;

@@ -110,6 +110,31 @@ describe("label router", () => {
 });
 
 describe("task router", () => {
+	it("places a task at a time on its scheduled day", async () => {
+		const { me } = await setup();
+		const created = await me.task.create({
+			scheduledDate: today,
+			scheduledTime: "09:30",
+			title: "レポート",
+		});
+		expect(created).toMatchObject({ scheduledTime: "09:30" });
+
+		await expect(
+			me.task.update({ id: created.id, scheduledTime: "25:00" })
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(
+			me.task.update({ id: created.id, scheduledTime: "13:15" })
+		).resolves.toMatchObject({ scheduledDate: today, scheduledTime: "13:15" });
+		// Taking the day away takes the time with it.
+		await expect(
+			me.task.update({ id: created.id, scheduledDate: null })
+		).resolves.toMatchObject({ scheduledDate: null, scheduledTime: null });
+		// A time without a day is not kept.
+		await expect(
+			me.task.create({ scheduledTime: "10:00", title: "x" })
+		).resolves.toMatchObject({ scheduledTime: null });
+	});
+
 	it("creates tasks with labels and lists them by view", async () => {
 		const { me, other } = await setup();
 		const next = await me.label.create({ name: "next" });

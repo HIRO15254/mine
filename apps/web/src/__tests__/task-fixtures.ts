@@ -13,6 +13,7 @@ export function makeTask(overrides: Partial<Task> = {}): Task {
 		projectId: null,
 		recurrence: null,
 		scheduledDate: null,
+		scheduledTime: null,
 		sortOrder: 0,
 		startDate: null,
 		title: "牛乳を買う",

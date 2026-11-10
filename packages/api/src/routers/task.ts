@@ -24,6 +24,10 @@ type Db = Pick<Context, "db">;
 
 const dayKey = z.string().refine(isDayKey, { message: "Expected YYYY-MM-DD" });
 
+const timeOfDay = z
+	.string()
+	.regex(/^([01]\d|2[0-3]):[0-5]\d$/, { message: "Expected HH:MM" });
+
 const taskFields = {
 	deadline: dayKey.nullish(),
 	estimateMinutes: z.number().int().min(1).max(10_000).nullish(),
@@ -33,6 +37,7 @@ const taskFields = {
 	projectId: z.string().min(1).nullish(),
 	recurrence: recurrenceSchema.nullish(),
 	scheduledDate: dayKey.nullish(),
+	scheduledTime: timeOfDay.nullish(),
 	startDate: dayKey.nullish(),
 	title: z.string().trim().min(1).max(500),
 };
@@ -52,6 +57,7 @@ function toTask(row: TaskRow, labels: Array<{ id: string; name: string }>) {
 		projectId: row.projectId,
 		recurrence: parseRecurrence(row.recurrence),
 		scheduledDate: row.scheduledDate,
+		scheduledTime: row.scheduledTime,
 		sortOrder: row.sortOrder,
 		startDate: row.startDate,
 		title: row.title,
@@ -189,6 +195,9 @@ export const taskRouter = router({
 				projectId: input.projectId ?? null,
 				recurrence: serializeRecurrence(input.recurrence ?? null),
 				scheduledDate: input.scheduledDate ?? null,
+				scheduledTime: input.scheduledDate
+					? (input.scheduledTime ?? null)
+					: null,
 				startDate: input.startDate ?? null,
 				title: input.title,
 				userId,
@@ -217,6 +226,9 @@ export const taskRouter = router({
 			const changes = Object.fromEntries(
 				Object.entries(fields).filter(([, value]) => value !== undefined)
 			);
+			if (fields.scheduledDate === null) {
+				changes.scheduledTime = null;
+			}
 			if (recurrence !== undefined) {
 				changes.recurrence = serializeRecurrence(recurrence);
 			}

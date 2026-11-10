@@ -91,6 +91,8 @@ export const task = sqliteTable(
 		startDate: text("start_date"),
 		/** 予定日 */
 		scheduledDate: text("scheduled_date"),
+		/** 予定の時刻 (HH:MM), placed on the calendar; only with scheduledDate. */
+		scheduledTime: text("scheduled_time"),
 		/** 締め切り */
 		deadline: text("deadline"),
 		/** JSON-encoded Recurrence, see @mine/api tasks/recurrence. */

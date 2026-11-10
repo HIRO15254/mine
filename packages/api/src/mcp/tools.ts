@@ -168,6 +168,7 @@ function describeTask(task: Task, projects: Project[]) {
 		project: projectPath(projects, task.projectId),
 		recurrence: task.recurrence,
 		scheduledDate: task.scheduledDate,
+		scheduledTime: task.scheduledTime,
 		startDate: task.startDate,
 		title: task.title,
 	});
@@ -205,6 +206,13 @@ const taskFields = {
 			'Repeat rule. basis "schedule" repeats on fixed dates, "completion" counts from the day it is done'
 		),
 	scheduledDate: day.nullish().describe("予定日: the day planned to do it"),
+	scheduledTime: z
+		.string()
+		.regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+		.nullish()
+		.describe(
+			"HH:MM on the scheduled day; places the task on the calendar for its estimate (30 minutes without one)"
+		),
 	startDate: day
 		.nullish()
 		.describe("最速実行可能日: hidden from Today until this day"),

@@ -33,17 +33,32 @@ export function createTrpcMock() {
 	const state: {
 		connections: unknown[];
 		current: unknown;
+		entries: unknown[];
+		events: unknown[];
 		projects: unknown[];
+		tasks: unknown[];
 		threads: unknown[];
 		tokens: unknown[];
 	} = {
 		connections: [],
 		current: null,
+		entries: [],
+		events: [],
 		projects: [],
+		tasks: [],
 		threads: [],
 		tokens: [],
 	};
 	const trpc = {
+		calendar: {
+			events: {
+				queryOptions: (input: unknown) => ({
+					queryFn: () =>
+						Promise.resolve({ calendars: [], events: state.events }),
+					queryKey: [["calendar", "events"], { input }],
+				}),
+			},
+		},
 		label: {
 			list: {
 				queryOptions: () => ({
@@ -76,6 +91,12 @@ export function createTrpcMock() {
 			complete: mutation(calls.update),
 			create: mutation(calls.create),
 			delete: mutation(calls.remove),
+			list: {
+				queryOptions: (input: unknown) => ({
+					queryFn: () => Promise.resolve(state.tasks),
+					queryKey: [["task", "list"], { input }],
+				}),
+			},
 			pathKey: () => [["task"]],
 			uncomplete: mutation(calls.update),
 			update: mutation(calls.update),
@@ -99,6 +120,12 @@ export function createTrpcMock() {
 				}),
 			},
 			delete: mutation(calls.remove),
+			list: {
+				queryOptions: (input: unknown) => ({
+					queryFn: () => Promise.resolve(state.entries),
+					queryKey: [["time", "list"], { input }],
+				}),
+			},
 			pathKey: () => [["time"]],
 			start: mutation(calls.timeStart),
 			stop: mutation(calls.timeStop),

@@ -164,6 +164,7 @@ export function TaskEditor({
 		project: `${formId}-project`,
 		start: `${formId}-start`,
 		scheduled: `${formId}-scheduled`,
+		time: `${formId}-time`,
 		deadline: `${formId}-deadline`,
 		repeat: `${formId}-repeat`,
 		interval: `${formId}-interval`,
@@ -297,6 +298,21 @@ export function TaskEditor({
 						/>
 					</Field>
 				</div>
+				{draft.scheduledDate ? (
+					<div className="grid desk:grid-cols-3 grid-cols-1 gap-3">
+						<Field className="desk:col-start-2" htmlFor={ids.time} label="時刻">
+							<Input
+								className="px-2"
+								id={ids.time}
+								onChange={(event) => set("scheduledTime", event.target.value)}
+								size={size}
+								step={900}
+								type="time"
+								value={draft.scheduledTime}
+							/>
+						</Field>
+					</div>
+				) : null}
 				<RepeatFields draft={draft} ids={ids} set={set} size={size} />
 				{labels.length > 0 && (
 					<fieldset className="m-0 flex flex-col border-0 p-0">

@@ -1,33 +1,26 @@
-import {
-	IconPlayerPlayFilled,
-	IconPlayerStopFilled,
-} from "@tabler/icons-react";
-import { type FormEvent, useId, useState } from "react";
+import { IconPlayerStopFilled } from "@tabler/icons-react";
+import { useId } from "react";
 
 import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
-import { Input } from "@/components/ui/input/input";
-import { NativeSelect } from "@/components/ui/native-select/native-select";
 import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
-import { flattenProjects, type Project } from "@/lib/tasks";
+import type { Project } from "@/lib/tasks";
 import { formatElapsed, type TimeEntry } from "@/lib/time";
-
-import {
-	useNow,
-	useRunningEntry,
-	useStartTimer,
-	useStopTimer,
-} from "./use-time";
+import { TimerInput } from "./timer-input";
+import { useNow, useRunningEntry, useStopTimer } from "./use-time";
 
 /** The running entry with a stop button, or a form to start one. */
 export function TimerBar({
 	estimateOf,
+	menuPlacement,
 	onEdit,
 	projects,
 }: {
 	/** The estimate in minutes of the entry's task, when it has one. */
 	estimateOf?: (entry: TimeEntry) => number | null;
+	/** Where the entry's suggestions open. */
+	menuPlacement?: "bottom" | "top";
 	onEdit?: (entry: TimeEntry) => void;
 	projects: Project[];
 }) {
@@ -47,7 +40,7 @@ export function TimerBar({
 			projects={projects}
 		/>
 	) : (
-		<StartTimer projects={projects} />
+		<TimerInput menuPlacement={menuPlacement} projects={projects} />
 	);
 }
 
@@ -194,73 +187,5 @@ export function RunningTimer({
 				<IconPlayerStopFilled aria-hidden />
 			</Button>
 		</div>
-	);
-}
-
-function StartTimer({ projects }: { projects: Project[] }) {
-	const id = useId();
-	const isDesk = useIsDesk();
-	const size = isDesk ? "default" : "xl";
-	const [description, setDescription] = useState("");
-	const [projectId, setProjectId] = useState("");
-	const start = useStartTimer();
-
-	const submit = (event: FormEvent) => {
-		event.preventDefault();
-		start.mutate(
-			{ description: description.trim(), projectId: projectId || null },
-			{
-				onSuccess: () => {
-					setDescription("");
-				},
-			}
-		);
-	};
-
-	return (
-		<form className="flex flex-wrap items-center gap-1.5" onSubmit={submit}>
-			<label className="sr-only" htmlFor={`${id}-description`}>
-				何をしていますか
-			</label>
-			<Input
-				autoComplete="off"
-				className="min-w-0 flex-[1_1_220px]"
-				id={`${id}-description`}
-				onChange={(event) => setDescription(event.target.value)}
-				placeholder="何をしていますか"
-				size={size}
-				value={description}
-			/>
-			<div className="flex min-w-0 flex-[1_1_180px] items-center gap-1.5">
-				<div className="min-w-0 flex-1">
-					<NativeSelect
-						aria-label="プロジェクト"
-						onChange={(event) => setProjectId(event.target.value)}
-						size={size}
-						value={projectId}
-					>
-						<option value="">プロジェクトなし</option>
-						{flattenProjects(projects)
-							.filter((project) => !project.archived)
-							.map((project) => (
-								<option key={project.id} value={project.id}>
-									{"　".repeat(project.depth)}
-									{project.name}
-								</option>
-							))}
-					</NativeSelect>
-				</div>
-				<Button
-					aria-label="計測を始める"
-					className={isDesk ? undefined : "w-[var(--m-control)] px-0"}
-					disabled={start.isPending}
-					size={isDesk ? "icon" : "xl"}
-					title="計測を始める"
-					type="submit"
-				>
-					<IconPlayerPlayFilled aria-hidden />
-				</Button>
-			</div>
-		</form>
 	);
 }

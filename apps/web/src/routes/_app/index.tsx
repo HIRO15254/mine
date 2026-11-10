@@ -206,12 +206,12 @@ function FloatingTimer() {
 			className="has-[[data-running]]:prism-edge sticky bottom-3 z-10 mt-auto rounded-xl border border-border bg-card p-3 text-card-foreground shadow-[var(--shadow-lg)] has-[[data-running]]:shadow-[var(--glow),var(--shadow-lg)]"
 			data-slot="floating-timer"
 		>
-			<TodayTimer />
+			<TodayTimer menuPlacement="top" />
 		</section>
 	);
 }
 
-function TodayTimer() {
+function TodayTimer({ menuPlacement }: { menuPlacement?: "bottom" | "top" }) {
 	const { projects } = useTaskContext();
 	const { editor, openEdit } = useEntryEditor(projects);
 	// Same query as TodayTasks, so the estimate comes from the cache.
@@ -223,7 +223,12 @@ function TodayTimer() {
 		null;
 	return (
 		<>
-			<TimerBar estimateOf={estimateOf} onEdit={openEdit} projects={projects} />
+			<TimerBar
+				estimateOf={estimateOf}
+				menuPlacement={menuPlacement}
+				onEdit={openEdit}
+				projects={projects}
+			/>
 			{editor}
 		</>
 	);

@@ -5,40 +5,100 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
 
 import { renderWithQuery } from "../../../__tests__/render";
-import { makeProject } from "../../../__tests__/task-fixtures";
+import { makeProject, makeTask } from "../../../__tests__/task-fixtures";
 import { trpcMock } from "../../../__tests__/trpc-mock";
 import { TimerBar } from "../timer-bar";
 
 const ELAPSED = /^0:01:0\d$/;
 const ESTIMATE = /見積もり/;
-const projects = [makeProject({ id: "work", name: "仕事" })];
+const WORK = /仕事/;
+const REPORT = /週次レポートを送る/;
+const MEETING = /研究室ミーティング/;
+const projects = [makeProject({ color: "chart-2", id: "work", name: "仕事" })];
 
 describe("TimerBar", () => {
 	beforeEach(() => {
 		trpcMock.calls.timeStart.mockClear();
 		trpcMock.calls.timeStop.mockClear();
 		trpcMock.state.current = null;
+		trpcMock.state.entries = [];
+		trpcMock.state.events = [];
+		trpcMock.state.tasks = [];
 	});
 
-	it("starts a timer with a description and project", async () => {
-		renderWithQuery(<TimerBar projects={projects} />);
+	it("starts a timer with a description and a #project", async () => {
+		const { container } = renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.type(
 			await screen.findByLabelText("何をしていますか"),
-			"資料作り"
+			"資料作り #仕事 "
 		);
-		await userEvent.selectOptions(
-			screen.getByLabelText("プロジェクト"),
-			"work"
-		);
+		expect(
+			container.querySelector('mark[data-project="work"]')
+		).toHaveTextContent("#仕事");
 		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
 
 		await waitFor(() =>
 			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
-				{ description: "資料作り", projectId: "work" },
+				{ description: "資料作り", projectId: "work", taskId: undefined },
 				expect.anything()
 			)
 		);
+	});
+
+	it("completes a #project from the suggestions", async () => {
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		const input = await screen.findByLabelText("何をしていますか");
+		await userEvent.type(input, "会議 #仕");
+		expect(await screen.findByRole("option", { name: WORK })).toBeVisible();
+		await userEvent.keyboard("{Enter}");
+
+		expect(input).toHaveValue("会議 #仕事 ");
+		expect(trpcMock.calls.timeStart).not.toHaveBeenCalled();
+	});
+
+	it("starts a suggested task with its project", async () => {
+		trpcMock.state.tasks = [
+			makeTask({ id: "t1", projectId: "work", title: "週次レポートを送る" }),
+		];
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		await userEvent.type(
+			await screen.findByLabelText("何をしていますか"),
+			"レポート"
+		);
+		await userEvent.click(await screen.findByRole("option", { name: REPORT }));
+		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
+
+		await waitFor(() =>
+			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
+				{ description: "週次レポートを送る", projectId: "work", taskId: "t1" },
+				expect.anything()
+			)
+		);
+	});
+
+	it("offers the event happening now when the box is empty", async () => {
+		const now = Date.now();
+		trpcMock.state.events = [
+			{
+				allDay: false,
+				calendarId: "primary",
+				color: "#4593f8",
+				end: new Date(now + 30 * 60_000).toISOString(),
+				htmlLink: null,
+				id: "ev",
+				location: null,
+				start: new Date(now - 30 * 60_000).toISOString(),
+				title: "研究室ミーティング",
+			},
+		];
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		await userEvent.click(await screen.findByLabelText("何をしていますか"));
+
+		expect(await screen.findByRole("option", { name: MEETING })).toBeVisible();
 	});
 
 	it("shows the running entry and stops it", async () => {

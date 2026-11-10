@@ -37,6 +37,7 @@ describe("task drafts", () => {
 				weekdays: [5, 1],
 			},
 			scheduledDate: "2026-11-06",
+			scheduledTime: "09:30",
 			startDate: "2026-11-02",
 		});
 		expect(draftToInput(draftFromTask(task, { projectId: "other" }))).toEqual({
@@ -53,6 +54,7 @@ describe("task drafts", () => {
 				weekdays: [1, 5],
 			},
 			scheduledDate: "2026-11-06",
+			scheduledTime: "09:30",
 			startDate: "2026-11-02",
 			title: "牛乳を買う",
 		});
