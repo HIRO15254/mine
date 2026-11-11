@@ -421,11 +421,27 @@ app.post("/mcp", async (context) => {
 		);
 	}
 	const caller = appRouter.createCaller(ctx);
-	const reply = await handleMcp(await context.req.text(), () => ({
-		caller,
-		now: Date.now(),
-		timeZone: DEFAULT_TIME_ZONE,
-	}));
+	const web = context.env.CORS_ORIGIN;
+	const reply = await handleMcp(
+		await context.req.text(),
+		() => ({ caller, now: Date.now(), timeZone: DEFAULT_TIME_ZONE }),
+		{
+			// The Mine mark, served by the web app.
+			icons: [
+				{
+					mimeType: "image/png",
+					sizes: ["192x192"],
+					src: `${web}/pwa-192x192.png`,
+				},
+				{
+					mimeType: "image/png",
+					sizes: ["512x512"],
+					src: `${web}/pwa-512x512.png`,
+				},
+			],
+			websiteUrl: web,
+		}
+	);
 	return reply === null ? context.body(null, 202) : context.json(reply);
 });
 
@@ -434,6 +450,11 @@ app.on(["GET", "DELETE"], "/mcp", (context) =>
 );
 
 app.get("/", (context) => context.text("OK"));
+
+// Connector lists that look up the API host's favicon get the Mine mark.
+app.get("/favicon.ico", (context) =>
+	context.redirect(`${context.env.CORS_ORIGIN}/favicon.ico`, 301)
+);
 
 export { app };
 export default app;

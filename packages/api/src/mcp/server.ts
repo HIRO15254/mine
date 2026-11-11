@@ -123,7 +123,17 @@ async function callTool(
 	}
 }
 
-function initialize(params: Record<string, unknown> | undefined) {
+/** What the server tells clients about itself beyond its name. */
+export interface ServerDetails {
+	/** Icons for the connector list (MCP 2025-11-25 `Implementation.icons`). */
+	icons?: Array<{ mimeType: string; sizes: string[]; src: string }>;
+	websiteUrl?: string;
+}
+
+function initialize(
+	params: Record<string, unknown> | undefined,
+	details: ServerDetails
+) {
 	const requested = params?.protocolVersion;
 	return {
 		capabilities: { tools: { listChanged: false } },
@@ -133,15 +143,19 @@ function initialize(params: Record<string, unknown> | undefined) {
 			SUPPORTED_PROTOCOL_VERSIONS.includes(requested)
 				? requested
 				: LATEST_PROTOCOL_VERSION,
-		serverInfo: { name: "mine", title: "Mine", version: "1.0.0" },
+		serverInfo: { ...details, name: "mine", title: "Mine", version: "1.0.0" },
 	};
 }
 
-async function handleRequest(request: JsonRpcRequest, env: () => ToolEnv) {
+async function handleRequest(
+	request: JsonRpcRequest,
+	env: () => ToolEnv,
+	details: ServerDetails
+) {
 	const id = request.id ?? null;
 	switch (request.method) {
 		case "initialize":
-			return rpcResult(id, initialize(request.params));
+			return rpcResult(id, initialize(request.params, details));
 		case "ping":
 			return rpcResult(id, {});
 		case "tools/list":
@@ -157,7 +171,11 @@ async function handleRequest(request: JsonRpcRequest, env: () => ToolEnv) {
 	}
 }
 
-function handleMessage(message: unknown, env: () => ToolEnv) {
+function handleMessage(
+	message: unknown,
+	env: () => ToolEnv,
+	details: ServerDetails
+) {
 	const parsed = requestSchema.safeParse(message);
 	if (!parsed.success) {
 		return Promise.resolve(
@@ -168,7 +186,7 @@ function handleMessage(message: unknown, env: () => ToolEnv) {
 	if (parsed.data.id === undefined) {
 		return Promise.resolve(null);
 	}
-	return handleRequest(parsed.data as JsonRpcRequest, env);
+	return handleRequest(parsed.data as JsonRpcRequest, env, details);
 }
 
 /**
@@ -177,7 +195,8 @@ function handleMessage(message: unknown, env: () => ToolEnv) {
  */
 export async function handleMcp(
 	body: string,
-	env: () => ToolEnv
+	env: () => ToolEnv,
+	details: ServerDetails = {}
 ): Promise<unknown> {
 	let message: unknown;
 	try {
@@ -187,9 +206,11 @@ export async function handleMcp(
 	}
 	if (Array.isArray(message)) {
 		const replies = (
-			await Promise.all(message.map((item) => handleMessage(item, env)))
+			await Promise.all(
+				message.map((item) => handleMessage(item, env, details))
+			)
 		).filter((reply) => reply !== null);
 		return replies.length > 0 ? replies : null;
 	}
-	return handleMessage(message, env);
+	return handleMessage(message, env, details);
 }

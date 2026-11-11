@@ -20,6 +20,15 @@ describe("worker", () => {
 		await expect(response.text()).resolves.toBe("OK");
 	});
 
+	it("sends favicon lookups to the web app's icon", async () => {
+		const response = await app.request("/favicon.ico", {}, bindings);
+
+		expect(response.status).toBe(301);
+		expect(response.headers.get("Location")).toBe(
+			"https://web.example.test/favicon.ico"
+		);
+	});
+
 	it("serves the tRPC health check", async () => {
 		const response = await app.request("/trpc/healthCheck", {}, bindings);
 		const payload = (await response.json()) as {

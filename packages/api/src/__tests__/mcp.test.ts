@@ -117,6 +117,26 @@ describe("MCP protocol", () => {
 				env
 			)
 		).toBeNull();
+		const icon = {
+			mimeType: "image/png",
+			sizes: ["192x192"],
+			src: "https://web.example.test/pwa-192x192.png",
+		};
+		expect(
+			await handleMcp(
+				JSON.stringify({ id: 1, jsonrpc: "2.0", method: "initialize" }),
+				env,
+				{ icons: [icon], websiteUrl: "https://web.example.test" }
+			)
+		).toMatchObject({
+			result: {
+				serverInfo: {
+					icons: [icon],
+					name: "mine",
+					websiteUrl: "https://web.example.test",
+				},
+			},
+		});
 		expect(await handleMcp("{oops", env)).toMatchObject({
 			error: { code: -32_700 },
 		});
