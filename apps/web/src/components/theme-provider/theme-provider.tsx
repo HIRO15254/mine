@@ -1,30 +1,43 @@
-import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import type * as React from "react";
 import { useEffect } from "react";
 
-/** Keeps the browser and status bar color in step with the chosen theme. */
-function ThemeColor() {
-	const { resolvedTheme } = useTheme();
-	useEffect(() => {
-		if (!resolvedTheme) {
-			return;
-		}
-		const color = getComputedStyle(document.documentElement)
-			.getPropertyValue("--background")
-			.trim();
-		if (!color) {
-			return;
-		}
-		let meta = document.querySelector<HTMLMetaElement>(
-			'meta[name="theme-color"]'
-		);
-		if (!meta) {
-			meta = document.createElement("meta");
-			meta.name = "theme-color";
-			document.head.append(meta);
-		}
+/** Puts the page background in the browser's theme-color meta. */
+function syncThemeColor() {
+	const color = getComputedStyle(document.documentElement)
+		.getPropertyValue("--background")
+		.trim();
+	if (!color) {
+		return;
+	}
+	let meta = document.querySelector<HTMLMetaElement>(
+		'meta[name="theme-color"]'
+	);
+	if (!meta) {
+		meta = document.createElement("meta");
+		meta.name = "theme-color";
+		document.head.append(meta);
+	}
+	if (meta.content !== color) {
 		meta.content = color;
-	}, [resolvedTheme]);
+	}
+}
+
+/**
+ * Keeps the browser and status bar color in step with the theme. next-themes
+ * switches the class on <html> in an effect of its own that runs after this
+ * component's, so the color is read when the class changes, not when the
+ * theme's name does (which gave the previous theme's color).
+ */
+function ThemeColor() {
+	useEffect(() => {
+		syncThemeColor();
+		const observer = new MutationObserver(syncThemeColor);
+		observer.observe(document.documentElement, {
+			attributeFilter: ["class", "style"],
+		});
+		return () => observer.disconnect();
+	}, []);
 	return null;
 }
 

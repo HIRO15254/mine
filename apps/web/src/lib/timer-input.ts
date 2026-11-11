@@ -20,41 +20,83 @@ const SPACE = /\s/;
 const SPACES = /\s+/g;
 const LEADING_SPACE = /^\s+/;
 
-function findProject(projects: Project[], name: string): Project | null {
+/**
+ * The project a name stands for. Several can share a name (under different
+ * parents): the one picked from the suggestions wins, then an open one.
+ */
+function findProject(
+	projects: Project[],
+	name: string,
+	preferredId?: string | null
+): Project | null {
 	const wanted = lower(name);
+	const named = projects.filter((item) => lower(item.name) === wanted);
 	return (
-		projects.find((item) => !item.archived && lower(item.name) === wanted) ??
-		projects.find((item) => lower(item.name) === wanted) ??
+		named.find((item) => item.id === preferredId) ??
+		named.find((item) => !item.archived) ??
+		named[0] ??
 		null
 	);
 }
 
-/** Every "#word" that starts a word, with the project it names, if any. */
-export function findHashTokens(text: string, projects: Project[]): HashToken[] {
+/** The project name with spaces that the text after a "#" starts with. */
+function spacedName(rest: string, names: string[]): string | undefined {
+	const text = lower(rest);
+	return names.find(
+		(name) =>
+			text.startsWith(name) &&
+			(text.length === name.length || SPACE.test(text[name.length] ?? ""))
+	);
+}
+
+/**
+ * Every "#word" that starts a word, with the project it names, if any. A
+ * project whose name has spaces is matched whole ("#Side project").
+ */
+export function findHashTokens(
+	text: string,
+	projects: Project[],
+	preferredId?: string | null
+): HashToken[] {
 	const tokens: HashToken[] = [];
+	// Longest first, so "#Side project" is not read as "#Side".
+	const spaced = [...new Set(projects.map((item) => lower(item.name)))]
+		.filter((name) => SPACE.test(name))
+		.sort((a, b) => b.length - a.length);
+	let covered = 0;
 	for (const match of text.matchAll(HASH)) {
 		const start = match.index;
-		if (start > 0 && !SPACE.test(text[start - 1] ?? "")) {
+		if (start < covered || (start > 0 && !SPACE.test(text[start - 1] ?? ""))) {
 			continue;
 		}
+		const long = spacedName(text.slice(start + 1), spaced);
+		const name = long
+			? text.slice(start + 1, start + 1 + long.length)
+			: match[0].slice(1);
+		covered = start + 1 + name.length;
 		tokens.push({
-			end: start + match[0].length,
-			project: findProject(projects, match[0].slice(1)),
+			end: covered,
+			project: findProject(projects, name, preferredId),
 			start,
 		});
 	}
 	return tokens;
 }
 
-/** The description without project tokens, and the last project named. */
+/**
+ * The description without project tokens, and the last project named.
+ * `preferredId` is the project picked from the suggestions, which settles a
+ * name that several projects share.
+ */
 export function parseTimerText(
 	text: string,
-	projects: Project[]
+	projects: Project[],
+	preferredId?: string | null
 ): { description: string; projectId: string | null } {
 	let projectId: string | null = null;
 	let description = "";
 	let from = 0;
-	for (const token of findHashTokens(text, projects)) {
+	for (const token of findHashTokens(text, projects, preferredId)) {
 		if (!token.project) {
 			continue;
 		}

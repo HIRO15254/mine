@@ -11,13 +11,15 @@ import {
 import { Button } from "@/components/ui/button/button";
 import { Spinner } from "@/components/ui/spinner/spinner";
 import { authClient } from "@/lib/auth-client";
+import { checkSession } from "@/lib/session";
 
 export const Route = createFileRoute("/login")({
 	validateSearch: (search: Record<string, unknown>): { error?: string } =>
 		typeof search.error === "string" ? { error: search.error } : {},
 	beforeLoad: async () => {
-		const { data } = await authClient.getSession();
-		if (data) {
+		// Without an answer the sign-in screen still opens.
+		const session = await checkSession();
+		if (session.state === "signed-in") {
 			throw redirect({ to: "/" });
 		}
 	},

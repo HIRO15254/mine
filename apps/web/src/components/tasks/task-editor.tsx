@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
@@ -124,6 +124,13 @@ export function TaskEditor({
 
 	const close = () => onOpenChange(false);
 	const queryClient = useQueryClient();
+	const mounted = useRef(true);
+	useEffect(() => {
+		mounted.current = true;
+		return () => {
+			mounted.current = false;
+		};
+	}, []);
 	// Saving closes the sheet at once and shows the change in the lists; if
 	// the server refuses, the lists go back and the sheet reopens with the draft.
 	const failed =
@@ -136,6 +143,12 @@ export function TaskEditor({
 				| undefined
 		) => {
 			restoreTaskLists(queryClient, context?.snapshot);
+			if (!mounted.current) {
+				// Another task's sheet (or another screen) is up by now: reopening
+				// would show that one, so the failure is told on its own.
+				toast.error(message, { description: draft.title.trim() || undefined });
+				return;
+			}
 			setError(message);
 			onOpenChange(true);
 		};

@@ -1,27 +1,24 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/app-shell/app-shell";
-import { authClient } from "@/lib/auth-client";
-import { isOffline, rememberUser, savedUser } from "@/lib/offline";
-
-async function currentSession() {
-	try {
-		const { data } = await authClient.getSession();
-		return data;
-	} catch {
-		return null;
-	}
-}
+import { clearOfflineData, rememberUser, savedUser } from "@/lib/offline";
+import { checkSession } from "@/lib/session";
 
 export const Route = createFileRoute("/_app")({
-	beforeLoad: async () => {
-		const data = await currentSession();
-		if (data) {
-			rememberUser(data.user);
-			return { user: data.user };
+	beforeLoad: async ({ context }) => {
+		const session = await checkSession();
+		if (session.state === "signed-in") {
+			rememberUser(session.user);
+			return { user: session.user };
 		}
-		// Offline, open with the last signed-in user and the saved data.
-		const user = isOffline() ? savedUser() : null;
+		if (session.state === "signed-out") {
+			context.queryClient.clear();
+			clearOfflineData();
+			throw redirect({ to: "/login" });
+		}
+		// No answer (offline, or the API is briefly out of reach): open with
+		// the last signed-in user and the saved data rather than signing out.
+		const user = savedUser();
 		if (!user) {
 			throw redirect({ to: "/login" });
 		}

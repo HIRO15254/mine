@@ -108,7 +108,8 @@ export function taskFromInput(
 	const pick = <K extends keyof TaskInput>(
 		key: K,
 		fallback: Task[K & keyof Task]
-	) => (key in input ? input[key] : fallback) as Task[K & keyof Task];
+	) =>
+		(input[key] === undefined ? fallback : input[key]) as Task[K & keyof Task];
 	return {
 		completedAt: base?.completedAt ?? null,
 		createdAt: base?.createdAt ?? new Date().toISOString(),

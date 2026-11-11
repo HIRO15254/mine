@@ -2,8 +2,10 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 
+import { RouteError, RouteNotFound } from "./components/app-shell/route-error";
 import {
 	CACHE_MAX_AGE,
+	CACHE_VERSION,
 	queryPersister,
 	shouldSaveQuery,
 	syncOnlineState,
@@ -17,12 +19,20 @@ syncOnlineState();
 const router = createRouter({
 	routeTree,
 	defaultPreload: "intent",
+	defaultErrorComponent: RouteError,
+	defaultNotFoundComponent: RouteNotFound,
 	context: { trpc, queryClient },
 	Wrap: ({ children }) => (
 		<PersistQueryClientProvider
 			client={queryClient}
 			persistOptions={{
-				dehydrateOptions: { shouldDehydrateQuery: shouldSaveQuery },
+				buster: CACHE_VERSION,
+				dehydrateOptions: {
+					// A write still under way is not saved: resuming it later would
+					// need its function again, and nothing registers one.
+					shouldDehydrateMutation: () => false,
+					shouldDehydrateQuery: (query) => shouldSaveQuery(query),
+				},
 				maxAge: CACHE_MAX_AGE,
 				persister: queryPersister,
 			}}

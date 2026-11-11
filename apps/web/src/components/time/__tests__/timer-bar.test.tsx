@@ -14,6 +14,8 @@ const ESTIMATE = /見積もり/;
 const WORK = /仕事/;
 const REPORT = /週次レポートを送る/;
 const MEETING = /研究室ミーティング/;
+const DOCS = /資料/;
+const CAMP = /合宿の準備/;
 const RECORD_SEMINAR = /^ゼミ発表を\d\d:\d\dから記録$/;
 const projects = [makeProject({ color: "chart-2", id: "work", name: "仕事" })];
 
@@ -89,6 +91,77 @@ describe("TimerBar", () => {
 				{ description: "週次レポートを送る", projectId: "work", taskId: "t1" },
 				expect.anything()
 			)
+		);
+	});
+
+	it("links a picked task whose title has a full-width space", async () => {
+		trpcMock.state.tasks = [
+			makeTask({ id: "t2", projectId: null, title: "資料　確認" }),
+		];
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		await userEvent.type(
+			await screen.findByLabelText("何をしていますか"),
+			"資料"
+		);
+		await userEvent.click(await screen.findByRole("option", { name: DOCS }));
+		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
+
+		await waitFor(() =>
+			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
+				{ description: "資料 確認", projectId: null, taskId: "t2" },
+				expect.anything()
+			)
+		);
+	});
+
+	it("starts on the picked project when another has the same name", async () => {
+		const twins = [
+			makeProject({ id: "uni-lab", name: "研究" }),
+			makeProject({ id: "club-lab", name: "研究", parentId: "club" }),
+			makeProject({ id: "club", name: "サークル" }),
+		];
+		trpcMock.state.tasks = [
+			makeTask({ id: "t3", projectId: "club-lab", title: "合宿の準備" }),
+		];
+		renderWithQuery(<TimerBar projects={twins} />);
+
+		await userEvent.type(
+			await screen.findByLabelText("何をしていますか"),
+			"合宿"
+		);
+		await userEvent.click(await screen.findByRole("option", { name: CAMP }));
+		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
+
+		await waitFor(() =>
+			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
+				{ description: "合宿の準備", projectId: "club-lab", taskId: "t3" },
+				expect.anything()
+			)
+		);
+	});
+
+	it("gives the text back when the start fails", async () => {
+		trpcMock.calls.timeStart.mockImplementationOnce(
+			() =>
+				new Promise((_resolve, reject) => {
+					setTimeout(() => reject(new Error("offline")), 50);
+				})
+		);
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		await userEvent.type(
+			await screen.findByLabelText("何をしていますか"),
+			"資料作り #仕事"
+		);
+		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
+
+		// The timer shows as running at once, in place of the box.
+		expect(
+			await screen.findByRole("button", { name: "計測を止める" })
+		).toBeVisible();
+		expect(await screen.findByLabelText("何をしていますか")).toHaveValue(
+			"資料作り #仕事"
 		);
 	});
 

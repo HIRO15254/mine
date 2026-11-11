@@ -25,8 +25,9 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
 import { useIsDesk } from "@/hooks/use-media-query";
-import { rangeOfDays, startOfDay } from "@/lib/calendar-time";
-import { type Project, todayKey } from "@/lib/tasks";
+import { useToday, useTodayDate } from "@/hooks/use-today";
+import { addDays, rangeOfDays } from "@/lib/calendar-time";
+import type { Project } from "@/lib/tasks";
 import {
 	completeHash,
 	findHashTokens,
@@ -44,7 +45,6 @@ import { trpc } from "@/utils/trpc";
 
 import { useStartTimer } from "./use-time";
 
-const DAY = 86_400_000;
 const HISTORY_DAYS = 30;
 
 const KIND_ICON: Record<SuggestionKind, typeof IconHash> = {
@@ -66,13 +66,19 @@ const KIND_LABEL: Record<SuggestionKind, string> = {
  * events load at once, for the event under way; tasks wait for `active`.
  */
 function useSuggestionSources(active: boolean) {
-	const today = useMemo(() => startOfDay(new Date()), []);
-	const history = useMemo(() => {
-		const to = Date.now();
-		return { from: to - HISTORY_DAYS * DAY, to };
-	}, []);
+	const today = useTodayDate();
+	const todayString = useToday();
+	// Whole days, through the end of today: one saved copy per day instead of
+	// one per visit, and entries added since the box appeared are in it.
+	const history = useMemo(
+		() => ({
+			from: addDays(today, -HISTORY_DAYS).getTime(),
+			to: addDays(today, 1).getTime(),
+		}),
+		[today]
+	);
 	const tasks = useQuery({
-		...trpc.task.list.queryOptions({ today: todayKey(), view: "open" }),
+		...trpc.task.list.queryOptions({ today: todayString, view: "open" }),
 		enabled: active,
 		staleTime: 60_000,
 	});
@@ -167,15 +173,17 @@ function EventNudge({
 
 /** The typed text with each "#プロジェクト" drawn in its project's hue. */
 function Highlighted({
+	pickedProjectId,
 	projects,
 	text,
 }: {
+	pickedProjectId: string | null;
 	projects: Project[];
 	text: string;
 }) {
 	const parts: ReactNode[] = [];
 	let from = 0;
-	for (const token of findHashTokens(text, projects)) {
+	for (const token of findHashTokens(text, projects, pickedProjectId)) {
 		parts.push(text.slice(from, token.start));
 		const word = text.slice(token.start, token.end);
 		parts.push(
@@ -274,6 +282,19 @@ function SuggestionOption({
 	);
 }
 
+interface UnsentStart {
+	picked: { id: string; title: string } | null;
+	pickedProjectId: string | null;
+	text: string;
+}
+
+/**
+ * What was typed for a start the server has not answered. The box leaves the
+ * screen while the timer shows as running; if the start fails, the box comes
+ * back with this instead of empty.
+ */
+let unsent: UnsentStart | null = null;
+
 /**
  * One line that starts the timer: "論文を読む #研究" starts 論文を読む on the
  * project 研究. Typing offers matching tasks, past entries and events; an
@@ -292,13 +313,19 @@ export function TimerInput({
 	const size = isDesk ? "default" : "xl";
 	const input = useRef<HTMLInputElement>(null);
 	const mirror = useRef<HTMLDivElement>(null);
-	const [text, setText] = useState("");
+	const [text, setText] = useState(() => unsent?.text ?? "");
 	const [caret, setCaret] = useState(0);
 	const [open, setOpen] = useState(false);
 	const [active, setActive] = useState(-1);
-	const [picked, setPicked] = useState<{ title: string; id: string } | null>(
-		null
+	// The task and project chosen from the suggestions, kept by id: the text
+	// alone cannot tell two projects of the same name apart.
+	const [picked, setPicked] = useState(() => unsent?.picked ?? null);
+	const [pickedProjectId, setPickedProjectId] = useState(
+		() => unsent?.pickedProjectId ?? null
 	);
+	useEffect(() => {
+		unsent = null;
+	}, []);
 	const [touched, setTouched] = useState(false);
 	const start = useStartTimer();
 	const sources = useSuggestionSources(touched);
@@ -364,14 +391,22 @@ export function TimerInput({
 			const project = projects.find((p) => p.id === item.projectId);
 			if (project) {
 				const next = completeHash(text, hash, project);
+				setPickedProjectId(project.id);
 				update(next.text, next.caret);
 				placeCaret(next.caret);
 			}
 			return;
 		}
 		const next = timerText(item.description, item.projectId, projects);
+		setPickedProjectId(item.projectId);
+		// Compared as the box will read it back (spaces folded).
 		setPicked(
-			item.taskId ? { id: item.taskId, title: item.description } : null
+			item.taskId
+				? {
+						id: item.taskId,
+						title: parseTimerText(next, projects, item.projectId).description,
+					}
+				: null
 		);
 		update(next, next.length);
 		setOpen(false);
@@ -380,23 +415,30 @@ export function TimerInput({
 
 	const submit = (event: FormEvent) => {
 		event.preventDefault();
-		const parsed = parseTimerText(text, projects);
+		const parsed = parseTimerText(text, projects, pickedProjectId);
 		const taskId =
 			picked && picked.title === parsed.description ? picked.id : undefined;
-		start.mutate(
-			{
+		const draft = { picked, pickedProjectId, text };
+		unsent = draft;
+		start
+			.mutateAsync({
 				description: parsed.description,
 				projectId: parsed.projectId,
 				taskId,
-			},
-			{
-				onSuccess: () => {
+			})
+			.then(
+				() => {
+					if (unsent === draft) {
+						unsent = null;
+					}
 					setText("");
 					setCaret(0);
 					setPicked(null);
+					setPickedProjectId(null);
 				},
-			}
-		);
+				// useStartTimer reports the failure; `unsent` gives the text back.
+				() => undefined
+			);
 		setOpen(false);
 	};
 
@@ -490,7 +532,11 @@ export function TimerInput({
 					ref={mirror}
 				>
 					<span className="shrink-0">
-						<Highlighted projects={projects} text={text} />
+						<Highlighted
+							pickedProjectId={pickedProjectId}
+							projects={projects}
+							text={text}
+						/>
 					</span>
 				</div>
 			</div>

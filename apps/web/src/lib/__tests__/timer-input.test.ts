@@ -56,6 +56,35 @@ describe("parseTimerText", () => {
 	});
 });
 
+describe("projects the text alone cannot name", () => {
+	const all = [
+		...projects,
+		makeProject({ id: "side", name: "Side project" }),
+		makeProject({ id: "club-lab", name: "研究", parentId: "club" }),
+	];
+
+	it("reads a project whose name has spaces as one token", () => {
+		expect(parseTimerText("下書き #side project あとで", all)).toEqual({
+			description: "下書き あとで",
+			projectId: "side",
+		});
+		expect(findHashTokens("#Side projects", all)).toEqual([
+			{ end: 5, project: null, start: 0 },
+		]);
+	});
+
+	it("takes the picked project when several share the name", () => {
+		expect(parseTimerText("論文 #研究", all).projectId).toBe("lab");
+		expect(parseTimerText("論文 #研究", all, "club-lab").projectId).toBe(
+			"club-lab"
+		);
+		// The picked project no longer counts once another name is typed.
+		expect(parseTimerText("論文 #仕事", all, "club-lab").projectId).toBe(
+			"work"
+		);
+	});
+});
+
 describe("hashAtCaret and completeHash", () => {
 	it("finds the #word being typed and completes it", () => {
 		const text = "会議 #仕 あと";

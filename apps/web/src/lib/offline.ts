@@ -1,5 +1,6 @@
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { onlineManager, type Query } from "@tanstack/react-query";
+import { removeOldestQuery } from "@tanstack/react-query-persist-client";
 
 /** Keys in localStorage; cleared on sign-out. */
 const CACHE_KEY = "mine-query-cache";
@@ -7,6 +8,9 @@ const USER_KEY = "mine-user";
 
 /** How long a saved copy may be shown while offline. */
 export const CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+/** Saved copies from another version are dropped; raise it when the API's shapes change. */
+export const CACHE_VERSION = "1";
 
 /** Token and connection lists are only needed online. */
 const SKIPPED_ROUTERS = new Set(["token", "oauth"]);
@@ -21,15 +25,26 @@ function storage(): Storage | undefined {
 
 export const queryPersister = createSyncStoragePersister({
 	key: CACHE_KEY,
+	// When storage is full, the oldest queries go until the rest fits.
+	retry: removeOldestQuery,
 	storage: storage(),
 	throttleTime: 2000,
 });
 
-export function shouldSaveQuery(query: Pick<Query, "queryKey" | "state">) {
+/**
+ * Whether a query belongs in the offline copy. Data nobody has refreshed for
+ * a week is left out: each day and week has its own key, and restoring them
+ * on every start would otherwise keep them all for good.
+ */
+export function shouldSaveQuery(
+	query: Pick<Query, "queryKey" | "state">,
+	now = Date.now()
+) {
 	const [path] = query.queryKey as [unknown];
 	const router = Array.isArray(path) ? path[0] : undefined;
 	return (
 		query.state.status === "success" &&
+		now - query.state.dataUpdatedAt <= CACHE_MAX_AGE &&
 		!(typeof router === "string" && SKIPPED_ROUTERS.has(router))
 	);
 }

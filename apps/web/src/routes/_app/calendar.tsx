@@ -41,6 +41,7 @@ import {
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { useIsDesk } from "@/hooks/use-media-query";
+import { useToday, useTodayDate } from "@/hooks/use-today";
 import {
 	addDays,
 	dayKey,
@@ -48,11 +49,10 @@ import {
 	formatWeekLabel,
 	parseDayKey,
 	rangeOfDays,
-	startOfDay,
 	startOfWeek,
 } from "@/lib/calendar-time";
 import { dropMinutes, formatTime } from "@/lib/day-grid";
-import { type Project, type Task, todayKey } from "@/lib/tasks";
+import type { Project, Task } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/utils/trpc";
 
@@ -67,10 +67,10 @@ export const Route = createFileRoute("/_app/calendar")({
 function CalendarPage() {
 	const { week } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
-	const today = startOfDay(new Date());
+	const today = useTodayDate();
 	const weekStart = useMemo(
-		() => startOfWeek(parseDayKey(week) ?? new Date()),
-		[week]
+		() => startOfWeek(parseDayKey(week) ?? today),
+		[today, week]
 	);
 	const days = useMemo(
 		() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
@@ -271,7 +271,7 @@ function WeekPlanner({
 		retry: false,
 		staleTime: 60_000,
 	});
-	const todayString = todayKey();
+	const todayString = useToday();
 	const openTasks = useQuery(
 		trpc.task.list.queryOptions({ today: todayString, view: "open" })
 	);

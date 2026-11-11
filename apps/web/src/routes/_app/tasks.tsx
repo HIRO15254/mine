@@ -29,13 +29,13 @@ import {
 	ToggleGroupItem,
 } from "@/components/ui/toggle-group/toggle-group";
 import { useIsDesk } from "@/hooks/use-media-query";
+import { useToday } from "@/hooks/use-today";
 import { quickAddText } from "@/lib/share";
 import {
 	flattenProjects,
 	groupTasks,
 	TASK_VIEW_OPTIONS,
 	type TaskView,
-	todayKey,
 } from "@/lib/tasks";
 import { trpc } from "@/utils/trpc";
 
@@ -99,7 +99,7 @@ function TasksPage() {
 	const view = search.view ?? "today";
 	const navigate = useNavigate({ from: Route.fullPath });
 	const isDesk = useIsDesk();
-	const today = todayKey();
+	const today = useToday();
 	const { labels, projects } = useTaskContext();
 	const { editor, openEdit, openNew } = useTaskEditor({ labels, projects });
 	const tasks = useQuery(trpc.task.list.queryOptions({ today, view }));

@@ -8,7 +8,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
-
 import { Page } from "@/components/app-shell/page";
 import { ComingSoon } from "@/components/placeholder/coming-soon";
 import { useTaskContext } from "@/components/tasks/use-tasks";
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/card/card";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Spinner } from "@/components/ui/spinner/spinner";
+import { useTodayDate } from "@/hooks/use-today";
 import {
 	addDays,
 	dayKey,
@@ -54,12 +54,13 @@ function Loading() {
 function TimePage() {
 	const { week } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
+	const today = useTodayDate();
 	const weekStart = useMemo(
-		() => startOfWeek(parseDayKey(week) ?? new Date()),
-		[week]
+		() => startOfWeek(parseDayKey(week) ?? today),
+		[today, week]
 	);
 	const range = useMemo(() => weekRange(weekStart), [weekStart]);
-	const isCurrentWeek = dayKey(weekStart) === dayKey(startOfWeek(new Date()));
+	const isCurrentWeek = dayKey(weekStart) === dayKey(startOfWeek(today));
 	const { projects } = useTaskContext();
 	const { editor, openEdit, openNew } = useEntryEditor(projects);
 	const entries = useQuery(trpc.time.list.queryOptions(range));

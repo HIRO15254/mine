@@ -48,6 +48,14 @@ export default defineConfig({
 			},
 			pwaAssets: { disabled: false, config: true },
 			workbox: {
+				// The Mine mark and the Latin subset of the digits' font are on every
+				// screen, so they are there for an offline start. Noto Sans JP is
+				// 120-odd subsets and is cached as each is first used.
+				globPatterns: [
+					"**/*.{js,css,html}",
+					"logo.png",
+					"assets/jetbrains-mono-latin-wght-*.woff2",
+				],
 				globIgnores: ["**/noto-sans-jp-*.woff2"],
 				runtimeCaching: [
 					{

@@ -59,6 +59,23 @@ describe("optimistic task lists", () => {
 		expect(list("inbox")).toEqual([task.id, "milk"]);
 	});
 
+	it("keeps what an edit leaves out, even when the key is there", () => {
+		const { queryClient, report } = setup();
+
+		// The editor sends every field; the ones it did not touch are undefined.
+		const edited = taskFromInput(
+			queryClient,
+			{ priority: undefined, projectId: null, title: "報告書" },
+			report
+		);
+
+		expect(edited).toMatchObject({
+			priority: 2,
+			projectId: null,
+			title: "報告書",
+		});
+	});
+
 	it("moves an edited task between views and removes a deleted one", () => {
 		const { list, queryClient } = setup();
 		const base = findTask(queryClient, "milk");

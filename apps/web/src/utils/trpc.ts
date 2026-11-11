@@ -1,14 +1,32 @@
 import type { AppRouter } from "@mine/api/routers/index";
 import { env } from "@mine/env/web";
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { toast } from "sonner";
 
-import { CACHE_MAX_AGE } from "@/lib/offline";
+import { CACHE_MAX_AGE, isOffline } from "@/lib/offline";
 
 export const queryClient = new QueryClient({
-	// Kept long enough to be saved for offline use.
-	defaultOptions: { queries: { gcTime: CACHE_MAX_AGE, retry: 1 } },
+	defaultOptions: {
+		// Offline, a write fails at once and the screen goes back. Left to wait
+		// for the network it would look saved and be lost with the tab.
+		mutations: { networkMode: "always" },
+		// Kept long enough to be saved for offline use.
+		queries: { gcTime: CACHE_MAX_AGE, retry: 1 },
+	},
+	mutationCache: new MutationCache({
+		// A write that says nothing of its own failure still must not fail unseen.
+		onError: (_error, _input, _context, mutation) => {
+			if (!mutation.options.onError) {
+				toast.error(
+					isOffline()
+						? "オフラインのため保存できませんでした"
+						: "保存できませんでした"
+				);
+			}
+		},
+	}),
 });
 
 export const trpcClient = createTRPCClient<AppRouter>({

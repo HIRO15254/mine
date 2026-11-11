@@ -48,5 +48,18 @@ describe("ApiTokenSettings", () => {
 			{ name: "HTTP Shortcuts" },
 			expect.anything()
 		);
+
+		// A browser that refuses the clipboard must not break the sheet.
+		const writeText = vi.fn(() => Promise.reject(new Error("denied")));
+		Object.defineProperty(navigator, "clipboard", {
+			configurable: true,
+			value: { writeText },
+		});
+		await userEvent.click(screen.getByRole("button", { name: "コピー" }));
+		await waitFor(() => expect(writeText).toHaveBeenCalled());
+		expect(screen.getByRole("button", { name: "コピー" })).toBeInTheDocument();
+		expect(screen.getByLabelText("発行したトークン")).toHaveValue(
+			"mine_abcdef-secret"
+		);
 	});
 });

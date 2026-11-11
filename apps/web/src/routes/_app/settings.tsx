@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/toggle-group/toggle-group";
 import { authClient } from "@/lib/auth-client";
 import { clearOfflineData } from "@/lib/offline";
+import { forgetSession } from "@/lib/session";
 import { queryClient, trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_app/settings")({
@@ -46,6 +47,7 @@ function SettingsPage() {
 
 	const signOut = async () => {
 		await authClient.signOut();
+		forgetSession();
 		clearOfflineData();
 		queryClient.clear();
 		await navigate({ to: "/login" });

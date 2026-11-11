@@ -9,8 +9,17 @@ import {
 	syncOnlineState,
 } from "../offline";
 
-function query(path: string[], status: "error" | "pending" | "success") {
-	return { queryKey: [path, { type: "query" }], state: { status } } as never;
+const NOW = Date.UTC(2026, 10, 11);
+
+function query(
+	path: string[],
+	status: "error" | "pending" | "success",
+	dataUpdatedAt = NOW
+) {
+	return {
+		queryKey: [path, { type: "query" }],
+		state: { dataUpdatedAt, status },
+	} as never;
 }
 
 describe("offline storage", () => {
@@ -19,12 +28,22 @@ describe("offline storage", () => {
 	});
 
 	it("saves successful queries except tokens and connections", () => {
-		expect(shouldSaveQuery(query(["task", "list"], "success"))).toBe(true);
-		expect(shouldSaveQuery(query(["task", "list"], "error"))).toBe(false);
-		expect(shouldSaveQuery(query(["token", "list"], "success"))).toBe(false);
-		expect(shouldSaveQuery(query(["oauth", "connections"], "success"))).toBe(
-			false
-		);
+		const saves = (...args: Parameters<typeof query>) =>
+			shouldSaveQuery(query(...args), NOW);
+		expect(saves(["task", "list"], "success")).toBe(true);
+		expect(saves(["task", "list"], "error")).toBe(false);
+		expect(saves(["token", "list"], "success")).toBe(false);
+		expect(saves(["oauth", "connections"], "success")).toBe(false);
+	});
+
+	it("leaves out data nobody has refreshed for a week", () => {
+		const DAY = 86_400_000;
+		expect(
+			shouldSaveQuery(query(["time", "list"], "success", NOW - 6 * DAY), NOW)
+		).toBe(true);
+		expect(
+			shouldSaveQuery(query(["time", "list"], "success", NOW - 8 * DAY), NOW)
+		).toBe(false);
 	});
 
 	it("starts React Query offline when the browser is", () => {

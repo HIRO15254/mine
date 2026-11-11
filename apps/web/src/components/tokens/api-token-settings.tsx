@@ -2,6 +2,7 @@ import { env } from "@mine/env/web";
 import { IconCheck, IconCopy, IconKey, IconPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
+import { toast } from "sonner";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
 import { ConfirmDeleteButton } from "@/components/tasks/confirm-delete-button";
@@ -133,9 +134,17 @@ function CreateTokenSheet({
 	};
 
 	const copy = async () => {
-		if (created) {
+		if (!created) {
+			return;
+		}
+		try {
 			await navigator.clipboard.writeText(created);
 			setCopied(true);
+		} catch {
+			// The browser can refuse; the token stays on screen to copy by hand.
+			toast.error("コピーできませんでした", {
+				description: "トークンを選択してコピーしてください",
+			});
 		}
 	};
 

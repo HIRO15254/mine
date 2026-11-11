@@ -34,13 +34,9 @@ import {
 } from "@/components/ui/card/card";
 import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
-import {
-	eventsOnDay,
-	rangeOfDays,
-	startOfDay,
-	startOfWeek,
-} from "@/lib/calendar-time";
-import { groupTasks, todayKey } from "@/lib/tasks";
+import { useToday, useTodayDate } from "@/hooks/use-today";
+import { eventsOnDay, rangeOfDays, startOfWeek } from "@/lib/calendar-time";
+import { groupTasks } from "@/lib/tasks";
 import { currentTimeZone, type TimeEntry, weekRange } from "@/lib/time";
 import { trpc } from "@/utils/trpc";
 
@@ -126,7 +122,7 @@ function TodayPage() {
 }
 
 function TodayEvents() {
-	const today = useMemo(() => startOfDay(new Date()), []);
+	const today = useTodayDate();
 	const query = useQuery({
 		...trpc.calendar.events.queryOptions(rangeOfDays(today, 1)),
 		staleTime: 60_000,
@@ -151,7 +147,7 @@ function TodayEvents() {
 }
 
 function TodayTasks() {
-	const today = todayKey();
+	const today = useToday();
 	const { labels, projects } = useTaskContext();
 	const { editor, openEdit } = useTaskEditor({ labels, projects });
 	const tasks = useQuery(trpc.task.list.queryOptions({ today, view: "today" }));
@@ -215,9 +211,8 @@ function TodayTimer({ menuPlacement }: { menuPlacement?: "bottom" | "top" }) {
 	const { projects } = useTaskContext();
 	const { editor, openEdit } = useEntryEditor(projects);
 	// Same query as TodayTasks, so the estimate comes from the cache.
-	const tasks = useQuery(
-		trpc.task.list.queryOptions({ today: todayKey(), view: "today" })
-	);
+	const today = useToday();
+	const tasks = useQuery(trpc.task.list.queryOptions({ today, view: "today" }));
 	const estimateOf = (entry: TimeEntry) =>
 		tasks.data?.find((task) => task.id === entry.taskId)?.estimateMinutes ??
 		null;
@@ -235,7 +230,8 @@ function TodayTimer({ menuPlacement }: { menuPlacement?: "bottom" | "top" }) {
 }
 
 function ThisWeek() {
-	const weekStart = useMemo(() => startOfWeek(new Date()), []);
+	const today = useTodayDate();
+	const weekStart = useMemo(() => startOfWeek(today), [today]);
 	const range = useMemo(() => weekRange(weekStart), [weekStart]);
 	const { projects } = useTaskContext();
 	const summary = useQuery(
