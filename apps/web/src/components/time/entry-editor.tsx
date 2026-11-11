@@ -13,7 +13,12 @@ import { flattenProjects, type Project } from "@/lib/tasks";
 import type { TimeEntry } from "@/lib/time";
 import { trpc } from "@/utils/trpc";
 
-import { draftFromEntry, draftTimes, type EntryDraft } from "./entry-draft";
+import {
+	draftFromEntry,
+	draftTimes,
+	type EntryDraft,
+	editedTimes,
+} from "./entry-draft";
 import { useInvalidateTime } from "./use-time";
 
 interface EditorState {
@@ -97,16 +102,19 @@ export function EntryEditor({
 			billable: draft.billable,
 			description: draft.description.trim(),
 			projectId: draft.projectId || null,
-			startedAt: times.startedAt,
 		};
 		if (entry) {
 			update.mutate({
 				...fields,
+				...editedTimes(entry, draft, times),
 				id: entry.id,
-				...(times.endedAt === null ? {} : { endedAt: times.endedAt }),
 			});
 		} else if (times.endedAt !== null) {
-			create.mutate({ ...fields, endedAt: times.endedAt });
+			create.mutate({
+				...fields,
+				endedAt: times.endedAt,
+				startedAt: times.startedAt,
+			});
 		}
 	};
 

@@ -401,6 +401,10 @@ export function TimerInput({
 	};
 
 	const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		// Keys pressed while converting kana belong to the IME, not to the list.
+		if (event.nativeEvent.isComposing || event.keyCode === 229) {
+			return;
+		}
 		if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 			event.preventDefault();
 			if (showMenu) {

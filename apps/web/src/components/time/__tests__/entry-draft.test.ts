@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { draftFromEntry, draftTimes } from "../entry-draft";
+import { draftFromEntry, draftTimes, editedTimes } from "../entry-draft";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -66,5 +66,62 @@ describe("entry drafts", () => {
 		expect(
 			draftTimes({ ...base, running: true, start: "08:00" }, NOV5_9AM)
 		).toEqual({ endedAt: null, startedAt: NOV5_9AM - HOUR });
+	});
+
+	it("keeps the times of an edit that did not touch them", () => {
+		const entry = {
+			billable: true,
+			description: "押し間違い",
+			endedAt: NOV5_9AM + 50_000,
+			id: "e",
+			projectId: null,
+			startedAt: NOV5_9AM + 10_000,
+			taskId: null,
+		};
+		const draft = { ...draftFromEntry(entry, 0), description: "調査" };
+		const times = draftTimes(draft, NOV5_9AM + HOUR);
+		if (times.error !== undefined) {
+			throw new Error(times.error);
+		}
+
+		// Read back from 09:00–09:00, this 40-second entry would last a day.
+		expect(times.endedAt).toBe(NOV5_9AM + 24 * HOUR);
+		expect(editedTimes(entry, draft, times)).toEqual({});
+	});
+
+	it("sends only the time that was edited", () => {
+		const entry = {
+			billable: true,
+			description: "会議",
+			endedAt: NOV5_9AM + HOUR + 17_000,
+			id: "e",
+			projectId: null,
+			startedAt: NOV5_9AM + 42_500,
+			taskId: null,
+		};
+		const read = (changes: Partial<ReturnType<typeof draftFromEntry>>) => {
+			const draft = { ...draftFromEntry(entry, 0), ...changes };
+			const times = draftTimes(draft, NOV5_9AM + 48 * HOUR);
+			if (times.error !== undefined) {
+				throw new Error(times.error);
+			}
+			return editedTimes(entry, draft, times);
+		};
+
+		expect(read({ end: "10:30" })).toEqual({
+			endedAt: NOV5_9AM + 90 * MINUTE,
+		});
+		expect(read({ start: "08:30" })).toEqual({
+			startedAt: NOV5_9AM - 30 * MINUTE,
+		});
+		// Another day moves both, and a start past the end rolls the end over.
+		expect(read({ day: "2026-11-06" })).toEqual({
+			endedAt: NOV5_9AM + 25 * HOUR,
+			startedAt: NOV5_9AM + 24 * HOUR,
+		});
+		expect(read({ start: "11:00" })).toEqual({
+			endedAt: NOV5_9AM + 25 * HOUR,
+			startedAt: NOV5_9AM + 2 * HOUR,
+		});
 	});
 });

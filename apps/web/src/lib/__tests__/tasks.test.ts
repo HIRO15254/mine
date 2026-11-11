@@ -65,6 +65,16 @@ describe("parseQuickAdd", () => {
 		expect(result.scheduledDate).toBe("2026-11-07");
 		expect(result.projectId).toBeUndefined();
 	});
+
+	it("reads words every object inherits as plain title text", () => {
+		const result = parseQuickAdd("fix toString and constructor bug", {
+			labels,
+			projects,
+			today: TODAY,
+		});
+		expect(result.title).toBe("fix toString and constructor bug");
+		expect(result.scheduledDate).toBeUndefined();
+	});
 });
 
 describe("formatRecurrence", () => {

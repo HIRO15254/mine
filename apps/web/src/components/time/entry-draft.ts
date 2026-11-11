@@ -72,3 +72,28 @@ export function draftTimes(draft: EntryDraft, now: number): DraftTimes {
 	}
 	return { endedAt, startedAt };
 }
+
+/**
+ * The times to send when editing `entry`: only the ones whose fields changed.
+ * The form shows minutes, so sending an untouched time back would drop its
+ * seconds and could push the end of a short entry to the next day.
+ */
+export function editedTimes(
+	entry: TimeEntry,
+	draft: EntryDraft,
+	times: { endedAt: number | null; startedAt: number }
+): { endedAt?: number; startedAt?: number } {
+	const before = draftFromEntry(entry, 0);
+	const sameDay = draft.day === before.day;
+	const startKept = sameDay && draft.start === before.start;
+	const startedAt = startKept ? entry.startedAt : times.startedAt;
+	const endKept =
+		entry.endedAt !== null &&
+		sameDay &&
+		draft.end === before.end &&
+		entry.endedAt > startedAt;
+	return {
+		...(startKept ? {} : { startedAt }),
+		...(endKept || times.endedAt === null ? {} : { endedAt: times.endedAt }),
+	};
+}

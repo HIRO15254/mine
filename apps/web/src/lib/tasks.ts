@@ -138,7 +138,10 @@ function applyToken(
 		result.priority = Number(priority[1]);
 		return true;
 	}
-	const base = token in DATE_WORDS ? parseDayKey(context.today) : null;
+	// Own keys only: `in` would also match toString, constructor and the like.
+	const base = Object.hasOwn(DATE_WORDS, token)
+		? parseDayKey(context.today)
+		: null;
 	if (base) {
 		result.scheduledDate = dayKey(addDays(base, DATE_WORDS[token] ?? 0));
 		return true;

@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -57,6 +57,18 @@ describe("TimerBar", () => {
 
 		expect(input).toHaveValue("会議 #仕事 ");
 		expect(trpcMock.calls.timeStart).not.toHaveBeenCalled();
+	});
+
+	it("leaves keys to the IME while kana is being converted", async () => {
+		renderWithQuery(<TimerBar projects={projects} />);
+
+		const input = await screen.findByLabelText("何をしていますか");
+		await userEvent.type(input, "会議 #仕");
+		expect(await screen.findByRole("option", { name: WORK })).toBeVisible();
+		// Enter that confirms the conversion must not pick the suggestion.
+		fireEvent.keyDown(input, { isComposing: true, key: "Enter" });
+
+		expect(input).toHaveValue("会議 #仕");
 	});
 
 	it("starts a suggested task with its project", async () => {
