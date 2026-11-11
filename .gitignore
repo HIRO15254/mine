@@ -47,6 +47,9 @@ test-results
 # Cloudflare local state
 .wrangler
 
+# Agent worktrees
+.claude/worktrees/
+
 # Misc
 *.tgz
 .cache
