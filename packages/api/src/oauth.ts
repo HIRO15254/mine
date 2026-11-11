@@ -100,7 +100,7 @@ export function protectedResourceMetadata(resource: string, issuer: string) {
 
 const registrationSchema = z.object({
 	client_name: z.string().trim().max(200).optional(),
-	redirect_uris: z.array(z.string()).min(1).max(10),
+	redirect_uris: z.array(z.string().max(2048)).min(1).max(10),
 	token_endpoint_auth_method: z
 		.enum(["none", "client_secret_post", "client_secret_basic"])
 		.optional(),

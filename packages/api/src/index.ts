@@ -2,7 +2,9 @@ import { initTRPC, TRPCError } from "@trpc/server";
 
 import type { Context } from "./context";
 
-export const t = initTRPC.context<Context>().create();
+// Workers have no NODE_ENV, so tRPC would treat production as development
+// and put stack traces in every error response.
+export const t = initTRPC.context<Context>().create({ isDev: false });
 export const router = t.router;
 export const publicProcedure = t.procedure;
 

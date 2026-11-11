@@ -58,6 +58,25 @@ describe("worker", () => {
 		const response = await app.request("/trpc/me", {}, bindings);
 
 		expect(response.status).toBe(401);
+		// A Worker has no NODE_ENV; the error must not carry a stack trace.
+		expect(await response.text()).not.toContain("stack");
+	});
+
+	it("answers a token request whose JSON body is not an object", async () => {
+		const response = await app.request(
+			"/oauth/token",
+			{
+				body: "null",
+				headers: { "Content-Type": "application/json" },
+				method: "POST",
+			},
+			bindings
+		);
+
+		expect(response.status).toBe(401);
+		await expect(response.json()).resolves.toMatchObject({
+			error: "invalid_client",
+		});
 	});
 
 	it("requires an API token for the app API", async () => {

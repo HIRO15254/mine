@@ -373,6 +373,9 @@ async function readParams(request: Request): Promise<Record<string, string>> {
 	const type = request.headers.get("Content-Type") ?? "";
 	if (type.includes("application/json")) {
 		const body = await readJson(request);
+		if (typeof body !== "object" || body === null) {
+			return {};
+		}
 		return Object.fromEntries(
 			Object.entries(body as Record<string, unknown>).filter(
 				(entry): entry is [string, string] => typeof entry[1] === "string"

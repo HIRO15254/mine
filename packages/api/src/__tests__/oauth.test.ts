@@ -91,6 +91,15 @@ describe("redirect URIs", () => {
 			registerClient(db, { redirect_uris: ["https://evil.example/cb"] })
 		).rejects.toBeInstanceOf(OAuthError);
 	});
+
+	it("rejects a redirect URI too long to be real", async () => {
+		const { db } = setup();
+		await expect(
+			registerClient(db, {
+				redirect_uris: [`http://localhost/${"a".repeat(3000)}`],
+			})
+		).rejects.toBeInstanceOf(OAuthError);
+	});
 });
 
 describe("authorization code flow", () => {
