@@ -244,7 +244,10 @@ export const timeRouter = router({
 			const current = await findEntry(ctx, userId, input.id);
 			const startedAt = input.startedAt ?? current.startedAt;
 			const endedAt = input.endedAt ?? current.endedAt;
-			assertSpan(startedAt, endedAt);
+			// A forgotten timer can run past the limit; renaming it must still work.
+			if (input.startedAt !== undefined || input.endedAt !== undefined) {
+				assertSpan(startedAt, endedAt);
+			}
 			if (endedAt === null && startedAt > ctx.now()) {
 				badRequest("A running entry cannot start in the future");
 			}

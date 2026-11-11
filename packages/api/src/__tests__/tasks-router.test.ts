@@ -49,6 +49,11 @@ describe("project router", () => {
 		await expect(
 			me.project.update({ id: second.id, parentId: null, archived: true })
 		).resolves.toMatchObject({ archived: true, parentId: null });
+		// Nothing to change is not an error.
+		await expect(me.project.update({ id: second.id })).resolves.toMatchObject({
+			archived: true,
+			name: "バイト",
+		});
 	});
 
 	it("moves tasks to the inbox when their project is deleted", async () => {

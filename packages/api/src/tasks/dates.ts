@@ -7,7 +7,9 @@ export function isDayKey(value: string): boolean {
 	if (!DAY_KEY.test(value)) {
 		return false;
 	}
-	return toDayKey(fromDayKey(value)) === value;
+	const date = fromDayKey(value);
+	// A month or day out of range gives an invalid date, not a later one.
+	return !Number.isNaN(date.getTime()) && toDayKey(date) === value;
 }
 
 function fromDayKey(key: string): Date {

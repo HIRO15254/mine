@@ -87,6 +87,21 @@ describe("time router", () => {
 		).rejects.toThrow();
 	});
 
+	it("renames an entry a forgotten timer left running for days", async () => {
+		const { clock, me } = await setup();
+		const started = await me.time.start({ description: "消し忘れ" });
+		clock.now += 8 * 24 * HOUR;
+		await me.time.stop();
+
+		await expect(
+			me.time.update({ description: "調査", id: started.id })
+		).resolves.toMatchObject({ description: "調査" });
+		// Changing the span is still checked.
+		await expect(
+			me.time.update({ id: started.id, startedAt: NOV5 + 1 })
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+
 	it("validates manual entries and edits", async () => {
 		const { me, other } = await setup();
 		const project = await me.project.create({ name: "仕事" });

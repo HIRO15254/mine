@@ -21,6 +21,8 @@ describe("dates", () => {
 		expect(isDayKey("2026-02-28")).toBe(true);
 		expect(isDayKey("2026-02-30")).toBe(false);
 		expect(isDayKey("2026-2-1")).toBe(false);
+		expect(isDayKey("2026-13-01")).toBe(false);
+		expect(isDayKey("2026-02-32")).toBe(false);
 		expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
 		expect(addMonths("2026-11-15", 2, 31)).toBe("2027-01-31");
 	});

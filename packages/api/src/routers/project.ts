@@ -108,11 +108,16 @@ export const projectRouter = router({
 			if (input.parentId) {
 				await assertNoCycle(ctx, userId, input.id, input.parentId);
 			}
-			const { id, ...changes } = input;
-			await ctx.db
-				.update(project)
-				.set(changes)
-				.where(and(eq(project.id, id), eq(project.userId, userId)));
+			const { id, ...fields } = input;
+			const changes = Object.fromEntries(
+				Object.entries(fields).filter(([, value]) => value !== undefined)
+			);
+			if (Object.keys(changes).length > 0) {
+				await ctx.db
+					.update(project)
+					.set(changes)
+					.where(and(eq(project.id, id), eq(project.userId, userId)));
+			}
 			return findProject(ctx, userId, id);
 		}),
 
