@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 function Spinner({ className, ...props }: React.ComponentProps<"span">) {
 	return (
 		<span
-			aria-label="Loading"
+			aria-label="読み込み中"
 			className={cn("inline-flex animate-spin", className)}
 			data-slot="spinner"
 			role="status"

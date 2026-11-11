@@ -70,7 +70,7 @@ function DialogContent({
 					<DialogPrimitive.Close asChild data-slot="dialog-close">
 						<IconButton
 							className="absolute top-3 right-3"
-							label="Close"
+							label="閉じる"
 							size="sm"
 						>
 							<IconX />
