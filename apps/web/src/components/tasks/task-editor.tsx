@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +22,14 @@ import {
 import { cn } from "@/lib/utils";
 import { trpc } from "@/utils/trpc";
 import { ConfirmDeleteButton } from "./confirm-delete-button";
+import {
+	findTask,
+	placeTask,
+	removeTask,
+	restoreTaskLists,
+	snapshotTaskLists,
+	taskFromInput,
+} from "./optimistic";
 import {
 	type DraftDefaults,
 	draftError,
@@ -115,28 +123,59 @@ export function TaskEditor({
 	const [error, setError] = useState<string | null>(null);
 
 	const close = () => onOpenChange(false);
+	const queryClient = useQueryClient();
+	// Saving closes the sheet at once and shows the change in the lists; if
+	// the server refuses, the lists go back and the sheet reopens with the draft.
+	const failed =
+		(message: string) =>
+		(
+			_error: unknown,
+			_input: unknown,
+			context:
+				| { snapshot: Awaited<ReturnType<typeof snapshotTaskLists>> }
+				| undefined
+		) => {
+			restoreTaskLists(queryClient, context?.snapshot);
+			setError(message);
+			onOpenChange(true);
+		};
 	const create = useMutation(
 		trpc.task.create.mutationOptions({
+			onError: failed("保存できませんでした"),
+			onMutate: async (input) => {
+				const snapshot = await snapshotTaskLists(queryClient);
+				placeTask(queryClient, taskFromInput(queryClient, input, null));
+				return { snapshot };
+			},
 			onSettled: invalidate,
-			onSuccess: close,
-			onError: () => setError("保存できませんでした"),
 		})
 	);
 	const update = useMutation(
 		trpc.task.update.mutationOptions({
+			onError: failed("保存できませんでした"),
+			onMutate: async ({ id, ...input }) => {
+				const snapshot = await snapshotTaskLists(queryClient);
+				const base = findTask(queryClient, id) ?? task;
+				if (base) {
+					placeTask(queryClient, taskFromInput(queryClient, input, base));
+				}
+				return { snapshot };
+			},
 			onSettled: invalidate,
-			onSuccess: close,
-			onError: () => setError("保存できませんでした"),
 		})
 	);
 	const remove = useMutation(
 		trpc.task.delete.mutationOptions({
+			onError: failed("削除できませんでした"),
+			onMutate: async ({ id }) => {
+				const snapshot = await snapshotTaskLists(queryClient);
+				removeTask(queryClient, id);
+				return { snapshot };
+			},
 			onSettled: invalidate,
 			onSuccess: () => {
 				toast.success("削除しました", { description: task?.title });
-				close();
 			},
-			onError: () => setError("削除できませんでした"),
 		})
 	);
 
@@ -151,11 +190,13 @@ export function TaskEditor({
 			return;
 		}
 		const input = draftToInput(draft);
+		setError(null);
 		if (task) {
 			update.mutate({ ...input, id: task.id });
 		} else {
 			create.mutate(input);
 		}
+		close();
 	};
 
 	const ids = {
@@ -179,7 +220,10 @@ export function TaskEditor({
 				task && (
 					<ConfirmDeleteButton
 						disabled={remove.isPending}
-						onConfirm={() => remove.mutate({ id: task.id })}
+						onConfirm={() => {
+							remove.mutate({ id: task.id });
+							close();
+						}}
 					/>
 				)
 			}

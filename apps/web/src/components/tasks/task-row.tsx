@@ -36,6 +36,7 @@ const TONE_CLASS = {
 
 export function TaskRow({
 	isCompleting = false,
+	isSaving = false,
 	onComplete,
 	onOpen,
 	onStartTimer,
@@ -45,6 +46,8 @@ export function TaskRow({
 	today,
 }: {
 	isCompleting?: boolean;
+	/** Just added and not saved yet: shown, but not usable until it is. */
+	isSaving?: boolean;
 	onComplete: (task: Task) => void;
 	onOpen: (task: Task) => void;
 	/** Starts the timer on this task; the button is hidden without it. */
@@ -63,7 +66,13 @@ export function TaskRow({
 		(showProject && project) ||
 		task.estimateMinutes;
 	return (
-		<div className="group/task flex min-h-[var(--m-list-row)] items-start gap-2.5 rounded-md px-2 desk:py-2.5 py-3">
+		<div
+			aria-busy={isSaving || undefined}
+			className={cn(
+				"group/task flex min-h-[var(--m-list-row)] items-start gap-2.5 rounded-md px-2 desk:py-2.5 py-3",
+				isSaving && "pointer-events-none opacity-60"
+			)}
+		>
 			<button
 				aria-label={`「${task.title}」を完了にする`}
 				className={cn(
@@ -71,7 +80,7 @@ export function TaskRow({
 					PRIORITY_RING[task.priority],
 					isCompleting && "check-done"
 				)}
-				disabled={isCompleting}
+				disabled={isCompleting || isSaving}
 				onClick={() => onComplete(task)}
 				style={
 					project

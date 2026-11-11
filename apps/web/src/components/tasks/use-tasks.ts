@@ -1,8 +1,21 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	useMutation,
+	useMutationState,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { todayKey } from "@/lib/tasks";
 import { trpc } from "@/utils/trpc";
+
+import { removeTask, restoreTaskLists, snapshotTaskLists } from "./optimistic";
+
+/** How long a completed row stays to show its check before it leaves. */
+const COMPLETE_POP_MS = 420;
+
+const wait = (ms: number) =>
+	new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(ms, 0)));
 
 /** Projects and labels, cached together because every task view needs both. */
 export function useTaskContext() {
@@ -31,15 +44,40 @@ export function useInvalidateTasks() {
 		]);
 }
 
-/** Completes a task and offers an undo toast. */
+/**
+ * Completes a task and offers an undo toast. The row shows its check at once
+ * and leaves the lists after a beat, without waiting for the server.
+ */
 export function useCompleteTask() {
+	const queryClient = useQueryClient();
 	const invalidate = useInvalidateTasks();
 	const uncomplete = useMutation(
 		trpc.task.uncomplete.mutationOptions({ onSettled: invalidate })
 	);
 	return useMutation(
 		trpc.task.complete.mutationOptions({
-			onSettled: invalidate,
+			onMutate: async ({ id }) => {
+				const snapshot = await snapshotTaskLists(queryClient);
+				const timer = window.setTimeout(
+					() => removeTask(queryClient, id),
+					COMPLETE_POP_MS
+				);
+				return { snapshot, startedAt: Date.now(), timer };
+			},
+			onError: (_error, _input, context) => {
+				if (context) {
+					window.clearTimeout(context.timer);
+					restoreTaskLists(queryClient, context.snapshot);
+				}
+				toast.error("完了にできませんでした");
+			},
+			// Refetch only after the row has left, so it does not come back.
+			onSettled: async (_data, _error, _input, context) => {
+				await wait(
+					context ? COMPLETE_POP_MS - (Date.now() - context.startedAt) : 0
+				);
+				await invalidate();
+			},
 			onSuccess: (result) => {
 				toast.success(
 					result.recurring ? "次の予定に進めました" : "完了にしました",
@@ -52,9 +90,21 @@ export function useCompleteTask() {
 					}
 				);
 			},
-			onError: () => toast.error("完了にできませんでした"),
 		})
 	);
+}
+
+/** Ids of the tasks being completed right now, for their check animation. */
+export function useCompletingIds(): Set<string> {
+	const ids = useMutationState({
+		filters: {
+			mutationKey: trpc.task.complete.mutationKey(),
+			status: "pending",
+		},
+		select: (mutation) =>
+			(mutation.state.variables as { id?: string } | undefined)?.id ?? "",
+	});
+	return new Set(ids);
 }
 
 export function completeInput(id: string) {

@@ -1,5 +1,5 @@
 import { IconAdjustmentsHorizontal, IconPlus } from "@tabler/icons-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,7 +9,12 @@ import { Input } from "@/components/ui/input/input";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { type Label, type Project, parseQuickAdd, todayKey } from "@/lib/tasks";
 import { trpc } from "@/utils/trpc";
-
+import {
+	placeTask,
+	restoreTaskLists,
+	snapshotTaskLists,
+	taskFromInput,
+} from "./optimistic";
 import type { DraftDefaults } from "./task-draft";
 import { useInvalidateTasks } from "./use-tasks";
 
@@ -38,14 +43,20 @@ export function QuickAdd({
 	const isDesk = useIsDesk();
 	const [text, setText] = useState(initialText ?? "");
 	const invalidate = useInvalidateTasks();
+	const queryClient = useQueryClient();
+	// The task shows in the lists at once; the box is free for the next one.
 	const create = useMutation(
 		trpc.task.create.mutationOptions({
-			onSettled: invalidate,
-			onSuccess: () => {
-				setText("");
-				onAdded?.();
+			onMutate: async (input) => {
+				const snapshot = await snapshotTaskLists(queryClient);
+				placeTask(queryClient, taskFromInput(queryClient, input, null));
+				return { snapshot };
 			},
-			onError: () => toast.error("追加できませんでした"),
+			onError: (_error, _input, context) => {
+				restoreTaskLists(queryClient, context?.snapshot);
+				toast.error("追加できませんでした");
+			},
+			onSettled: invalidate,
 		})
 	);
 
@@ -59,13 +70,20 @@ export function QuickAdd({
 		if (!parsed.title) {
 			return;
 		}
-		create.mutate({
-			labelIds: parsed.labelIds,
-			priority: parsed.priority,
-			projectId: parsed.projectId ?? defaults?.projectId ?? null,
-			scheduledDate: parsed.scheduledDate ?? defaults?.scheduledDate ?? null,
-			title: parsed.title,
-		});
+		const submitted = text;
+		create.mutate(
+			{
+				labelIds: parsed.labelIds,
+				priority: parsed.priority,
+				projectId: parsed.projectId ?? defaults?.projectId ?? null,
+				scheduledDate: parsed.scheduledDate ?? defaults?.scheduledDate ?? null,
+				title: parsed.title,
+			},
+			// Give the text back if it could not be saved.
+			{ onError: () => setText((current) => current || submitted) }
+		);
+		setText("");
+		onAdded?.();
 	};
 
 	return (
@@ -77,7 +95,6 @@ export function QuickAdd({
 				autoComplete="off"
 				// Opened from a shortcut or a share: the box is why the page is open.
 				autoFocus={autoFocus}
-				disabled={create.isPending}
 				enterKeyHint="done"
 				id={id}
 				onChange={(event) => setText(event.target.value)}
@@ -92,7 +109,7 @@ export function QuickAdd({
 			<Button
 				aria-label="追加"
 				className={isDesk ? undefined : "w-[var(--m-control)] px-0"}
-				disabled={create.isPending || !text.trim()}
+				disabled={!text.trim()}
 				size={isDesk ? "icon" : "xl"}
 				title="追加"
 				type="submit"

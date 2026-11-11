@@ -1,9 +1,9 @@
 import { toast } from "sonner";
 import { useStartTimer } from "@/components/time/use-time";
 import type { Project, Task, TaskGroup } from "@/lib/tasks";
-
+import { isOptimistic } from "./optimistic";
 import { TaskRow } from "./task-row";
-import { completeInput, useCompleteTask } from "./use-tasks";
+import { completeInput, useCompleteTask, useCompletingIds } from "./use-tasks";
 
 export function TaskList({
 	groups,
@@ -19,6 +19,7 @@ export function TaskList({
 	today: string;
 }) {
 	const complete = useCompleteTask();
+	const completing = useCompletingIds();
 	const start = useStartTimer();
 	return (
 		<div className="flex flex-col gap-4">
@@ -40,9 +41,8 @@ export function TaskList({
 						{group.tasks.map((task) => (
 							<li key={task.id}>
 								<TaskRow
-									isCompleting={
-										complete.isPending && complete.variables?.id === task.id
-									}
+									isCompleting={completing.has(task.id)}
+									isSaving={isOptimistic(task)}
 									onComplete={(item) => complete.mutate(completeInput(item.id))}
 									onOpen={onOpen}
 									onStartTimer={(item) =>

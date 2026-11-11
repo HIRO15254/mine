@@ -2,11 +2,26 @@ import { vi } from "vitest";
 
 type Fn = (input: unknown) => Promise<unknown>;
 
-function mutation(fn: Fn) {
+function mutation(fn: Fn, path: string[] = []) {
 	return {
+		mutationKey: () => [path],
 		mutationOptions: (options: Record<string, unknown> = {}) => ({
 			...options,
 			mutationFn: fn,
+			mutationKey: [path],
+		}),
+	};
+}
+
+/** A query whose key the app also reads with queryKey() and pathKey(). */
+function query(path: string[], fn: (input: unknown) => Promise<unknown>) {
+	return {
+		pathKey: () => [path],
+		queryKey: (input?: unknown) =>
+			input === undefined ? [path] : [path, { input }],
+		queryOptions: (input?: unknown) => ({
+			queryFn: () => fn(input),
+			queryKey: input === undefined ? [path] : [path, { input }],
 		}),
 	};
 }
@@ -60,12 +75,7 @@ export function createTrpcMock() {
 			},
 		},
 		label: {
-			list: {
-				queryOptions: () => ({
-					queryFn: () => Promise.resolve([]),
-					queryKey: [["label", "list"]],
-				}),
-			},
+			list: query(["label", "list"], () => Promise.resolve([])),
 			pathKey: () => [["label"]],
 		},
 		oauth: {
@@ -88,18 +98,13 @@ export function createTrpcMock() {
 			pathKey: () => [["project"]],
 		},
 		task: {
-			complete: mutation(calls.update),
-			create: mutation(calls.create),
-			delete: mutation(calls.remove),
-			list: {
-				queryOptions: (input: unknown) => ({
-					queryFn: () => Promise.resolve(state.tasks),
-					queryKey: [["task", "list"], { input }],
-				}),
-			},
+			complete: mutation(calls.update, ["task", "complete"]),
+			create: mutation(calls.create, ["task", "create"]),
+			delete: mutation(calls.remove, ["task", "delete"]),
+			list: query(["task", "list"], () => Promise.resolve(state.tasks)),
 			pathKey: () => [["task"]],
-			uncomplete: mutation(calls.update),
-			update: mutation(calls.update),
+			uncomplete: mutation(calls.update, ["task", "uncomplete"]),
+			update: mutation(calls.update, ["task", "update"]),
 		},
 		thread: {
 			list: {
@@ -113,12 +118,7 @@ export function createTrpcMock() {
 		},
 		time: {
 			create: mutation(calls.timeCreate),
-			current: {
-				queryOptions: () => ({
-					queryFn: () => Promise.resolve(state.current),
-					queryKey: [["time", "current"]],
-				}),
-			},
+			current: query(["time", "current"], () => Promise.resolve(state.current)),
 			delete: mutation(calls.remove),
 			list: {
 				queryOptions: (input: unknown) => ({

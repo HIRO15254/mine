@@ -8,7 +8,12 @@ import { useIsDesk } from "@/hooks/use-media-query";
 import type { Project } from "@/lib/tasks";
 import { formatElapsed, type TimeEntry } from "@/lib/time";
 import { TimerInput } from "./timer-input";
-import { useNow, useRunningEntry, useStopTimer } from "./use-time";
+import {
+	isOptimisticEntry,
+	useNow,
+	useRunningEntry,
+	useStopTimer,
+} from "./use-time";
 
 /** The running entry with a stop button, or a form to start one. */
 export function TimerBar({
@@ -128,6 +133,8 @@ export function RunningTimer({
 	const stop = useStopTimer();
 	const isDesk = useIsDesk();
 	const project = projects.find((p) => p.id === entry.projectId);
+	// Until the server has the entry, it cannot be edited or stopped.
+	const saving = isOptimisticEntry(entry);
 	const details = (
 		<>
 			<span className="truncate font-medium desk:text-sm text-[length:var(--m-text-body)]">
@@ -150,7 +157,7 @@ export function RunningTimer({
 					size={isDesk ? 44 : 48}
 				/>
 			) : null}
-			{onEdit ? (
+			{onEdit && !saving ? (
 				<button
 					className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 border-0 bg-transparent p-0 text-left text-foreground outline-none focus-visible:shadow-[0_0_0_2px_var(--ring)]"
 					onClick={() => onEdit(entry)}
@@ -177,7 +184,7 @@ export function RunningTimer({
 			<Button
 				aria-label="計測を止める"
 				className={isDesk ? undefined : "w-[var(--m-control)] px-0"}
-				disabled={stop.isPending}
+				disabled={stop.isPending || saving}
 				onClick={() => stop.mutate()}
 				size={isDesk ? "icon" : "xl"}
 				title="計測を止める"
