@@ -8,6 +8,7 @@ import {
 	shouldSaveQuery,
 	syncOnlineState,
 } from "./lib/offline";
+import { hideSplash } from "./lib/splash";
 import { routeTree } from "./routeTree.gen";
 import { queryClient, trpc } from "./utils/trpc";
 
@@ -43,3 +44,10 @@ if (!rootElement) {
 }
 
 ReactDOM.createRoot(rootElement).render(<RouterProvider router={router} />);
+
+// The launch animation leaves once the first screen has loaded.
+const stopWaiting = router.subscribe("onResolved", () => {
+	stopWaiting();
+	hideSplash();
+});
+window.setTimeout(hideSplash, 6000);

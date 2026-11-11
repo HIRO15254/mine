@@ -137,6 +137,11 @@ try {
 				await page.goto(`${baseUrl}${screen.path}`, {
 					waitUntil: "networkidle",
 				});
+				// Let the launch animation and the cards' entrance finish.
+				await page.waitForSelector("#splash", { state: "detached" });
+				await page.waitForFunction(
+					() => !document.documentElement.classList.contains("app-enter")
+				);
 				await screen.prepare?.(page);
 				await page.evaluate(() => document.fonts.ready);
 				await page.waitForTimeout(400);

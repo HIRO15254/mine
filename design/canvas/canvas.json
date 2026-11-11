@@ -135,6 +135,14 @@
       "h": 844,
       "title": "記録していない予定 · mobile",
       "page": "today"
+    },
+    "launch.mobile.dc.html": {
+      "x": 1360,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "起動 · mobile",
+      "page": "brand"
     }
   },
   "order": [
@@ -149,7 +157,8 @@
     "calendar.desk.dc.html",
     "calendar.mobile.dc.html",
     "timer-input.mobile.dc.html",
-    "event-nudge.mobile.dc.html"
+    "event-nudge.mobile.dc.html",
+    "launch.mobile.dc.html"
   ],
   "notes": {
     "todayTitle": {
@@ -223,6 +232,14 @@
       "fill": "yellow",
       "page": "today",
       "text": "計測が止まっていて、いま進行中の予定に記録がないとき、入力欄の上に予定を出します（予定の色の点つき）。\n「記録」でその予定の開始時刻から計測。× でその予定は出さない。\n予定の色は Google カレンダーで予定ごとに付けた色、なければカレンダーの色。"
+    },
+    "launchNote": {
+      "x": 1820,
+      "y": 0,
+      "w": 340,
+      "fill": "yellow",
+      "page": "brand",
+      "text": "アプリを開いたときのアニメーション (2026-11-11 実装)。\nマークがぼかしから浮かび、プリズムの光がクリスタルを横切る → 「Mine」が字間を詰めながら現れ → 下にプリズムの線が伸びる。\n最初の画面が読み込めたら (最短 1.5 秒) 拡大しながら消え、カードが順に浮き上がる。\n動きを減らす設定では静止したまま消える。ボードは光が通る途中の一瞬。"
     }
   },
   "designSystems": [
