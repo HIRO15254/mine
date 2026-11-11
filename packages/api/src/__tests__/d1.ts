@@ -52,6 +52,22 @@ export function createTestDb() {
 		return statement;
 	};
 
-	const d1 = { prepare } as unknown as D1Database;
+	/**
+	 * Like D1: the statements run in one transaction, all or nothing, and
+	 * nothing else runs between them (node:sqlite is synchronous underneath).
+	 */
+	const batch = (statements: ReturnType<typeof prepare>[]) => {
+		sqlite.exec("BEGIN");
+		try {
+			const results = statements.map((statement) => statement.all());
+			sqlite.exec("COMMIT");
+			return Promise.all(results);
+		} catch (error) {
+			sqlite.exec("ROLLBACK");
+			return Promise.reject(error);
+		}
+	};
+
+	const d1 = { batch, prepare } as unknown as D1Database;
 	return { d1, db: createDb(d1), sqlite };
 }

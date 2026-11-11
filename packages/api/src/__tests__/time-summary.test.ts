@@ -97,4 +97,34 @@ describe("summarize", () => {
 			{ day: "2026-11-06", durationMs: 2.5 * HOUR },
 		]);
 	});
+
+	it("books an entry that crosses midnight to both days, each at its rate", () => {
+		// 2026-11-09 22:00 to 2026-11-10 01:00 in Tokyo; the rate changes on the 10th.
+		const NOV10 = NOV5 + 5 * 24 * HOUR;
+		const summary = summarize(
+			[
+				{
+					billable: true,
+					endedAt: NOV10 + HOUR,
+					projectId: "client",
+					startedAt: NOV10 - 2 * HOUR,
+				},
+			],
+			{
+				from: NOV5,
+				now: NOV10 + HOUR,
+				projects,
+				rates,
+				timeZone: "Asia/Tokyo",
+				to: NOV5 + 7 * 24 * HOUR,
+			}
+		);
+
+		expect(summary.days).toEqual([
+			{ day: "2026-11-09", durationMs: 2 * HOUR },
+			{ day: "2026-11-10", durationMs: HOUR },
+		]);
+		expect(summary.amount).toBe(2 * 1200 + 3000);
+		expect(summary.durationMs).toBe(3 * HOUR);
+	});
 });

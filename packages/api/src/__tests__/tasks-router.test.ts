@@ -56,6 +56,26 @@ describe("project router", () => {
 		});
 	});
 
+	it("keeps a project that has tracked time, here or in a subproject", async () => {
+		const { me } = await setup();
+		const school = await me.project.create({ name: "大学" });
+		const lab = await me.project.create({ name: "研究", parentId: school.id });
+		const entry = await me.time.create({
+			endedAt: 7_200_000,
+			projectId: lab.id,
+			startedAt: 3_600_000,
+		});
+
+		await expect(me.project.delete({ id: school.id })).rejects.toMatchObject({
+			code: "CONFLICT",
+		});
+		expect(await me.project.list()).toHaveLength(2);
+
+		await me.time.delete({ id: entry.id });
+		await me.project.delete({ id: school.id });
+		expect(await me.project.list()).toEqual([]);
+	});
+
 	it("moves tasks to the inbox when their project is deleted", async () => {
 		const { me } = await setup();
 		const school = await me.project.create({ name: "大学" });
@@ -277,6 +297,70 @@ describe("task router", () => {
 			scheduledDate: today,
 		});
 		expect(count()).toBe(0);
+	});
+
+	it("keeps a monthly task on its day after a short month", async () => {
+		const { me } = await setup();
+		const created = await me.task.create({
+			recurrence: { basis: "schedule", interval: 1, unit: "month" },
+			scheduledDate: "2027-01-31",
+			title: "家賃",
+		});
+
+		const february = await me.task.complete({
+			id: created.id,
+			today: "2027-01-31",
+		});
+		expect(february.task).toMatchObject({
+			recurrence: { dayOfMonth: 31 },
+			scheduledDate: "2027-02-28",
+		});
+		const march = await me.task.complete({
+			id: created.id,
+			today: "2027-02-28",
+		});
+		expect(march.task.scheduledDate).toBe("2027-03-31");
+	});
+
+	it("completes once when the same request arrives twice", async () => {
+		const { me, sqlite } = await setup();
+		const once = await me.task.create({ title: "一度きり" });
+		const weekly = await me.task.create({
+			recurrence: { basis: "schedule", interval: 1, unit: "week" },
+			scheduledDate: today,
+			title: "週報",
+		});
+
+		await Promise.all([
+			me.task.complete({ id: once.id, today }),
+			me.task.complete({ id: once.id, today }),
+			me.task.complete({ id: weekly.id, today }),
+			me.task.complete({ id: weekly.id, today }),
+		]);
+
+		expect(
+			sqlite.prepare("select count(*) as n from task_completion").get()
+		).toEqual({ n: 2 });
+		const [next] = await me.task.list({ today: "2026-11-12", view: "today" });
+		expect(next).toMatchObject({ id: weekly.id, scheduledDate: "2026-11-12" });
+	});
+
+	it("writes nothing when a label is not the user's", async () => {
+		const { me, other } = await setup();
+		const theirs = await other.label.create({ name: "他人" });
+		const mine = await me.label.create({ name: "自分" });
+
+		await expect(
+			me.task.create({ labelIds: [theirs.id], title: "作れない" })
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(await me.task.list({ today, view: "inbox" })).toEqual([]);
+
+		const created = await me.task.create({ labelIds: [mine.id], title: "元" });
+		await expect(
+			me.task.update({ id: created.id, labelIds: [theirs.id], title: "変更" })
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		const [kept] = await me.task.list({ today, view: "inbox" });
+		expect(kept).toMatchObject({ labels: [{ name: "自分" }], title: "元" });
 	});
 
 	it("deletes only the owner's tasks", async () => {

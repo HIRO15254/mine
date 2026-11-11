@@ -1,6 +1,5 @@
 import { IconChevronRight, IconPlus, IconTag } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import { TRPCClientError } from "@trpc/client";
 import { type FormEvent, useId, useState } from "react";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
@@ -9,14 +8,10 @@ import { Field } from "@/components/ui/field/field";
 import { Input } from "@/components/ui/input/input";
 import { useIsDesk } from "@/hooks/use-media-query";
 import type { Label } from "@/lib/tasks";
-import { trpc } from "@/utils/trpc";
+import { isConflict, trpc } from "@/utils/trpc";
 
 import { ConfirmDeleteButton } from "./confirm-delete-button";
 import { useInvalidateTasks, useTaskContext } from "./use-tasks";
-
-function isConflict(error: unknown): boolean {
-	return error instanceof TRPCClientError && error.data?.code === "CONFLICT";
-}
 
 export function LabelSettings() {
 	const { isPending, labels } = useTaskContext();

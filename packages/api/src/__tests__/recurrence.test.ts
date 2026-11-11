@@ -5,6 +5,7 @@ import {
 	advanceDates,
 	nextOccurrence,
 	parseRecurrence,
+	pinDayOfMonth,
 	type Recurrence,
 	serializeRecurrence,
 } from "../tasks/recurrence";
@@ -83,6 +84,30 @@ describe("nextOccurrence", () => {
 		expect(nextOccurrence(monthly, "2027-02-28", "2027-02-28")).toBe(
 			"2027-03-31"
 		);
+	});
+
+	it("lands on the rule's day when it is still ahead in the same month", () => {
+		const monthly = rule({ dayOfMonth: 20, unit: "month" });
+		expect(nextOccurrence(monthly, "2027-01-15", "2027-01-15")).toBe(
+			"2027-01-20"
+		);
+		expect(nextOccurrence(monthly, "2027-01-15", "2027-01-25")).toBe(
+			"2027-02-20"
+		);
+	});
+
+	it("pins a monthly rule to the anchor's day", () => {
+		const monthly = rule({ unit: "month" });
+		expect(pinDayOfMonth(monthly, "2027-01-31")).toEqual({
+			...monthly,
+			dayOfMonth: 31,
+		});
+		const fixed = rule({ dayOfMonth: 5, unit: "month" });
+		expect(pinDayOfMonth(fixed, "2027-01-31")).toBe(fixed);
+		const fromDone = rule({ basis: "completion", unit: "month" });
+		expect(pinDayOfMonth(fromDone, "2027-01-31")).toBe(fromDone);
+		const weekly = rule({ unit: "week" });
+		expect(pinDayOfMonth(weekly, "2027-01-31")).toBe(weekly);
 	});
 
 	it("counts from the completion day", () => {

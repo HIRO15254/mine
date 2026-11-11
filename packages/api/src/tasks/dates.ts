@@ -35,6 +35,11 @@ export function weekday(key: string): number {
 	return fromDayKey(key).getUTCDay();
 }
 
+/** 1–31 */
+export function dayOfMonth(key: string): number {
+	return fromDayKey(key).getUTCDate();
+}
+
 /** Same day-of-month `months` later, clamped to the month's last day. */
 export function addMonths(
 	key: string,

@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-import { addDays, addMonths, diffDays, maxDay, weekday } from "./dates";
+import {
+	addDays,
+	addMonths,
+	dayOfMonth,
+	diffDays,
+	maxDay,
+	weekday,
+} from "./dates";
 
 /**
  * A deliberately small recurrence model:
@@ -51,7 +58,9 @@ function nextWeekly(rule: Recurrence, anchor: string, after: string): string {
 }
 
 function nextMonthly(rule: Recurrence, anchor: string, after: string): string {
-	for (let step = 1; step <= 1200; step += 1) {
+	// Step 0 is the rule's day in the anchor's own month, which can still be
+	// ahead (a task on the 28th that repeats on the 31st).
+	for (let step = 0; step <= 1200; step += 1) {
 		const day = addMonths(anchor, step * rule.interval, rule.dayOfMonth);
 		if (day > after) {
 			return day;
@@ -97,14 +106,29 @@ export interface TaskDates {
 	startDate: string | null;
 }
 
+/** The date a recurring task counts from: its schedule, else its deadline. */
+export function anchorDay(dates: TaskDates, today: string): string {
+	return dates.scheduledDate ?? dates.deadline ?? dates.startDate ?? today;
+}
+
+/**
+ * A monthly rule without a day takes the anchor's. Without it a task on the
+ * 31st would land on the 28th in February and stay there ever after.
+ */
+export function pinDayOfMonth(rule: Recurrence, anchor: string): Recurrence {
+	if (rule.unit !== "month" || rule.basis !== "schedule" || rule.dayOfMonth) {
+		return rule;
+	}
+	return { ...rule, dayOfMonth: dayOfMonth(anchor) };
+}
+
 /** Moves every date of a recurring task by the same number of days. */
 export function advanceDates(
 	rule: Recurrence,
 	dates: TaskDates,
 	today: string
 ): TaskDates {
-	const anchor =
-		dates.scheduledDate ?? dates.deadline ?? dates.startDate ?? today;
+	const anchor = anchorDay(dates, today);
 	const next = nextOccurrence(rule, anchor, today);
 	if (!(dates.scheduledDate || dates.deadline || dates.startDate)) {
 		return { deadline: null, scheduledDate: next, startDate: null };

@@ -86,16 +86,38 @@ const normalize = (value: string) =>
 		.replaceAll(/\s*\/\s*/g, "/")
 		.trim();
 
-export function findProject(
-	projects: Project[],
-	query: string
-): Project | undefined {
+/** Open projects the query names: by full path, otherwise by name alone. */
+function matchProjects(projects: Project[], query: string): Project[] {
 	const wanted = normalize(query);
 	const open = projects.filter((p) => !p.archived);
-	return (
-		open.find((p) => normalize(pathOf(projects, p.id) ?? "") === wanted) ??
-		open.find((p) => normalize(p.name) === wanted)
+	const byPath = open.filter(
+		(p) => normalize(pathOf(projects, p.id) ?? "") === wanted
 	);
+	return byPath.length > 0
+		? byPath
+		: open.filter((p) => normalize(p.name) === wanted);
+}
+
+/**
+ * The one open project the query names. An unknown name lists the projects
+ * there are, and a name shared by several lists those, so the caller can
+ * retry with a full path instead of landing on whichever came first.
+ */
+export function resolveProject(projects: Project[], query: string): Project {
+	const matches = matchProjects(projects, query);
+	const [match] = matches;
+	if (match && matches.length === 1) {
+		return match;
+	}
+	const paths = (list: Project[]) =>
+		list.map((p) => pathOf(projects, p.id)).join(", ");
+	const open = projects.filter((p) => !p.archived);
+	throw new TRPCError({
+		code: "BAD_REQUEST",
+		message: match
+			? `"${query}" matches several projects: ${paths(matches)}. Use the full path.`
+			: `Unknown project "${query}". Projects: ${paths(open) || "(none)"}`,
+	});
 }
 
 export async function startTimer(
@@ -105,14 +127,7 @@ export async function startTimer(
 ): Promise<TimerStatus> {
 	let projectId = input.projectId;
 	if (input.project && !projectId) {
-		const match = findProject(await caller.project.list(), input.project);
-		if (!match) {
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: `Unknown project: ${input.project}`,
-			});
-		}
-		projectId = match.id;
+		projectId = resolveProject(await caller.project.list(), input.project).id;
 	}
 	await caller.time.start({
 		description: input.description,

@@ -1,7 +1,7 @@
 import { project, task } from "@mine/db/schema/tasks";
 import { projectRate, timeEntry } from "@mine/db/schema/time";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, gt, isNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Context } from "../context";
@@ -78,6 +78,32 @@ async function assertRefs(
 	}
 }
 
+/**
+ * Checks a new entry's project and task. The task lends its title and its
+ * project when the entry names none; an explicit null keeps it without one.
+ */
+async function resolveEntryRefs(
+	ctx: Db,
+	userId: string,
+	input: {
+		description?: string;
+		projectId?: string | null;
+		taskId?: string | null;
+	}
+) {
+	let projectId = input.projectId ?? null;
+	let text = input.description ?? "";
+	if (input.taskId) {
+		const owned = await findOwnedTask(ctx, userId, input.taskId);
+		projectId = input.projectId === undefined ? owned.projectId : projectId;
+		text = text || owned.title;
+	}
+	if (projectId) {
+		await assertProject(ctx, userId, projectId);
+	}
+	return { description: text, projectId };
+}
+
 async function findEntry(ctx: Db, userId: string, id: string) {
 	const [row] = await ctx.db
 		.select()
@@ -90,28 +116,29 @@ async function findEntry(ctx: Db, userId: string, id: string) {
 	return row;
 }
 
+function running(userId: string) {
+	return and(eq(timeEntry.userId, userId), isNull(timeEntry.endedAt));
+}
+
 async function runningEntry(ctx: Db, userId: string) {
 	const [row] = await ctx.db
 		.select()
 		.from(timeEntry)
-		.where(and(eq(timeEntry.userId, userId), isNull(timeEntry.endedAt)))
+		.where(running(userId))
 		.orderBy(desc(timeEntry.startedAt))
 		.limit(1);
 	return row ?? null;
 }
 
-/** Stops every running entry; a start time in the future is pulled back. */
+/** Stops the running entry; a start time in the future is pulled back. */
 async function stopRunning(ctx: Db, userId: string, now: number) {
-	const running = await runningEntry(ctx, userId);
-	if (!running) {
+	const current = await runningEntry(ctx, userId);
+	if (!current) {
 		return null;
 	}
-	const endedAt = Math.max(now, running.startedAt);
-	await ctx.db
-		.update(timeEntry)
-		.set({ endedAt })
-		.where(and(eq(timeEntry.userId, userId), isNull(timeEntry.endedAt)));
-	return toEntry({ ...running, endedAt });
+	const endedAt = Math.max(now, current.startedAt);
+	await ctx.db.update(timeEntry).set({ endedAt }).where(running(userId));
+	return toEntry({ ...current, endedAt });
 }
 
 function assertSpan(startedAt: number, endedAt: number | null) {
@@ -163,34 +190,30 @@ export const timeRouter = router({
 		.input(z.object({ ...entryFields, startedAt: instant.optional() }))
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
-			let projectId = input.projectId ?? null;
-			let text = input.description ?? "";
-			if (input.taskId) {
-				const owned = await findOwnedTask(ctx, userId, input.taskId);
-				projectId = input.projectId === undefined ? owned.projectId : projectId;
-				text = text || owned.title;
-			}
-			if (projectId) {
-				await assertProject(ctx, userId, projectId);
-			}
+			const refs = await resolveEntryRefs(ctx, userId, input);
 			const now = ctx.now();
 			const startedAt = input.startedAt ?? now;
 			if (startedAt > now || now - startedAt > MAX_ENTRY_SPAN) {
 				badRequest("startedAt must be in the past week");
 			}
-			// A backdated start also ends the running entry there.
-			await stopRunning(ctx, userId, startedAt);
 			const row = {
+				...refs,
 				billable: input.billable ?? true,
-				description: text,
 				endedAt: null,
 				id: crypto.randomUUID(),
-				projectId,
 				startedAt,
 				taskId: input.taskId ?? null,
 				userId,
 			};
-			await ctx.db.insert(timeEntry).values(row);
+			// One transaction, so two starts at once cannot leave two timers
+			// running. A backdated start also ends the running entry there.
+			await ctx.db.batch([
+				ctx.db
+					.update(timeEntry)
+					.set({ endedAt: sql`max(${timeEntry.startedAt}, ${startedAt})` })
+					.where(running(userId)),
+				ctx.db.insert(timeEntry).values(row),
+			]);
 			return toEntry({ ...row, createdAt: new Date(now) });
 		}),
 
@@ -215,13 +238,12 @@ export const timeRouter = router({
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
 			assertSpan(input.startedAt, input.endedAt);
-			await assertRefs(ctx, userId, input);
+			const refs = await resolveEntryRefs(ctx, userId, input);
 			const row = {
+				...refs,
 				billable: input.billable ?? true,
-				description: input.description ?? "",
 				endedAt: input.endedAt,
 				id: crypto.randomUUID(),
-				projectId: input.projectId ?? null,
 				startedAt: input.startedAt,
 				taskId: input.taskId ?? null,
 				userId,

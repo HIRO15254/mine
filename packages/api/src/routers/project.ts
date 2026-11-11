@@ -1,4 +1,5 @@
 import { PROJECT_COLORS, project } from "@mine/db/schema/tasks";
+import { timeEntry } from "@mine/db/schema/time";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
@@ -121,12 +122,46 @@ export const projectRouter = router({
 			return findProject(ctx, userId, id);
 		}),
 
-	/** Deletes the project and its subprojects; their tasks move to the inbox. */
+	/**
+	 * Deletes the project and its subprojects; their tasks move to the inbox.
+	 * Refused while any of them has tracked time: the entries would lose their
+	 * project and its rates, which rewrites past totals. Archive those instead.
+	 */
 	delete: protectedProcedure
 		.input(z.object({ id: z.string().min(1) }))
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
 			await findProject(ctx, userId, input.id);
+			const [all, tracked] = await Promise.all([
+				ctx.db
+					.select({ id: project.id, parentId: project.parentId })
+					.from(project)
+					.where(eq(project.userId, userId)),
+				ctx.db
+					.selectDistinct({ projectId: timeEntry.projectId })
+					.from(timeEntry)
+					.where(eq(timeEntry.userId, userId)),
+			]);
+			const doomed = new Set([input.id]);
+			for (let grew = true; grew; ) {
+				grew = false;
+				for (const item of all) {
+					if (
+						item.parentId &&
+						doomed.has(item.parentId) &&
+						!doomed.has(item.id)
+					) {
+						doomed.add(item.id);
+						grew = true;
+					}
+				}
+			}
+			if (tracked.some((row) => row.projectId && doomed.has(row.projectId))) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "The project has time entries; archive it instead",
+				});
+			}
 			await ctx.db
 				.delete(project)
 				.where(and(eq(project.id, input.id), eq(project.userId, userId)));

@@ -12,7 +12,7 @@ import { project, task } from "./tasks";
 
 /**
  * One block of tracked time. Times are epoch milliseconds; a null endedAt is
- * the running timer (at most one per user, enforced by the API).
+ * the running timer (at most one per user, enforced by a partial index).
  */
 export const timeEntry = sqliteTable(
 	"time_entry",
@@ -39,6 +39,9 @@ export const timeEntry = sqliteTable(
 		index("time_entry_user_started_idx").on(table.userId, table.startedAt),
 		index("time_entry_project_idx").on(table.projectId),
 		index("time_entry_task_idx").on(table.taskId),
+		uniqueIndex("time_entry_running_idx")
+			.on(table.userId)
+			.where(sql`${table.endedAt} is null`),
 	]
 );
 

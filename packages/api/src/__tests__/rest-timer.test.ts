@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import { createContextFactory } from "../context";
 import {
-	findProject,
 	formatElapsed,
 	projectChoices,
+	resolveProject,
 	startTimer,
 	statusOf,
 	stopTimer,
@@ -84,13 +84,31 @@ describe("REST timer", () => {
 		});
 	});
 
+	it("asks for the full path when a name fits several projects", async () => {
+		const { caller, lab } = await setup();
+		const club = await caller.project.create({ name: "サークル" });
+		await caller.project.create({ name: "研究", parentId: club.id });
+		const projects = await caller.project.list();
+
+		expect(() => resolveProject(projects, "研究")).toThrow(
+			'"研究" matches several projects: 大学 / 研究, サークル / 研究. Use the full path.'
+		);
+		expect(resolveProject(projects, "大学 / 研究").id).toBe(lab.id);
+		await expect(
+			startTimer(caller, { project: "研究" }, START)
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(caller.time.current()).resolves.toBeNull();
+	});
+
 	it("matches projects by name and rejects unknown ones", async () => {
 		const { caller, uni } = await setup();
 		const projects = await caller.project.list();
 
-		expect(findProject(projects, " 研究 ")?.name).toBe("研究");
-		expect(findProject(projects, "大学")?.id).toBe(uni.id);
-		expect(findProject(projects, "旧")).toBeUndefined();
+		expect(resolveProject(projects, " 研究 ").name).toBe("研究");
+		expect(resolveProject(projects, "大学").id).toBe(uni.id);
+		expect(() => resolveProject(projects, "旧")).toThrow(
+			'Unknown project "旧". Projects: 大学, 大学 / 研究'
+		);
 		await expect(
 			startTimer(caller, { project: "どこか" }, START)
 		).rejects.toMatchObject({ code: "BAD_REQUEST" });

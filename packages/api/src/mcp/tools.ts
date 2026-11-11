@@ -1,7 +1,12 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { findProject, startTimer, stopTimer, timerStatus } from "../rest/timer";
+import {
+	resolveProject,
+	startTimer,
+	stopTimer,
+	timerStatus,
+} from "../rest/timer";
 import type { appRouter } from "../routers/index";
 import { threadUrl } from "../routers/thread";
 import { addDays, isDayKey } from "../tasks/dates";
@@ -94,18 +99,6 @@ function projectPath(projects: Project[], id: string | null): string | null {
 		current = current.parentId ? byId.get(current.parentId) : undefined;
 	}
 	return names.length > 0 ? names.join(" / ") : null;
-}
-
-function resolveProject(projects: Project[], ref: string): Project {
-	const match = findProject(projects, ref);
-	if (!match) {
-		const known = projects
-			.filter((item) => !item.archived)
-			.map((item) => projectPath(projects, item.id))
-			.join(", ");
-		fail(`Unknown project "${ref}". Projects: ${known || "(none)"}`);
-	}
-	return match;
 }
 
 function resolveLabels(labels: Label[], names: string[]): string[] {
@@ -420,7 +413,7 @@ const addTimeEntry = defineTool({
 	name: "add_time_entry",
 	title: "記録を追加",
 	description:
-		"Records time already spent, e.g. 「昨日 10 時から 2 時間、論文を読んだ」.",
+		"Records time already spent, e.g. 「昨日 10 時から 2 時間、論文を読んだ」. With taskId the description and project come from the task unless given.",
 	annotations: {},
 	input: z.object({
 		billable: z.boolean().optional(),
@@ -536,8 +529,9 @@ const listEvents = defineTool({
 					compact({
 						allDay: event.allDay || undefined,
 						calendar: names.get(event.calendarId),
+						// Google ends an all-day event on the day after its last.
 						end: event.allDay
-							? event.end
+							? addDays(event.end, -1)
 							: localTime(Date.parse(event.end), env.timeZone),
 						location: event.location,
 						start: event.allDay

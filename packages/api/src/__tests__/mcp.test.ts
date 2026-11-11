@@ -59,7 +59,7 @@ async function setup() {
 			text,
 		};
 	};
-	return { call, rpc };
+	return { call, env, rpc };
 }
 
 describe("time zone helpers", () => {
@@ -269,6 +269,55 @@ describe("MCP tools", () => {
 				{ id: "p3", path: "生活" },
 			],
 		});
+	});
+
+	it("ends an all-day event on its last day", async () => {
+		const { call, env } = await setup();
+		env.caller = {
+			calendar: {
+				events: () =>
+					Promise.resolve({
+						calendars: [{ id: "c1", name: "予定" }],
+						events: [
+							{
+								allDay: true,
+								calendarId: "c1",
+								end: "2026-11-09",
+								start: "2026-11-07",
+								title: "学会",
+							},
+							{
+								allDay: false,
+								calendarId: "c1",
+								end: "2026-11-06T02:00:00Z",
+								start: "2026-11-06T01:00:00Z",
+								title: "ゼミ",
+							},
+						],
+					}),
+			},
+		} as unknown as ToolEnv["caller"];
+
+		const events = await call("list_events", {
+			from: "2026-11-06",
+			to: "2026-11-08",
+		});
+
+		expect(events.data.events).toEqual([
+			{
+				calendar: "予定",
+				end: "2026-11-06 11:00",
+				start: "2026-11-06 10:00",
+				title: "ゼミ",
+			},
+			{
+				allDay: true,
+				calendar: "予定",
+				end: "2026-11-08",
+				start: "2026-11-07",
+				title: "学会",
+			},
+		]);
 	});
 
 	it("needs Google for events", async () => {

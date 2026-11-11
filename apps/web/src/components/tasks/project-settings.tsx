@@ -23,7 +23,7 @@ import {
 	type ProjectColor,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/utils/trpc";
+import { isConflict, trpc } from "@/utils/trpc";
 
 import { ConfirmDeleteButton } from "./confirm-delete-button";
 import { useInvalidateTasks, useTaskContext } from "./use-tasks";
@@ -143,7 +143,12 @@ function ProjectEditor({
 	const remove = useMutation(
 		trpc.project.delete.mutationOptions({
 			...options,
-			onError: () => setError("削除できませんでした"),
+			onError: (cause) =>
+				setError(
+					isConflict(cause)
+						? "記録があるので削除できません。アーカイブしてください"
+						: "削除できませんでした"
+				),
 		})
 	);
 
@@ -249,7 +254,7 @@ function ProjectEditor({
 				)}
 				{project && (
 					<p className="m-0 text-muted-foreground text-xs">
-						削除するとサブプロジェクトも消え、タスクはインボックスに移ります。
+						削除するとサブプロジェクトも消え、タスクはインボックスに移ります。記録があるプロジェクトは削除できません。
 					</p>
 				)}
 				{error && <FieldError>{error}</FieldError>}

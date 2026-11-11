@@ -6,7 +6,7 @@ import {
 	taskLabel,
 } from "@mine/db/schema/tasks";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Context } from "../context";
@@ -14,7 +14,9 @@ import { protectedProcedure, router } from "../index";
 import { isDayKey } from "../tasks/dates";
 import {
 	advanceDates,
+	anchorDay,
 	parseRecurrence,
+	pinDayOfMonth,
 	recurrenceSchema,
 	serializeRecurrence,
 } from "../tasks/recurrence";
@@ -110,12 +112,8 @@ async function assertProject(ctx: Db, userId: string, projectId: string) {
 	}
 }
 
-async function setLabels(
-	ctx: Db,
-	userId: string,
-	taskId: string,
-	labelIds: string[]
-) {
+/** The distinct label ids, once all of them are known to be the user's. */
+async function ownedLabelIds(ctx: Db, userId: string, labelIds: string[]) {
 	const unique = [...new Set(labelIds)];
 	if (unique.length > 0) {
 		const owned = await ctx.db
@@ -126,12 +124,13 @@ async function setLabels(
 			throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown label" });
 		}
 	}
-	await ctx.db.delete(taskLabel).where(eq(taskLabel.taskId, taskId));
-	if (unique.length > 0) {
-		await ctx.db
-			.insert(taskLabel)
-			.values(unique.map((labelId) => ({ labelId, taskId })));
-	}
+	return unique;
+}
+
+function attachLabels(ctx: Db, taskId: string, labelIds: string[]) {
+	return ctx.db
+		.insert(taskLabel)
+		.values(labelIds.map((labelId) => ({ labelId, taskId })));
 }
 
 export const taskRouter = router({
@@ -182,11 +181,14 @@ export const taskRouter = router({
 		.input(z.object(taskFields))
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
+			// Everything is checked before the first write, and the writes go in
+			// one transaction, so a bad label cannot leave half a task behind.
 			if (input.projectId) {
 				await assertProject(ctx, userId, input.projectId);
 			}
+			const labelIds = await ownedLabelIds(ctx, userId, input.labelIds ?? []);
 			const id = crypto.randomUUID();
-			await ctx.db.insert(task).values({
+			const insert = ctx.db.insert(task).values({
 				deadline: input.deadline ?? null,
 				estimateMinutes: input.estimateMinutes ?? null,
 				id,
@@ -202,8 +204,10 @@ export const taskRouter = router({
 				title: input.title,
 				userId,
 			});
-			if (input.labelIds?.length) {
-				await setLabels(ctx, userId, id, input.labelIds);
+			if (labelIds.length > 0) {
+				await ctx.db.batch([insert, attachLabels(ctx, id, labelIds)]);
+			} else {
+				await insert;
 			}
 			return loadTask(ctx, userId, id);
 		}),
@@ -223,6 +227,7 @@ export const taskRouter = router({
 				await assertProject(ctx, userId, input.projectId);
 			}
 			const { id, labelIds, recurrence, ...fields } = input;
+			const labels = labelIds && (await ownedLabelIds(ctx, userId, labelIds));
 			const changes = Object.fromEntries(
 				Object.entries(fields).filter(([, value]) => value !== undefined)
 			);
@@ -232,14 +237,23 @@ export const taskRouter = router({
 			if (recurrence !== undefined) {
 				changes.recurrence = serializeRecurrence(recurrence);
 			}
-			if (Object.keys(changes).length > 0) {
-				await ctx.db
-					.update(task)
-					.set(changes)
-					.where(and(eq(task.id, id), eq(task.userId, userId)));
-			}
-			if (labelIds) {
-				await setLabels(ctx, userId, id, labelIds);
+			const writes = [
+				...(Object.keys(changes).length > 0
+					? [
+							ctx.db
+								.update(task)
+								.set(changes)
+								.where(and(eq(task.id, id), eq(task.userId, userId))),
+						]
+					: []),
+				...(labels
+					? [ctx.db.delete(taskLabel).where(eq(taskLabel.taskId, id))]
+					: []),
+				...(labels?.length ? [attachLabels(ctx, id, labels)] : []),
+			];
+			const [first, ...rest] = writes;
+			if (first) {
+				await ctx.db.batch([first, ...rest]);
 			}
 			return loadTask(ctx, userId, id);
 		}),
@@ -254,19 +268,45 @@ export const taskRouter = router({
 				return { recurring: false, task: await loadTask(ctx, userId, row.id) };
 			}
 			const now = new Date();
-			await ctx.db.insert(taskCompletion).values({
-				completedAt: now,
-				deadline: row.deadline,
-				id: crypto.randomUUID(),
-				scheduledDate: row.scheduledDate,
-				startDate: row.startDate,
-				taskId: row.id,
-			});
-			const rule = parseRecurrence(row.recurrence);
-			await ctx.db
-				.update(task)
-				.set(rule ? advanceDates(rule, row, input.today) : { completedAt: now })
-				.where(eq(task.id, row.id));
+			const parsed = parseRecurrence(row.recurrence);
+			const rule = parsed && pinDayOfMonth(parsed, anchorDay(row, input.today));
+			// Both writes apply only while the task is as it was read, so a
+			// repeated request cannot complete it twice or skip an occurrence.
+			const asRead = and(
+				eq(task.id, row.id),
+				isNull(task.completedAt),
+				sql`${task.startDate} is ${row.startDate}`,
+				sql`${task.scheduledDate} is ${row.scheduledDate}`,
+				sql`${task.deadline} is ${row.deadline}`
+			);
+			await ctx.db.batch([
+				ctx.db.insert(taskCompletion).select(
+					ctx.db
+						.select({
+							id: sql<string>`${crypto.randomUUID()}`.as("id"),
+							taskId: task.id,
+							completedAt: sql<Date>`${Math.floor(now.getTime() / 1000)}`.as(
+								"completed_at"
+							),
+							startDate: task.startDate,
+							scheduledDate: task.scheduledDate,
+							deadline: task.deadline,
+						})
+						.from(task)
+						.where(asRead)
+				),
+				ctx.db
+					.update(task)
+					.set(
+						rule
+							? {
+									...advanceDates(rule, row, input.today),
+									recurrence: serializeRecurrence(rule),
+								}
+							: { completedAt: now }
+					)
+					.where(asRead),
+			]);
 			return {
 				recurring: rule !== null,
 				task: await loadTask(ctx, userId, row.id),
@@ -288,19 +328,21 @@ export const taskRouter = router({
 			if (!last) {
 				return loadTask(ctx, userId, row.id);
 			}
-			await ctx.db
-				.update(task)
-				.set(
-					row.completedAt
-						? { completedAt: null }
-						: {
-								deadline: last.deadline,
-								scheduledDate: last.scheduledDate,
-								startDate: last.startDate,
-							}
-				)
-				.where(eq(task.id, row.id));
-			await ctx.db.delete(taskCompletion).where(eq(taskCompletion.id, last.id));
+			await ctx.db.batch([
+				ctx.db
+					.update(task)
+					.set(
+						row.completedAt
+							? { completedAt: null }
+							: {
+									deadline: last.deadline,
+									scheduledDate: last.scheduledDate,
+									startDate: last.startDate,
+								}
+					)
+					.where(eq(task.id, row.id)),
+				ctx.db.delete(taskCompletion).where(eq(taskCompletion.id, last.id)),
+			]);
 			return loadTask(ctx, userId, row.id);
 		}),
 

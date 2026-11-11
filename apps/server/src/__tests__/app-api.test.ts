@@ -99,7 +99,7 @@ describe("app API", () => {
 		});
 		expect(unknown.status).toBe(400);
 		await expect(unknown.json()).resolves.toEqual({
-			error: "Unknown project: どこか",
+			error: 'Unknown project "どこか". Projects: 仕事',
 		});
 
 		const broken = await call("/v1/timer/start", {

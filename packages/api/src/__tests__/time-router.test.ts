@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { createContextFactory } from "../context";
@@ -23,7 +25,12 @@ async function setup() {
 				{ now: () => clock.now }
 			)()
 		);
-	return { clock, me: await callerFor("u1"), other: await callerFor("u2") };
+	return {
+		clock,
+		me: await callerFor("u1"),
+		other: await callerFor("u2"),
+		sqlite,
+	};
 }
 
 describe("time router", () => {
@@ -61,6 +68,85 @@ describe("time router", () => {
 		});
 		await expect(me.time.current()).resolves.toBeNull();
 		await expect(me.time.stop()).resolves.toBeNull();
+	});
+
+	it("never leaves two timers running", async () => {
+		const { me, sqlite } = await setup();
+
+		await Promise.all([
+			me.time.start({ description: "一つ目" }),
+			me.time.start({ description: "二つ目" }),
+		]);
+
+		expect(
+			sqlite
+				.prepare(
+					"select count(*) as total, count(ended_at) as ended from time_entry"
+				)
+				.get()
+		).toEqual({ ended: 1, total: 2 });
+		// The database refuses a second one whatever the caller does.
+		expect(() =>
+			sqlite
+				.prepare(
+					"insert into time_entry (id, user_id, started_at) values ('x', 'u1', 1)"
+				)
+				.run()
+		).toThrow();
+	});
+
+	it("closes all but the newest running entry when the rule arrives", async () => {
+		const { sqlite } = await setup();
+		sqlite.exec("drop index time_entry_running_idx");
+		const insert = sqlite.prepare(
+			"insert into time_entry (id, user_id, started_at) values (?, ?, ?)"
+		);
+		insert.run("a", "u1", 100);
+		insert.run("b", "u1", 300);
+		insert.run("c", "u1", 200);
+		insert.run("d", "u2", 50);
+
+		const migration = readFileSync(
+			path.resolve(
+				import.meta.dirname,
+				"../../../db/src/migrations/0008_single_running_timer.sql"
+			),
+			"utf8"
+		);
+		for (const statement of migration.split("--> statement-breakpoint")) {
+			sqlite.exec(statement);
+		}
+
+		expect(
+			sqlite.prepare("select id, ended_at from time_entry order by id").all()
+		).toEqual([
+			{ ended_at: 300, id: "a" },
+			{ ended_at: null, id: "b" },
+			{ ended_at: 300, id: "c" },
+			{ ended_at: null, id: "d" },
+		]);
+	});
+
+	it("gives a manual entry its task's project and title", async () => {
+		const { me } = await setup();
+		const work = await me.project.create({ name: "仕事" });
+		const report = await me.task.create({
+			projectId: work.id,
+			title: "報告書",
+		});
+		const span = { endedAt: NOV5 + HOUR, startedAt: NOV5 };
+
+		await expect(
+			me.time.create({ ...span, taskId: report.id })
+		).resolves.toMatchObject({ description: "報告書", projectId: work.id });
+		await expect(
+			me.time.create({
+				...span,
+				description: "下書き",
+				projectId: null,
+				taskId: report.id,
+			})
+		).resolves.toMatchObject({ description: "下書き", projectId: null });
 	});
 
 	it("backdates a start and ends the running entry there", async () => {

@@ -1,11 +1,21 @@
+import { addDays } from "../tasks/dates";
+import { startOfDayIn } from "./zone";
+
+const dayFormats = new Map<string, Intl.DateTimeFormat>();
+
 /** Local calendar day (YYYY-MM-DD) of an instant in the given time zone. */
 export function localDay(ms: number, timeZone: string): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		day: "2-digit",
-		month: "2-digit",
-		timeZone,
-		year: "numeric",
-	}).format(new Date(ms));
+	let format = dayFormats.get(timeZone);
+	if (!format) {
+		format = new Intl.DateTimeFormat("en-CA", {
+			day: "2-digit",
+			month: "2-digit",
+			timeZone,
+			year: "numeric",
+		});
+		dayFormats.set(timeZone, format);
+	}
+	return format.format(new Date(ms));
 }
 
 export function isTimeZone(value: string): boolean {
@@ -79,8 +89,8 @@ const HOUR = 3_600_000;
 
 /**
  * Totals entries inside [from, to). Entries are clipped to the range, a
- * running entry counts up to `now`, and time is booked to the local day it
- * started on.
+ * running entry counts up to `now`, and an entry that crosses local midnight
+ * is booked to each day it covers, at that day's rate.
  */
 export function summarize(
 	entries: SummaryEntry[],
@@ -96,33 +106,45 @@ export function summarize(
 	const { from, now, projects, rates, timeZone, to } = options;
 	const byProject = new Map<string | null, ProjectTotal>();
 	const byDay = new Map<string, number>();
+	const dayEnds = new Map<string, number>();
+	const endOf = (day: string) => {
+		let end = dayEnds.get(day);
+		if (end === undefined) {
+			end = startOfDayIn(addDays(day, 1), timeZone);
+			dayEnds.set(day, end);
+		}
+		return end;
+	};
 	let durationMs = 0;
 	let amount = 0;
 	for (const entry of entries) {
-		const start = Math.max(entry.startedAt, from);
 		const end = Math.min(entry.endedAt ?? now, to);
-		if (end <= start) {
-			continue;
+		let start = Math.max(entry.startedAt, from);
+		while (start < end) {
+			const day = localDay(start, timeZone);
+			const dayEnd = endOf(day);
+			// A day boundary that fails to move forward ends the walk.
+			const stop = dayEnd > start ? Math.min(dayEnd, end) : end;
+			const ms = stop - start;
+			const rate = entry.billable
+				? rateFor(entry.projectId, day, projects, rates)
+				: null;
+			const total = byProject.get(entry.projectId) ?? {
+				amount: null,
+				durationMs: 0,
+				projectId: entry.projectId,
+			};
+			total.durationMs += ms;
+			if (rate !== null) {
+				const value = (ms / HOUR) * rate;
+				total.amount = (total.amount ?? 0) + value;
+				amount += value;
+			}
+			byProject.set(entry.projectId, total);
+			byDay.set(day, (byDay.get(day) ?? 0) + ms);
+			durationMs += ms;
+			start = stop;
 		}
-		const ms = end - start;
-		const day = localDay(start, timeZone);
-		const rate = entry.billable
-			? rateFor(entry.projectId, day, projects, rates)
-			: null;
-		const total = byProject.get(entry.projectId) ?? {
-			amount: null,
-			durationMs: 0,
-			projectId: entry.projectId,
-		};
-		total.durationMs += ms;
-		if (rate !== null) {
-			const value = (ms / HOUR) * rate;
-			total.amount = (total.amount ?? 0) + value;
-			amount += value;
-		}
-		byProject.set(entry.projectId, total);
-		byDay.set(day, (byDay.get(day) ?? 0) + ms);
-		durationMs += ms;
 	}
 	return {
 		amount: Math.round(amount),
