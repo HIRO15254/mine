@@ -20,6 +20,7 @@ This file is the source of truth for every coding agent working in this reposito
 - `bun run test:coverage`: run the coverage suite
 - `bun run check:test-discovery`: verify each test belongs to exactly one project
 - `bun run build`: build all applications
+- `bun run verify`: run everything the deploy gate runs (binding types, types, lint, test discovery, coverage tests, builds); run it before pushing
 - `bun run cf:typegen`: regenerate Cloudflare binding types after changing `wrangler.jsonc`
 - `bun run db:generate`: generate a D1 migration after changing the schema
 - `bun run db:migrate:local`: apply migrations to the local D1 database

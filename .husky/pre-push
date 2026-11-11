@@ -1,0 +1,2 @@
+# A push to master deploys production, so run what the deploy gate runs.
+bun run verify

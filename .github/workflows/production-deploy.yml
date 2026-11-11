@@ -9,13 +9,19 @@ concurrency:
   group: production-deploy
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
+# The Cloudflare token is given only to the steps that deploy, so installing
+# dependencies and running tests never see it.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
 jobs:
   ci:
+    # A manual run from another branch must not reach production.
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -26,11 +32,10 @@ jobs:
         with:
           bun-version: 1.3.10
       - run: bun install --frozen-lockfile
-      - run: bun run cf:typegen:check
-      - run: bun run check-types
-      - run: bun run check
-      - run: bun run check:test-discovery
-      - run: bun run test:coverage
+      # Types, lint, tests and both builds: nothing is deployed unless all pass.
+      - run: bun run verify
+        env:
+          VITE_SERVER_URL: ${{ vars.PRODUCTION_API_URL }}
 
   db-migrate:
     needs: ci
@@ -52,6 +57,8 @@ jobs:
             exit 1
           }
       - name: Apply D1 migrations
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           if find packages/db/src/migrations -maxdepth 1 -name '*.sql' -print -quit | grep -q .; then
             bun run db:migrate:remote
@@ -74,6 +81,7 @@ jobs:
       - name: Deploy Worker
         working-directory: apps/server
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
           PRODUCTION_WEB_URL: ${{ vars.PRODUCTION_WEB_URL }}
         run: bunx wrangler deploy --var "CORS_ORIGIN:${PRODUCTION_WEB_URL}" --var "BETTER_AUTH_URL:${PRODUCTION_API_URL}"
@@ -95,6 +103,8 @@ jobs:
           VITE_SERVER_URL: ${{ vars.PRODUCTION_API_URL }}
         run: bun run --filter @mine/web build
       - name: Deploy Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           app_slug=$(jq -r '.name' package.json)
           bunx wrangler pages deploy apps/web/dist --project-name "$app_slug" --branch master

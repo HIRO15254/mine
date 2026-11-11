@@ -29,12 +29,10 @@ Web は `http://localhost:3001`、API は `http://localhost:8787` で起動し�
 主要な検査コマンド:
 
 ```sh
-bun run check-types
-bun run check
-bun run test
-bun run check:test-discovery
-bun run build
+bun run verify
 ```
+
+`verify` は本番デプロイの前に走る検査（バインディングの型、型チェック、lint、テストの振り分け、カバレッジ付きテスト、両方のビルド）をまとめて実行します。`master` への push は本番デプロイになるため、pre-push フックでも同じものが走ります。
 
 Cloudflare と Google ログインの初期設定は[デプロイガイド](./docs/deploy.ja.md)を参照してください。
 

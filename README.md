@@ -27,12 +27,10 @@ The web app runs on `http://localhost:3001` and the API on `http://localhost:878
 Checks:
 
 ```sh
-bun run check-types
-bun run check
-bun run test
-bun run check:test-discovery
-bun run build
+bun run verify
 ```
+
+`verify` runs everything the deploy gate runs (binding types, type check, lint, test discovery, tests with coverage and both builds). A pre-push hook runs it too, because a push to `master` deploys production.
 
 See the [deployment guide](./docs/deploy.md) for Cloudflare and Google sign-in setup.
 

@@ -69,13 +69,6 @@ Export temporarily blocks other requests to the source D1 database, so schedule 
 
 ```sh
 bun install --frozen-lockfile
-bun run cf:typegen:check
-bun run check-types
-bun run check
-bun run test:ci
-bun run test:coverage
-bun run check:test-discovery
-bun run build
-bunx wrangler deploy --dry-run -c apps/server/wrangler.jsonc
+bun run verify
 bun run db:migrate:local
 ```
