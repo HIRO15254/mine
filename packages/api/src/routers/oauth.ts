@@ -1,6 +1,6 @@
 import { oauthClient, oauthGrant } from "@mine/db/schema/oauth";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 
 import { browserProcedure, router } from "../index";
@@ -17,7 +17,13 @@ export const oauthRouter = router({
 			})
 			.from(oauthGrant)
 			.innerJoin(oauthClient, eq(oauthClient.id, oauthGrant.clientId))
-			.where(eq(oauthGrant.userId, ctx.session.user.id))
+			// A connection whose refresh token ran out can no longer be used.
+			.where(
+				and(
+					eq(oauthGrant.userId, ctx.session.user.id),
+					gt(oauthGrant.refreshExpiresAt, ctx.now())
+				)
+			)
 			.orderBy(desc(oauthGrant.createdAt))
 	),
 

@@ -68,7 +68,7 @@ describe("token router", () => {
 		);
 		expect(session).toEqual({
 			user: { email: "me@example.com", id: "u1", name: "Me" },
-			via: "token",
+			via: "api-token",
 		});
 		const [listed] = await browser.token.list();
 		expect(listed?.lastUsedAt).toEqual(new Date("2026-11-06T00:00:00Z"));

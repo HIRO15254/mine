@@ -1,5 +1,5 @@
 import { oauthClient, oauthCode, oauthGrant } from "@mine/db/schema/oauth";
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Context } from "./context";
@@ -14,7 +14,7 @@ import {
 /**
  * A minimal OAuth 2.1 authorization server for MCP clients (Claude):
  * dynamic client registration, authorization code with PKCE (S256 only)
- * and rotating refresh tokens. The consent screen lives in the web app.
+ * and rotating refresh tokens. The consent screen is served by the Worker.
  */
 
 type Db = Context["db"];
@@ -23,6 +23,12 @@ const MINUTE = 60_000;
 export const CODE_TTL_MS = 10 * MINUTE;
 export const ACCESS_TTL_MS = 60 * MINUTE;
 export const REFRESH_TTL_MS = 90 * 24 * 60 * MINUTE;
+
+/**
+ * Registration needs no sign-in, so clients nobody connected could pile up.
+ * Only this many of them are kept; a connected client is never removed.
+ */
+export const UNUSED_CLIENT_LIMIT = 200;
 
 const CLIENT_SECRET_PREFIX = "mine_cs_";
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -106,6 +112,18 @@ const registrationSchema = z.object({
 		.optional(),
 });
 
+/** Drops the oldest clients without a connection beyond the limit. */
+async function pruneUnusedClients(db: Db) {
+	await db.delete(oauthClient).where(
+		sql`${oauthClient.id} in (
+			select c.id from oauth_client c
+			where not exists (select 1 from oauth_grant g where g.client_id = c.id)
+			order by c.created_at desc, c.rowid desc
+			limit -1 offset ${UNUSED_CLIENT_LIMIT}
+		)`
+	);
+}
+
 /** RFC 7591 dynamic client registration. */
 export async function registerClient(db: Db, body: unknown) {
 	const parsed = registrationSchema.safeParse(body);
@@ -132,6 +150,7 @@ export async function registerClient(db: Db, body: unknown) {
 		redirectUris: JSON.stringify(input.redirect_uris),
 		secretHash: secret ? await hashToken(secret) : null,
 	});
+	await pruneUnusedClients(db);
 	return {
 		client_id: id,
 		client_id_issued_at: Math.floor(Date.now() / 1000),

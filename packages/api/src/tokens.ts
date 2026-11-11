@@ -80,14 +80,15 @@ async function resolveAccessToken(
 		.where(eq(oauthGrant.id, row.grantId));
 	return {
 		user: { email: row.email, id: row.id, name: row.name },
-		via: "token",
+		via: "oauth",
 	};
 }
 
 /**
  * Resolves a personal API token or an OAuth access token to its owner's
  * session and records when it was used. Refresh tokens match neither table,
- * so they are never accepted as a bearer token.
+ * so they are never accepted as a bearer token. `session.via` tells the two
+ * kinds apart; each surface decides which it accepts.
  */
 export async function resolveTokenSession(
 	db: Context["db"],
@@ -121,6 +122,6 @@ export async function resolveTokenSession(
 		.where(eq(apiToken.id, row.tokenId));
 	return {
 		user: { email: row.email, id: row.id, name: row.name },
-		via: "token",
+		via: "api-token",
 	};
 }

@@ -241,6 +241,13 @@ describe("MCP over HTTP", () => {
 			result: { isError: false },
 		});
 
+		// The consent screen promised the MCP tools, nothing wider.
+		const asOAuth = { Authorization: `Bearer ${tokens.access_token}` };
+		const viaRest = await raw("/v1/timer", { headers: asOAuth });
+		expect(viaRest.status).toBe(401);
+		const viaTrpc = await raw("/trpc/project.list", { headers: asOAuth });
+		expect(viaTrpc.status).toBe(401);
+
 		const reused = await raw("/oauth/token", {
 			body: new URLSearchParams({
 				client_id: client.client_id,
@@ -256,6 +263,96 @@ describe("MCP over HTTP", () => {
 		await expect(reused.json()).resolves.toMatchObject({
 			error: "invalid_grant",
 		});
+	});
+});
+
+describe("tRPC over HTTP", () => {
+	const startTimer = (
+		raw: Awaited<ReturnType<typeof setup>>["raw"],
+		headers: Record<string, string>
+	) => {
+		// What another site's form can send without a CORS preflight.
+		const body = new FormData();
+		body.set("description", "攻撃");
+		return raw("/trpc/time.start", { body, headers, method: "POST" });
+	};
+
+	it("refuses a cookie write that does not come from the web app", async () => {
+		const { bindings, raw, sqlite } = await setup();
+		const cookie = await sessionCookie(sqlite, bindings.BETTER_AUTH_SECRET);
+
+		const foreign = await startTimer(raw, {
+			Cookie: cookie,
+			Origin: "https://evil.example",
+		});
+		expect(foreign.status).toBe(403);
+		const unnamed = await startTimer(raw, { Cookie: cookie });
+		expect(unnamed.status).toBe(403);
+		expect(
+			sqlite.prepare("select count(*) as n from time_entry").get()
+		).toEqual({ n: 0 });
+
+		const own = await raw("/trpc/time.start", {
+			body: JSON.stringify({ description: "資料" }),
+			headers: {
+				"Content-Type": "application/json",
+				Cookie: cookie,
+				Origin: bindings.CORS_ORIGIN,
+			},
+			method: "POST",
+		});
+		expect(own.status).toBe(200);
+		const read = await raw("/trpc/time.current", {
+			headers: { Cookie: cookie },
+		});
+		expect(read.status).toBe(200);
+	});
+
+	it("takes a personal API token but keeps token admin to the browser", async () => {
+		const { call } = await setup();
+
+		const projects = await call("/trpc/project.list");
+		expect(projects.status).toBe(200);
+		const started = await call("/trpc/time.start", {
+			body: JSON.stringify({ description: "資料" }),
+			headers: { "Content-Type": "application/json" },
+			method: "POST",
+		});
+		expect(started.status).toBe(200);
+		const tokens = await call("/trpc/token.list");
+		expect(tokens.status).toBe(403);
+	});
+
+	it("looks the session up once for a batch of calls", async () => {
+		const { call, sqlite } = await setup();
+		sqlite.prepare("update api_token set last_used_at = null").run();
+		let lookups = 0;
+		const prepare = sqlite.prepare.bind(sqlite);
+		sqlite.prepare = (source: string) => {
+			if (source.includes("update") && source.includes("api_token")) {
+				lookups += 1;
+			}
+			return prepare(source);
+		};
+
+		const batch = await call(
+			"/trpc/project.list,label.list,time.current?batch=1&input=%7B%7D"
+		);
+		expect(batch.status).toBe(200);
+		expect(lookups).toBe(1);
+	});
+
+	it("turns away an oversized registration", async () => {
+		const { raw } = await setup();
+		const response = await raw("/oauth/register", {
+			body: JSON.stringify({
+				client_name: "x".repeat(20_000),
+				redirect_uris: [CLAUDE],
+			}),
+			headers: { "Content-Type": "application/json" },
+			method: "POST",
+		});
+		expect(response.status).toBe(413);
 	});
 });
 

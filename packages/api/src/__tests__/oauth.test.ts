@@ -12,6 +12,7 @@ import {
 	isAllowedRedirectUri,
 	OAuthError,
 	registerClient,
+	UNUSED_CLIENT_LIMIT,
 } from "../oauth";
 import { appRouter } from "../routers/index";
 import { base64url, resolveTokenSession } from "../tokens";
@@ -127,7 +128,7 @@ describe("authorization code flow", () => {
 			tokens.access_token,
 			new Date(NOW + 2000)
 		);
-		expect(session).toMatchObject({ user: { id: "u1" }, via: "token" });
+		expect(session).toMatchObject({ user: { id: "u1" }, via: "oauth" });
 		// The refresh token is not a bearer token.
 		expect(await resolveTokenSession(db, tokens.refresh_token)).toBeNull();
 		// Access tokens expire.
@@ -331,7 +332,7 @@ describe("oauth router", () => {
 		const user = { email: "me@example.com", id: "u1", name: "Me" };
 		return {
 			browser: await callerWith({ user }),
-			token: await callerWith({ user, via: "token" }),
+			token: await callerWith({ user, via: "oauth" }),
 		};
 	}
 
@@ -371,5 +372,46 @@ describe("oauth router", () => {
 		await expect(
 			browser.oauth.revoke({ id: connection?.id ?? "" })
 		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	it("leaves out a connection whose refresh token ran out", async () => {
+		const { db, sqlite } = setup();
+		const { browser } = await callers(db);
+		const { client, code } = await authorize(db);
+		await exchangeToken(db, codeParams(client.client_id, code), null, NOW);
+		expect(await browser.oauth.connections()).toHaveLength(1);
+
+		sqlite
+			.prepare("update oauth_grant set refresh_expires_at = ?")
+			.run(Date.now() - 1);
+		expect(await browser.oauth.connections()).toEqual([]);
+	});
+});
+
+describe("client registration", () => {
+	it("keeps connected clients and only the newest unused ones", async () => {
+		const { db, sqlite } = setup();
+		const { client, code } = await authorize(db);
+		await exchangeToken(db, codeParams(client.client_id, code), null, NOW);
+		const insert = sqlite.prepare(
+			"insert into oauth_client (id, name, redirect_uris, created_at) values (?, 'x', '[]', ?)"
+		);
+		for (let index = 0; index < UNUSED_CLIENT_LIMIT + 5; index += 1) {
+			insert.run(`old-${index}`, 1000 + index);
+		}
+
+		const newest = await registerClient(db, { redirect_uris: [CLAUDE] });
+
+		const ids = (
+			sqlite.prepare("select id from oauth_client").all() as Array<{
+				id: string;
+			}>
+		).map((row) => row.id);
+		// The connected client, the new one and the newest unused ones remain.
+		expect(ids).toHaveLength(UNUSED_CLIENT_LIMIT + 1);
+		expect(ids).toContain(client.client_id);
+		expect(ids).toContain(newest.client_id);
+		expect(ids).not.toContain("old-0");
+		expect(ids).toContain(`old-${UNUSED_CLIENT_LIMIT + 4}`);
 	});
 });

@@ -28,7 +28,7 @@ async function setup() {
 		() =>
 			Promise.resolve({
 				user: { email: "me@example.com", id: "u1", name: "Me" },
-				via: "token" as const,
+				via: "api-token" as const,
 			}),
 		{ now: () => NOW }
 	)();

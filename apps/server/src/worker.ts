@@ -3,6 +3,7 @@ import {
 	type Context,
 	createContextFactory,
 	type Session,
+	type TokenKind,
 } from "@mine/api/context";
 import { DEFAULT_TIME_ZONE, handleMcp } from "@mine/api/mcp/server";
 import {
@@ -29,6 +30,7 @@ import { createAuth } from "@mine/auth";
 import { parseAllowedEmails } from "@mine/auth/allowlist";
 import { createDb, type Database } from "@mine/db";
 import { Hono, type Context as HonoContext } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 
 import type { Bindings } from "./bindings";
@@ -80,15 +82,14 @@ function googleTokenResolver(
 	return async () => {
 		const current = session();
 		try {
-			const token =
-				current?.via === "token"
-					? await auth.api.getAccessToken({
-							body: { providerId: "google", userId: current.user.id },
-						})
-					: await auth.api.getAccessToken({
-							body: { providerId: "google" },
-							headers,
-						});
+			const token = current?.via
+				? await auth.api.getAccessToken({
+						body: { providerId: "google", userId: current.user.id },
+					})
+				: await auth.api.getAccessToken({
+						body: { providerId: "google" },
+						headers,
+					});
 			return token.accessToken ?? null;
 		} catch {
 			return null;
@@ -96,23 +97,59 @@ function googleTokenResolver(
 	};
 }
 
+/** The session a bearer token stands for, if this surface accepts its kind. */
+async function tokenSession(
+	db: Database,
+	token: string,
+	accept: readonly TokenKind[]
+): Promise<Session | null> {
+	const session = await resolveTokenSession(db, token);
+	return session?.via && accept.includes(session.via) ? session : null;
+}
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/*
+ * The session cookie is SameSite=None, so another site's form could send a
+ * write with it (a form post needs no CORS preflight). A write that relies on
+ * the cookie must therefore come from the web app's own origin.
+ */
+app.use("/trpc/*", async (context, next) => {
+	const byToken = bearerToken(context.req.header("Authorization")) !== null;
+	const fromWebApp = context.req.header("Origin") === context.env.CORS_ORIGIN;
+	if (!(SAFE_METHODS.has(context.req.method) || byToken || fromWebApp)) {
+		return context.json({ error: "Cross-site request refused" }, 403);
+	}
+	await next();
+});
+
+/*
+ * The web app signs in with its cookie. A personal API token works here too;
+ * an OAuth token does not, because its consent screen only promised the MCP
+ * tools.
+ */
 app.use("/trpc/*", (context, next) => {
 	const db = createDb(context.env.DB);
 	const auth = authFor(context.env, db);
 	const headers = context.req.raw.headers;
 	let resolved: Session | null = null;
+	// One lookup per request, however many procedures a batch calls.
+	let pending: Promise<Session | null> | undefined;
+	const resolve = async () => {
+		const token = bearerToken(headers.get("Authorization"));
+		if (token) {
+			return tokenSession(db, token, ["api-token"]);
+		}
+		const session = await auth.api.getSession({ headers });
+		return session ? { user: session.user } : null;
+	};
 	return trpcServer({
 		router: appRouter,
 		createContext: createContextFactory(
 			db,
 			async () => {
-				const token = bearerToken(headers.get("Authorization"));
-				if (token) {
-					resolved = await resolveTokenSession(db, token);
-					return resolved;
-				}
-				const session = await auth.api.getSession({ headers });
-				resolved = session ? { user: session.user } : null;
+				pending ??= resolve();
+				resolved = await pending;
 				return resolved;
 			},
 			{
@@ -127,22 +164,24 @@ app.use("/trpc/*", (context, next) => {
 });
 
 /**
- * JSON API for third-party apps. Only personal API tokens are accepted here,
- * so a browser cookie can never trigger these from another site.
+ * JSON API for third-party apps. Only personal API tokens are accepted here:
+ * a browser cookie can never trigger these from another site, and an OAuth
+ * token stays within the MCP tools its consent screen described.
  */
 type Caller = ReturnType<typeof appRouter.createCaller>;
 const v1 = new Hono<{ Bindings: Bindings; Variables: { caller: Caller } }>();
 
 async function tokenContext(
 	env: Bindings,
-	header: string | undefined
+	header: string | undefined,
+	accept: readonly TokenKind[]
 ): Promise<Context | null> {
 	const token = bearerToken(header);
 	if (!token) {
 		return null;
 	}
 	const db = createDb(env.DB);
-	const session = await resolveTokenSession(db, token);
+	const session = await tokenSession(db, token, accept);
 	if (!session) {
 		return null;
 	}
@@ -160,7 +199,7 @@ async function tokenCaller(
 	env: Bindings,
 	header: string | undefined
 ): Promise<Caller | null> {
-	const ctx = await tokenContext(env, header);
+	const ctx = await tokenContext(env, header, ["api-token"]);
 	return ctx ? appRouter.createCaller(ctx) : null;
 }
 
@@ -220,8 +259,8 @@ app.route("/v1", v1);
 
 /*
  * MCP for Claude. Claude signs in through OAuth (dynamic registration, PKCE
- * and a consent screen in the web app); Claude Code can also send a
- * personal API token as a bearer header.
+ * and a consent screen served below); Claude Code can also send a personal
+ * API token as a bearer header.
  */
 const origin = (context: HonoContext) => new URL(context.req.url).origin;
 
@@ -357,6 +396,19 @@ app.get("/oauth/sign-in-failed", () =>
 	)
 );
 
+// Registration and token requests are a few hundred bytes; anyone can send them.
+app.use(
+	"/oauth/*",
+	bodyLimit({
+		maxSize: 16 * 1024,
+		onError: (context) =>
+			context.json(
+				{ error: "invalid_request", error_description: "Body too large" },
+				413
+			),
+	})
+);
+
 app.post("/oauth/register", async (context) => {
 	try {
 		const client = await registerClient(
@@ -405,7 +457,8 @@ app.post("/oauth/token", async (context) => {
 app.post("/mcp", async (context) => {
 	const ctx = await tokenContext(
 		context.env,
-		context.req.header("Authorization")
+		context.req.header("Authorization"),
+		["api-token", "oauth"]
 	);
 	if (!ctx) {
 		return context.json(

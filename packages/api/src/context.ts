@@ -9,10 +9,15 @@ export interface SessionUser {
 	name: string;
 }
 
+export type TokenKind = "api-token" | "oauth";
+
 export interface Session {
 	user: SessionUser;
-	/** Set when the request was authenticated with a personal API token. */
-	via?: "token";
+	/**
+	 * How a request without a browser cookie was authenticated: a personal API
+	 * token, or an OAuth access token issued to an app such as Claude.
+	 */
+	via?: TokenKind;
 }
 
 export type SessionResolver = () => Promise<Session | null>;
