@@ -19,15 +19,14 @@ export function parseTime(value: string | null | undefined): number | null {
 	return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 }
 
-/** 540 → "09:00" */
-export function formatTime(minutes: number): string {
-	const hours = Math.floor(minutes / 60);
-	return `${String(hours).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-}
-
-/** 540 → "9:00", for labels. */
+/** 540 → "9:00", for the grid's hour labels. */
 export function formatClockLabel(minutes: number): string {
 	return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+/** 540 → "09:00": minutes of the day as the `HH:MM` a task's time is stored in. */
+export function formatTime(minutes: number): string {
+	return formatClockLabel(minutes).padStart(5, "0");
 }
 
 export function minutesIntoDay(ms: number, day: Date): number {

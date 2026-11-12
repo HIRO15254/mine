@@ -3,10 +3,10 @@ import { IconPlayerPlay } from "@tabler/icons-react";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { useNow } from "@/hooks/use-now";
+import { formatClock } from "@/lib/calendar-time";
 import { PROJECT_COLOR_CLASS, type Project, projectPath } from "@/lib/tasks";
 import {
 	entryDuration,
-	formatClock,
 	formatDuration,
 	groupEntriesByDay,
 	type TimeEntry,

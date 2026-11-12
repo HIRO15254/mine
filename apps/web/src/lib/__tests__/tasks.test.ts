@@ -66,6 +66,18 @@ describe("parseQuickAdd", () => {
 		expect(result.projectId).toBeUndefined();
 	});
 
+	it("picks the open project when an archived one has the same name", () => {
+		const result = parseQuickAdd("片付け #家", {
+			labels,
+			projects: [
+				makeProject({ archived: true, id: "old-home", name: "家" }),
+				...projects,
+			],
+			today: TODAY,
+		});
+		expect(result.projectId).toBe("home");
+	});
+
 	it("reads words every object inherits as plain title text", () => {
 		const result = parseQuickAdd("fix toString and constructor bug", {
 			labels,

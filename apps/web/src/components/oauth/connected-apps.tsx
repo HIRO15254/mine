@@ -3,7 +3,7 @@ import { IconPlugConnected } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ConfirmDeleteButton } from "@/components/tasks/confirm-delete-button";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 const dateFormat = new Intl.DateTimeFormat("ja-JP", {
 	day: "numeric",

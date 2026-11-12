@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize, useIsDesk } from "@/hooks/use-media-query";
 import { type Label, type Project, parseQuickAdd, todayKey } from "@/lib/tasks";
 import type { DraftDefaults } from "./task-draft";
 import { useCreateTask } from "./use-tasks";
@@ -33,6 +33,7 @@ export function QuickAdd({
 }) {
 	const id = useId();
 	const isDesk = useIsDesk();
+	const size = useControlSize();
 	const [text, setText] = useState(initialText ?? "");
 	// The task shows in the lists at once; the box is free for the next one.
 	const create = useCreateTask(() => toast.error("追加できませんでした"));
@@ -80,7 +81,7 @@ export function QuickAdd({
 						? "タスクを追加（p1 #プロジェクト @ラベル 明日）"
 						: "タスクを追加"
 				}
-				size={isDesk ? "default" : "xl"}
+				size={size}
 				value={text}
 			/>
 			<Button

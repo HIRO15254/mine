@@ -7,7 +7,7 @@ import {
 
 import { ThemeProvider } from "@/components/theme-provider/theme-provider";
 import { Toaster } from "@/components/ui/sonner/sonner";
-import type { trpc } from "@/utils/trpc";
+import type { trpc } from "@/lib/trpc";
 
 import "../index.css";
 

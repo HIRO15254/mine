@@ -1,10 +1,10 @@
 import { IconCheck, IconExternalLink } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { LoadingBlock } from "@/components/app-shell/loading-block";
 
 import { useTaskContext } from "@/components/tasks/use-tasks";
 import { Badge } from "@/components/ui/badge/badge";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
-import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { type Project, projectPath } from "@/lib/tasks";
 import {
@@ -13,7 +13,7 @@ import {
 	sortThreads,
 	THREAD_STATUS_LABEL,
 } from "@/lib/threads";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 /** Open Claude threads as they reported themselves over MCP. */
 export function ThreadList() {
@@ -24,11 +24,7 @@ export function ThreadList() {
 	});
 
 	if (threads.isPending) {
-		return (
-			<div className="flex justify-center py-6 text-muted-foreground">
-				<Spinner />
-			</div>
-		);
+		return <LoadingBlock className="py-6" />;
 	}
 	if (threads.isError) {
 		return (

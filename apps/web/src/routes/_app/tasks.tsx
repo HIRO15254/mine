@@ -6,8 +6,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { LoadingBlock } from "@/components/app-shell/loading-block";
 
 import { Page } from "@/components/app-shell/page";
+import { ProjectOptions } from "@/components/tasks/project-options";
 import { QuickAdd } from "@/components/tasks/quick-add";
 import type { DraftDefaults } from "@/components/tasks/task-draft";
 import { useTaskEditor } from "@/components/tasks/task-editor";
@@ -23,21 +25,15 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty/empty";
 import { NativeSelect } from "@/components/ui/native-select/native-select";
-import { Spinner } from "@/components/ui/spinner/spinner";
 import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "@/components/ui/toggle-group/toggle-group";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize } from "@/hooks/use-media-query";
 import { useToday } from "@/hooks/use-today";
 import { quickAddText } from "@/lib/share";
-import {
-	flattenProjects,
-	groupTasks,
-	TASK_VIEW_OPTIONS,
-	type TaskView,
-} from "@/lib/tasks";
-import { trpc } from "@/utils/trpc";
+import { groupTasks, TASK_VIEW_OPTIONS, type TaskView } from "@/lib/tasks";
+import { trpc } from "@/lib/trpc";
 
 interface TasksSearch {
 	/** Text to start the quick-add box with, from a shortcut or a share. */
@@ -98,7 +94,7 @@ function TasksPage() {
 	const search = Route.useSearch();
 	const view = search.view ?? "today";
 	const navigate = useNavigate({ from: Route.fullPath });
-	const isDesk = useIsDesk();
+	const size = useControlSize();
 	const today = useToday();
 	const { labels, projects } = useTaskContext();
 	const { editor, openEdit, openNew } = useTaskEditor({ labels, projects });
@@ -160,16 +156,11 @@ function TasksPage() {
 								},
 							})
 						}
-						size={isDesk ? "default" : "xl"}
+						size={size}
 						value={projectFilter ?? ""}
 					>
 						<option value="">すべてのプロジェクト</option>
-						{flattenProjects(projects).map((project) => (
-							<option key={project.id} value={project.id}>
-								{"　".repeat(project.depth)}
-								{project.name}
-							</option>
-						))}
+						<ProjectOptions projects={projects} />
 					</NativeSelect>
 				)}
 				<QuickAdd
@@ -189,11 +180,7 @@ function TasksPage() {
 					onOpenEditor={() => openNew(defaults)}
 					projects={projects}
 				/>
-				{tasks.isPending && (
-					<div className="flex justify-center py-8 text-muted-foreground">
-						<Spinner />
-					</div>
-				)}
+				{tasks.isPending && <LoadingBlock />}
 				{tasks.isError && (
 					<Empty className="py-8">
 						<EmptyHeader>

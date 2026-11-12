@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import type { Task } from "@/lib/tasks";
 import { todayKey } from "@/lib/tasks";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 import {
 	findTask,

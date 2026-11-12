@@ -1,3 +1,4 @@
+import { projectPath as pathOf } from "@mine/api/projects/tree";
 import type { RouterInputs, RouterOutputs } from "@mine/api/routers/index";
 import type { Recurrence } from "@mine/api/tasks/recurrence";
 
@@ -125,7 +126,7 @@ interface QuickAddContext {
 	today: string;
 }
 
-const lower = (value: string) => value.toLowerCase();
+const lower = (value: string) => value.toLocaleLowerCase("ja");
 
 /** Applies one token to the result; false when it is plain title text. */
 function applyToken(
@@ -150,8 +151,7 @@ function applyToken(
 		return false;
 	}
 	if (token.startsWith("#")) {
-		const name = lower(token.slice(1));
-		const match = context.projects.find((p) => lower(p.name) === name);
+		const match = findProjectByName(context.projects, token.slice(1));
 		if (match) {
 			result.projectId = match.id;
 		}
@@ -207,16 +207,29 @@ export function flattenProjects(
 	return result;
 }
 
-/** "大学 / 研究" */
+/** "大学 / 研究", or "" for no project or one that is gone. */
 export function projectPath(projects: Project[], id: string | null): string {
-	const byId = new Map(projects.map((p) => [p.id, p]));
-	const names: string[] = [];
-	let current = id ? byId.get(id) : undefined;
-	for (let depth = 0; current && depth < 10; depth += 1) {
-		names.unshift(current.name);
-		current = current.parentId ? byId.get(current.parentId) : undefined;
-	}
-	return names.join(" / ");
+	return pathOf(projects, id) ?? "";
+}
+
+/**
+ * The project a typed name stands for ("#研究" in quick add and in the
+ * timer). Several can share a name under different parents: the one already
+ * picked wins, then an open one.
+ */
+export function findProjectByName(
+	projects: Project[],
+	name: string,
+	preferredId?: string | null
+): Project | null {
+	const wanted = lower(name);
+	const named = projects.filter((item) => lower(item.name) === wanted);
+	return (
+		named.find((item) => item.id === preferredId) ??
+		named.find((item) => !item.archived) ??
+		named[0] ??
+		null
+	);
 }
 
 export const TASK_VIEW_OPTIONS = [

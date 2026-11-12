@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
+vi.mock("@/lib/trpc", () => import("../../../__tests__/test-api"));
 
 import { TODAY } from "../../../__tests__/clock";
 import { makeTask } from "../../../__tests__/task-fixtures";

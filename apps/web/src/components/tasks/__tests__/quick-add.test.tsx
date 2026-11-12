@@ -2,7 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
+vi.mock("@/lib/trpc", () => import("../../../__tests__/test-api"));
 
 import { renderWithQuery } from "../../../__tests__/render";
 import { api } from "../../../__tests__/test-api";

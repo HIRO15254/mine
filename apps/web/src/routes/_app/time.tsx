@@ -6,9 +6,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { EmptyState } from "@/components/app-shell/empty-state";
+import { LoadingBlock } from "@/components/app-shell/loading-block";
 import { Page } from "@/components/app-shell/page";
 import { WeekNavigation } from "@/components/app-shell/week-navigation";
-import { ComingSoon } from "@/components/placeholder/coming-soon";
 import { useTaskContext } from "@/components/tasks/use-tasks";
 import { useEntryEditor } from "@/components/time/entry-editor";
 import { EntryList } from "@/components/time/entry-list";
@@ -21,24 +22,15 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card/card";
-import { Spinner } from "@/components/ui/spinner/spinner";
 import { useWeek, validateWeekSearch, weekSearch } from "@/hooks/use-week";
 import { formatWeekLabel } from "@/lib/calendar-time";
 import { currentTimeZone, weekRange } from "@/lib/time";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 export const Route = createFileRoute("/_app/time")({
 	validateSearch: validateWeekSearch,
 	component: TimePage,
 });
-
-function Loading() {
-	return (
-		<div className="flex justify-center py-8 text-muted-foreground">
-			<Spinner />
-		</div>
-	);
-}
 
 function TimePage() {
 	const { week } = Route.useSearch();
@@ -74,9 +66,9 @@ function TimePage() {
 							<CardTitle>この週の合計</CardTitle>
 						</CardHeader>
 						<CardContent>
-							{summary.isPending && <Loading />}
+							{summary.isPending && <LoadingBlock />}
 							{summary.isError && (
-								<ComingSoon
+								<EmptyState
 									description="集計を読み込めませんでした"
 									icon={IconAlertTriangle}
 								/>
@@ -100,15 +92,15 @@ function TimePage() {
 							<IconPlus aria-hidden />
 							記録を追加
 						</Button>
-						{entries.isPending && <Loading />}
+						{entries.isPending && <LoadingBlock />}
 						{entries.isError && (
-							<ComingSoon
+							<EmptyState
 								description="記録を読み込めませんでした"
 								icon={IconAlertTriangle}
 							/>
 						)}
 						{entries.isSuccess && entries.data.length === 0 && (
-							<ComingSoon
+							<EmptyState
 								description="この週の記録はありません"
 								icon={IconClockHour4}
 							/>

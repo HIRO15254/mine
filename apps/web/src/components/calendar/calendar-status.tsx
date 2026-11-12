@@ -1,5 +1,6 @@
 import { IconAlertTriangle, IconCalendarOff } from "@tabler/icons-react";
 import { useState } from "react";
+import { LoadingBlock } from "@/components/app-shell/loading-block";
 
 import { Button } from "@/components/ui/button/button";
 import {
@@ -21,11 +22,7 @@ export function isCalendarNotConnected(error: unknown): boolean {
 }
 
 export function CalendarLoading() {
-	return (
-		<div className="flex justify-center py-8 text-muted-foreground">
-			<Spinner />
-		</div>
-	);
+	return <LoadingBlock />;
 }
 
 /** Error or reconnect prompt for a failed calendar query. */

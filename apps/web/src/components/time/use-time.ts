@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 import { findTask } from "@/components/tasks/optimistic";
 import type { TimeEntry } from "@/lib/time";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 export function useRunningEntry() {
 	return useQuery({ ...trpc.time.current.queryOptions(), staleTime: 30_000 });

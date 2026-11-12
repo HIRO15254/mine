@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button/button";
 import { Field } from "@/components/ui/field/field";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
-import { useIsDesk } from "@/hooks/use-media-query";
-import { trpc } from "@/utils/trpc";
+import { useControlSize } from "@/hooks/use-media-query";
+import { trpc } from "@/lib/trpc";
 
 const dateFormat = new Intl.DateTimeFormat("ja-JP", {
 	day: "numeric",
@@ -105,7 +105,7 @@ function CreateTokenSheet({
 	open: boolean;
 }) {
 	const formId = useId();
-	const size = useIsDesk() ? "default" : "xl";
+	const size = useControlSize();
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const [created, setCreated] = useState<string | null>(null);

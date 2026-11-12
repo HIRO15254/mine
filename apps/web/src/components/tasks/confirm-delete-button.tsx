@@ -2,7 +2,7 @@ import { IconTrash } from "@tabler/icons-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button/button";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize } from "@/hooks/use-media-query";
 
 /** Deletes on the second press, so one stray tap cannot lose data. */
 export function ConfirmDeleteButton({
@@ -12,14 +12,14 @@ export function ConfirmDeleteButton({
 	disabled?: boolean;
 	onConfirm: () => void;
 }) {
-	const isDesk = useIsDesk();
+	const size = useControlSize();
 	const [armed, setArmed] = useState(false);
 	return (
 		<Button
 			disabled={disabled}
 			onBlur={() => setArmed(false)}
 			onClick={() => (armed ? onConfirm() : setArmed(true))}
-			size={isDesk ? "default" : "xl"}
+			size={size}
 			type="button"
 			variant={armed ? "destructive" : "ghost"}
 		>

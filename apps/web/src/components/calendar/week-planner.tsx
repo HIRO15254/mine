@@ -25,8 +25,8 @@ import { useToday } from "@/hooks/use-today";
 import { dayKey, formatDayLabel, rangeOfDays } from "@/lib/calendar-time";
 import { type DropTarget, dropMinutes, placementForDrop } from "@/lib/day-grid";
 import type { Project, Task } from "@/lib/tasks";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/utils/trpc";
 
 import { CalendarError, CalendarLoading } from "./calendar-status";
 import { TaskTray, type TrayFilter } from "./task-tray";

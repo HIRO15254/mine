@@ -11,8 +11,8 @@ import {
 	syncOnlineState,
 } from "./lib/offline";
 import { hideSplash } from "./lib/splash";
+import { queryClient, trpc } from "./lib/trpc";
 import { routeTree } from "./routeTree.gen";
-import { queryClient, trpc } from "./utils/trpc";
 
 syncOnlineState();
 

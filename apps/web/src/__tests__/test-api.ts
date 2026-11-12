@@ -3,7 +3,7 @@
  * database, so a component test fails when it calls a procedure that does
  * not exist or sends input the server refuses.
  *
- *   vi.mock("@/utils/trpc", () => import("<path>/__tests__/test-api"));
+ *   vi.mock("@/lib/trpc", () => import("<path>/__tests__/test-api"));
  *   beforeEach(() => api.reset());
  *
  * Seed and inspect data through `api.caller`, read what the app sent with

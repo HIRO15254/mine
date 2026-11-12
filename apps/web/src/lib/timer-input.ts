@@ -3,8 +3,8 @@
  * project 研究. Suggestions come from open tasks, past entries and the
  * calendar events happening around now.
  */
-import type { DisplayEvent } from "./calendar-time";
-import type { Project, Task } from "./tasks";
+import { type DisplayEvent, formatClock } from "./calendar-time";
+import { findProjectByName, type Project, type Task } from "./tasks";
 import type { TimeEntry } from "./time";
 
 const lower = (value: string) => value.toLocaleLowerCase("ja");
@@ -19,25 +19,6 @@ const HASH = /#[^\s#]+/g;
 const SPACE = /\s/;
 const SPACES = /\s+/g;
 const LEADING_SPACE = /^\s+/;
-
-/**
- * The project a name stands for. Several can share a name (under different
- * parents): the one picked from the suggestions wins, then an open one.
- */
-function findProject(
-	projects: Project[],
-	name: string,
-	preferredId?: string | null
-): Project | null {
-	const wanted = lower(name);
-	const named = projects.filter((item) => lower(item.name) === wanted);
-	return (
-		named.find((item) => item.id === preferredId) ??
-		named.find((item) => !item.archived) ??
-		named[0] ??
-		null
-	);
-}
 
 /** The project name with spaces that the text after a "#" starts with. */
 function spacedName(rest: string, names: string[]): string | undefined {
@@ -76,7 +57,7 @@ export function findHashTokens(
 		covered = start + 1 + name.length;
 		tokens.push({
 			end: covered,
-			project: findProject(projects, name, preferredId),
+			project: findProjectByName(projects, name, preferredId),
 			start,
 		});
 	}
@@ -167,11 +148,6 @@ const MAX_SUGGESTIONS = 7;
 const EVENT_LEAD = 15 * 60_000;
 const EVENT_AHEAD = 60 * 60_000;
 
-const clock = new Intl.DateTimeFormat("ja-JP", {
-	hour: "2-digit",
-	minute: "2-digit",
-});
-
 /** Timed events running now, about to start, or starting within the hour. */
 export function eventsAroundNow(
 	events: DisplayEvent[],
@@ -198,8 +174,8 @@ function eventSuggestion(event: DisplayEvent, now: number): TimerSuggestion {
 		key: `event:${event.calendarId}:${event.id}`,
 		kind: "event",
 		note: running
-			? `${clock.format(start)}–${clock.format(end)}`
-			: `${clock.format(start)} から`,
+			? `${formatClock(start)}–${formatClock(end)}`
+			: `${formatClock(start)} から`,
 		projectId: null,
 		taskId: null,
 	};

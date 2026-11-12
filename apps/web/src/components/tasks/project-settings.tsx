@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
+import { useSheetState } from "@/components/form-sheet/use-sheet-state";
 import { ProjectRates } from "@/components/time/project-rates";
 import { Button } from "@/components/ui/button/button";
 import { Field, FieldError } from "@/components/ui/field/field";
@@ -13,7 +14,7 @@ import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "@/components/ui/toggle-group/toggle-group";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize } from "@/hooks/use-media-query";
 import {
 	flattenProjects,
 	PROJECT_COLOR_CLASS,
@@ -22,10 +23,11 @@ import {
 	type Project,
 	type ProjectColor,
 } from "@/lib/tasks";
+import { isConflict, trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { isConflict, trpc } from "@/utils/trpc";
 
 import { ConfirmDeleteButton } from "./confirm-delete-button";
+import { ProjectOptions } from "./project-options";
 import { useInvalidateTasks, useTaskContext } from "./use-tasks";
 
 /** IDs of the project and its subprojects, which cannot become its parent. */
@@ -41,13 +43,7 @@ function selfAndDescendants(projects: Project[], id: string): Set<string> {
 
 export function ProjectSettings() {
 	const { isPending, projects } = useTaskContext();
-	const [editor, setEditor] = useState<{
-		key: number;
-		open: boolean;
-		project: Project | null;
-	}>({ key: 0, open: false, project: null });
-	const open = (project: Project | null) =>
-		setEditor((current) => ({ key: current.key + 1, open: true, project }));
+	const editor = useSheetState<Project | null>(null);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -62,7 +58,7 @@ export function ProjectSettings() {
 						<li key={project.id}>
 							<button
 								className="flex min-h-[var(--m-list-row)] w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent py-2 pr-3 text-left text-foreground text-sm outline-none hover:bg-accent focus-visible:shadow-[inset_0_0_0_2px_var(--ring)]"
-								onClick={() => open(project)}
+								onClick={() => editor.show(project)}
 								style={{ paddingLeft: `${12 + project.depth * 20}px` }}
 								type="button"
 							>
@@ -92,7 +88,7 @@ export function ProjectSettings() {
 			)}
 			<Button
 				className="self-start"
-				onClick={() => open(null)}
+				onClick={() => editor.show(null)}
 				type="button"
 				variant="secondary"
 			>
@@ -101,11 +97,9 @@ export function ProjectSettings() {
 			</Button>
 			<ProjectEditor
 				key={editor.key}
-				onOpenChange={(value) =>
-					setEditor((current) => ({ ...current, open: value }))
-				}
+				onOpenChange={editor.setOpen}
 				open={editor.open}
-				project={editor.project}
+				project={editor.value}
 				projects={projects}
 			/>
 		</div>
@@ -124,7 +118,7 @@ function ProjectEditor({
 	projects: Project[];
 }) {
 	const formId = useId();
-	const size = useIsDesk() ? "default" : "xl";
+	const size = useControlSize();
 	const invalidate = useInvalidateTasks();
 	const [name, setName] = useState(project?.name ?? "");
 	const [parentId, setParentId] = useState(project?.parentId ?? "");
@@ -204,14 +198,10 @@ function ProjectEditor({
 						value={parentId}
 					>
 						<option value="">なし</option>
-						{flattenProjects(projects)
-							.filter((item) => !blocked.has(item.id))
-							.map((item) => (
-								<option key={item.id} value={item.id}>
-									{"　".repeat(item.depth)}
-									{item.name}
-								</option>
-							))}
+						<ProjectOptions
+							include={(item) => !blocked.has(item.id)}
+							projects={projects}
+						/>
 					</NativeSelect>
 				</Field>
 				<fieldset className="m-0 flex flex-col border-0 p-0">

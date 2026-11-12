@@ -7,7 +7,8 @@ import {
 	EmptyMedia,
 } from "@/components/ui/empty/empty";
 
-export function ComingSoon({
+/** An icon and one line, for a section with nothing to show or one that failed to load. */
+export function EmptyState({
 	description,
 	icon: IconComponent,
 }: {

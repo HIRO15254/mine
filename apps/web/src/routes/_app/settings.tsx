@@ -34,7 +34,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { clearOfflineData } from "@/lib/offline";
 import { forgetSession } from "@/lib/session";
-import { queryClient, trpc } from "@/utils/trpc";
+import { queryClient, trpc } from "@/lib/trpc";
 
 export const Route = createFileRoute("/_app/settings")({
 	component: SettingsPage,

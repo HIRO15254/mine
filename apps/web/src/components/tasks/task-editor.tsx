@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
+import { useSheetState } from "@/components/form-sheet/use-sheet-state";
 import { Field, FieldError } from "@/components/ui/field/field";
 import { Input } from "@/components/ui/input/input";
 import { NativeSelect } from "@/components/ui/native-select/native-select";
@@ -10,9 +11,8 @@ import {
 	ToggleGroup,
 	ToggleGroupItem,
 } from "@/components/ui/toggle-group/toggle-group";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize } from "@/hooks/use-media-query";
 import {
-	flattenProjects,
 	type Label,
 	PRIORITY_RING,
 	type Project,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 import { ConfirmDeleteButton } from "./confirm-delete-button";
+import { openOr, ProjectOptions } from "./project-options";
 import {
 	type DraftDefaults,
 	draftError,
@@ -30,15 +31,7 @@ import {
 } from "./task-draft";
 import { useCreateTask, useDeleteTask, useUpdateTask } from "./use-tasks";
 
-interface EditorState {
-	defaults?: DraftDefaults;
-	/** Bumped on every open so the form starts fresh. */
-	key: number;
-	open: boolean;
-	task: Task | null;
-}
-
-/** Owns the editor's open state; render `editor` once per page. */
+/** Owns the task editor's open state; render `editor` once per page. */
 export function useTaskEditor({
 	labels,
 	projects,
@@ -46,32 +39,25 @@ export function useTaskEditor({
 	labels: Label[];
 	projects: Project[];
 }) {
-	const [state, setState] = useState<EditorState>({
-		key: 0,
-		open: false,
+	const sheet = useSheetState<{ defaults?: DraftDefaults; task: Task | null }>({
 		task: null,
 	});
-	const openNew = (defaults?: DraftDefaults) =>
-		setState((current) => ({
-			defaults,
-			key: current.key + 1,
-			open: true,
-			task: null,
-		}));
-	const openEdit = (task: Task) =>
-		setState((current) => ({ key: current.key + 1, open: true, task }));
 	const editor = (
 		<TaskEditor
-			defaults={state.defaults}
-			key={state.key}
+			defaults={sheet.value.defaults}
+			key={sheet.key}
 			labels={labels}
-			onOpenChange={(open) => setState((current) => ({ ...current, open }))}
-			open={state.open}
+			onOpenChange={sheet.setOpen}
+			open={sheet.open}
 			projects={projects}
-			task={state.task}
+			task={sheet.value.task}
 		/>
 	);
-	return { editor, openEdit, openNew };
+	return {
+		editor,
+		openEdit: (task: Task) => sheet.show({ task }),
+		openNew: (defaults?: DraftDefaults) => sheet.show({ defaults, task: null }),
+	};
 }
 
 /** Monday first, matching the calendar. */
@@ -104,8 +90,7 @@ export function TaskEditor({
 	task: Task | null;
 }) {
 	const formId = useId();
-	const isDesk = useIsDesk();
-	const size = isDesk ? "default" : "xl";
+	const size = useControlSize();
 	const [draft, setDraft] = useState<TaskDraft>(() =>
 		draftFromTask(task, defaults)
 	);
@@ -220,14 +205,10 @@ export function TaskEditor({
 							value={draft.projectId}
 						>
 							<option value="">インボックス</option>
-							{flattenProjects(projects)
-								.filter((p) => !p.archived || p.id === draft.projectId)
-								.map((p) => (
-									<option key={p.id} value={p.id}>
-										{"　".repeat(p.depth)}
-										{p.name}
-									</option>
-								))}
+							<ProjectOptions
+								include={openOr(draft.projectId)}
+								projects={projects}
+							/>
 						</NativeSelect>
 					</Field>
 					<Field htmlFor={ids.estimate} label="見積もり（分）">

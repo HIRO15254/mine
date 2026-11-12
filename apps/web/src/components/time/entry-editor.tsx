@@ -3,15 +3,17 @@ import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
+import { useSheetState } from "@/components/form-sheet/use-sheet-state";
 import { ConfirmDeleteButton } from "@/components/tasks/confirm-delete-button";
+import { openOr, ProjectOptions } from "@/components/tasks/project-options";
 import { Field, FieldError } from "@/components/ui/field/field";
 import { Input } from "@/components/ui/input/input";
 import { NativeSelect } from "@/components/ui/native-select/native-select";
 import { Switch } from "@/components/ui/switch/switch";
-import { useIsDesk } from "@/hooks/use-media-query";
-import { flattenProjects, type Project } from "@/lib/tasks";
+import { useControlSize } from "@/hooks/use-media-query";
+import type { Project } from "@/lib/tasks";
 import type { TimeEntry } from "@/lib/time";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 import {
 	draftFromEntry,
@@ -21,33 +23,23 @@ import {
 } from "./entry-draft";
 import { useInvalidateTime } from "./use-time";
 
-interface EditorState {
-	entry: TimeEntry | null;
-	key: number;
-	open: boolean;
-}
-
 /** Owns the entry editor's open state; render `editor` once per page. */
 export function useEntryEditor(projects: Project[]) {
-	const [state, setState] = useState<EditorState>({
-		entry: null,
-		key: 0,
-		open: false,
-	});
-	const openNew = () =>
-		setState((current) => ({ entry: null, key: current.key + 1, open: true }));
-	const openEdit = (entry: TimeEntry) =>
-		setState((current) => ({ entry, key: current.key + 1, open: true }));
+	const sheet = useSheetState<TimeEntry | null>(null);
 	const editor = (
 		<EntryEditor
-			entry={state.entry}
-			key={state.key}
-			onOpenChange={(open) => setState((current) => ({ ...current, open }))}
-			open={state.open}
+			entry={sheet.value}
+			key={sheet.key}
+			onOpenChange={sheet.setOpen}
+			open={sheet.open}
 			projects={projects}
 		/>
 	);
-	return { editor, openEdit, openNew };
+	return {
+		editor,
+		openEdit: (entry: TimeEntry) => sheet.show(entry),
+		openNew: () => sheet.show(null),
+	};
 }
 
 export function EntryEditor({
@@ -62,7 +54,7 @@ export function EntryEditor({
 	projects: Project[];
 }) {
 	const formId = useId();
-	const size = useIsDesk() ? "default" : "xl";
+	const size = useControlSize();
 	const invalidate = useInvalidateTime();
 	const [draft, setDraft] = useState<EntryDraft>(() =>
 		draftFromEntry(entry, Date.now())
@@ -162,14 +154,10 @@ export function EntryEditor({
 						value={draft.projectId}
 					>
 						<option value="">プロジェクトなし</option>
-						{flattenProjects(projects)
-							.filter((p) => !p.archived || p.id === draft.projectId)
-							.map((p) => (
-								<option key={p.id} value={p.id}>
-									{"　".repeat(p.depth)}
-									{p.name}
-								</option>
-							))}
+						<ProjectOptions
+							include={openOr(draft.projectId)}
+							projects={projects}
+						/>
 					</NativeSelect>
 				</Field>
 				<div className="grid desk:grid-cols-3 grid-cols-1 gap-3">

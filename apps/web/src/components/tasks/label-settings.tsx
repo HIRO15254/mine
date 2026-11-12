@@ -3,25 +3,20 @@ import { useMutation } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 
 import { FormSheet } from "@/components/form-sheet/form-sheet";
+import { useSheetState } from "@/components/form-sheet/use-sheet-state";
 import { Button } from "@/components/ui/button/button";
 import { Field } from "@/components/ui/field/field";
 import { Input } from "@/components/ui/input/input";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize } from "@/hooks/use-media-query";
 import type { Label } from "@/lib/tasks";
-import { isConflict, trpc } from "@/utils/trpc";
+import { isConflict, trpc } from "@/lib/trpc";
 
 import { ConfirmDeleteButton } from "./confirm-delete-button";
 import { useInvalidateTasks, useTaskContext } from "./use-tasks";
 
 export function LabelSettings() {
 	const { isPending, labels } = useTaskContext();
-	const [editor, setEditor] = useState<{
-		key: number;
-		label: Label | null;
-		open: boolean;
-	}>({ key: 0, label: null, open: false });
-	const open = (label: Label | null) =>
-		setEditor((current) => ({ key: current.key + 1, label, open: true }));
+	const editor = useSheetState<Label | null>(null);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -36,7 +31,7 @@ export function LabelSettings() {
 						<li key={label.id}>
 							<button
 								className="flex min-h-[var(--m-list-row)] w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-3 py-2 text-left text-foreground text-sm outline-none hover:bg-accent focus-visible:shadow-[inset_0_0_0_2px_var(--ring)]"
-								onClick={() => open(label)}
+								onClick={() => editor.show(label)}
 								type="button"
 							>
 								<IconTag
@@ -58,7 +53,7 @@ export function LabelSettings() {
 			</p>
 			<Button
 				className="self-start"
-				onClick={() => open(null)}
+				onClick={() => editor.show(null)}
 				type="button"
 				variant="secondary"
 			>
@@ -67,10 +62,8 @@ export function LabelSettings() {
 			</Button>
 			<LabelEditor
 				key={editor.key}
-				label={editor.label}
-				onOpenChange={(value) =>
-					setEditor((current) => ({ ...current, open: value }))
-				}
+				label={editor.value}
+				onOpenChange={editor.setOpen}
 				open={editor.open}
 			/>
 		</div>
@@ -87,7 +80,7 @@ function LabelEditor({
 	open: boolean;
 }) {
 	const formId = useId();
-	const size = useIsDesk() ? "default" : "xl";
+	const size = useControlSize();
 	const invalidate = useInvalidateTasks();
 	const [name, setName] = useState(label?.name ?? "");
 	const [error, setError] = useState<string | null>(null);

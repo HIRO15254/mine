@@ -1,6 +1,6 @@
 import type { RouterOutputs } from "@mine/api/routers/index";
 
-import { formatClock } from "./time";
+import { formatClock } from "./calendar-time";
 
 export type ClaudeThread = RouterOutputs["thread"]["list"][number];
 

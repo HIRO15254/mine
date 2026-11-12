@@ -1,9 +1,9 @@
 import { IconPlayerStopFilled } from "@tabler/icons-react";
 import { useId } from "react";
+import { LoadingBlock } from "@/components/app-shell/loading-block";
 
 import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
-import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { useNow } from "@/hooks/use-now";
 import type { Project } from "@/lib/tasks";
@@ -27,11 +27,7 @@ export function TimerBar({
 }) {
 	const running = useRunningEntry();
 	if (running.isPending) {
-		return (
-			<div className="flex justify-center py-3 text-muted-foreground">
-				<Spinner />
-			</div>
-		);
+		return <LoadingBlock className="py-3" />;
 	}
 	return running.data ? (
 		<RunningTimer

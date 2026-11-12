@@ -5,6 +5,7 @@ import {
 	type DisplayEvent,
 	dayKey,
 	eventsOnDay,
+	formatClock,
 	formatDayLabel,
 	formatEventTime,
 	formatWeekLabel,
@@ -141,5 +142,13 @@ describe("formatEventTime", () => {
 				day
 			)
 		).toBe("終日");
+	});
+});
+
+describe("formatClock", () => {
+	it("shows an instant as a 24-hour local time", () => {
+		expect(formatClock(new Date(2026, 10, 5, 9, 5).getTime())).toBe("09:05");
+		expect(formatClock(new Date(2026, 10, 5, 0, 0).getTime())).toBe("00:00");
+		expect(formatClock(new Date(2026, 10, 5, 23, 59).getTime())).toBe("23:59");
 	});
 });

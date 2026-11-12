@@ -24,10 +24,10 @@ import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize, useIsDesk } from "@/hooks/use-media-query";
 import { useNow } from "@/hooks/use-now";
 import { useToday, useTodayDate } from "@/hooks/use-today";
-import { addDays, rangeOfDays } from "@/lib/calendar-time";
+import { addDays, formatClock, rangeOfDays } from "@/lib/calendar-time";
 import type { Project } from "@/lib/tasks";
 import {
 	completeHash,
@@ -41,8 +41,8 @@ import {
 	type UnrecordedEvent,
 	unrecordedEvent,
 } from "@/lib/timer-input";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/utils/trpc";
 
 import { useStartTimer } from "./use-time";
 
@@ -99,11 +99,6 @@ function useSuggestionSources(active: boolean) {
 	};
 }
 
-const clock = new Intl.DateTimeFormat("ja-JP", {
-	hour: "2-digit",
-	minute: "2-digit",
-});
-
 /** Events put aside with ×, for as long as the app stays open. */
 const dismissedEvents = new Set<string>();
 
@@ -123,7 +118,7 @@ function EventNudge({
 	onRecord: () => void;
 }) {
 	const { event, from } = item;
-	const span = `${clock.format(from)}–${clock.format(Date.parse(event.end))}`;
+	const span = `${formatClock(from)}–${formatClock(Date.parse(event.end))}`;
 	return (
 		<div
 			className="@container flex min-w-0 items-center gap-2 rounded-md bg-[color-mix(in_srgb,var(--c)_14%,transparent)] py-1 pr-1 pl-2.5 desk:text-sm text-[length:var(--m-text-body)]"
@@ -145,7 +140,7 @@ function EventNudge({
 				</span>
 			</span>
 			<Button
-				aria-label={`${event.title}を${clock.format(from)}から記録`}
+				aria-label={`${event.title}を${formatClock(from)}から記録`}
 				disabled={busy}
 				onClick={onRecord}
 				size="sm"
@@ -301,7 +296,7 @@ export function TimerInput({
 }) {
 	const id = useId();
 	const isDesk = useIsDesk();
-	const size = isDesk ? "default" : "xl";
+	const size = useControlSize();
 	const input = useRef<HTMLInputElement>(null);
 	const mirror = useRef<HTMLDivElement>(null);
 	const [text, setText] = useState(() => unsent?.text ?? "");

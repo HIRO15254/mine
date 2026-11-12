@@ -28,3 +28,8 @@ export function useMediaQuery(query: string): boolean {
 export function useIsDesk(): boolean {
 	return useMediaQuery("(min-width: 45rem)");
 }
+
+/** The size of form controls: larger below `desk`, where they are touched. */
+export function useControlSize(): "default" | "xl" {
+	return useIsDesk() ? "default" : "xl";
+}

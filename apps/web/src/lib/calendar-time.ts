@@ -1,23 +1,16 @@
 /** Date helpers for the calendar views. All of them work in the browser's time zone. */
+import type { RouterInputs, RouterOutputs } from "@mine/api/routers/index";
 
-export interface TimedRange {
-	timeMax: string;
-	timeMin: string;
-}
+/** The range `calendar.events` takes: ISO instants, end exclusive. */
+export type TimedRange = RouterInputs["calendar"]["events"];
 
-export interface DisplayEvent {
-	allDay: boolean;
-	calendarId: string;
-	color: string;
-	end: string;
-	htmlLink: string | null;
-	id: string;
-	location: string | null;
-	start: string;
-	title: string;
-}
+/** A Google Calendar event as `calendar.events` returns it. */
+export type DisplayEvent =
+	RouterOutputs["calendar"]["events"]["events"][number];
 
 const DAY_KEY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const pad = (value: number) => String(value).padStart(2, "0");
 
 export function startOfDay(date: Date): Date {
 	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -34,9 +27,7 @@ export function startOfWeek(date: Date): Date {
 }
 
 export function dayKey(date: Date): string {
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${date.getFullYear()}-${month}-${day}`;
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function parseDayKey(value: string | undefined): Date | null {
@@ -89,10 +80,11 @@ export function eventsOnDay(events: DisplayEvent[], day: Date): DisplayEvent[] {
 		});
 }
 
-const timeFormat = new Intl.DateTimeFormat("ja-JP", {
-	hour: "2-digit",
-	minute: "2-digit",
-});
+/** 24-hour local clock time of an instant: 09:05. The one way times are shown. */
+export function formatClock(ms: number): string {
+	const date = new Date(ms);
+	return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 /** "10:00–11:00", or "終日"; parts outside the day become "〜". */
 export function formatEventTime(event: DisplayEvent, day: Date): string {
@@ -103,8 +95,8 @@ export function formatEventTime(event: DisplayEvent, day: Date): string {
 	const dayEnd = addDays(day, 1).getTime();
 	const start = Date.parse(event.start);
 	const end = Date.parse(event.end);
-	const from = start < dayStart ? "" : timeFormat.format(start);
-	const to = end > dayEnd ? "" : timeFormat.format(end);
+	const from = start < dayStart ? "" : formatClock(start);
+	const to = end > dayEnd ? "" : formatClock(end);
 	if (!(from || to)) {
 		return "終日";
 	}

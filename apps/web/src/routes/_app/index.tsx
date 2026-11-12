@@ -11,14 +11,14 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-
+import { EmptyState } from "@/components/app-shell/empty-state";
+import { LoadingBlock } from "@/components/app-shell/loading-block";
 import { Page } from "@/components/app-shell/page";
 import {
 	CalendarError,
 	CalendarLoading,
 } from "@/components/calendar/calendar-status";
 import { EventList } from "@/components/calendar/event-list";
-import { ComingSoon } from "@/components/placeholder/coming-soon";
 import { useTaskEditor } from "@/components/tasks/task-editor";
 import { TaskList } from "@/components/tasks/task-list";
 import { useTaskContext } from "@/components/tasks/use-tasks";
@@ -32,13 +32,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card/card";
-import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { useToday, useTodayDate } from "@/hooks/use-today";
 import { eventsOnDay, rangeOfDays, startOfWeek } from "@/lib/calendar-time";
 import { groupTasks } from "@/lib/tasks";
 import { currentTimeZone, type TimeEntry, weekRange } from "@/lib/time";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 export const Route = createFileRoute("/_app/")({ component: TodayPage });
 
@@ -153,15 +152,11 @@ function TodayTasks() {
 	const tasks = useQuery(trpc.task.list.queryOptions({ today, view: "today" }));
 
 	if (tasks.isPending) {
-		return (
-			<div className="flex justify-center py-8 text-muted-foreground">
-				<Spinner />
-			</div>
-		);
+		return <LoadingBlock />;
 	}
 	if (tasks.isError) {
 		return (
-			<ComingSoon
+			<EmptyState
 				description="タスクを読み込めませんでした"
 				icon={IconAlertTriangle}
 			/>
@@ -171,7 +166,7 @@ function TodayTasks() {
 	return (
 		<>
 			{groups.length === 0 ? (
-				<ComingSoon
+				<EmptyState
 					description="今日やることはありません"
 					icon={IconCircleCheck}
 				/>
@@ -238,15 +233,11 @@ function ThisWeek() {
 		trpc.time.summary.queryOptions({ ...range, timeZone: currentTimeZone() })
 	);
 	if (summary.isPending) {
-		return (
-			<div className="flex justify-center py-8 text-muted-foreground">
-				<Spinner />
-			</div>
-		);
+		return <LoadingBlock />;
 	}
 	if (summary.isError) {
 		return (
-			<ComingSoon
+			<EmptyState
 				description="集計を読み込めませんでした"
 				icon={IconAlertTriangle}
 			/>
@@ -254,7 +245,7 @@ function ThisWeek() {
 	}
 	if (summary.data.durationMs === 0) {
 		return (
-			<ComingSoon
+			<EmptyState
 				description="今週の記録はまだありません"
 				icon={IconChartBar}
 			/>

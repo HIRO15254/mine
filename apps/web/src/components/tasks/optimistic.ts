@@ -4,11 +4,11 @@
  * `task.list` query for one view; a task goes in or out of it by the same
  * rule the server uses (`inView`).
  */
-import { inView } from "@mine/api/tasks/views";
+import { compareTasks, inView } from "@mine/api/tasks/views";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 
 import type { Label, Task, TaskInput, TaskView } from "@/lib/tasks";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 type Snapshot = [QueryKey, Task[] | undefined][];
 
@@ -24,14 +24,15 @@ function inputOf(key: QueryKey): ListInput | null {
 	return meta?.input ?? null;
 }
 
-const dueDay = (task: Task) =>
-	task.scheduledDate ?? task.deadline ?? "9999-12-31";
+/** The task as the server's view rules take it: dates are not strings there. */
+const asViewTask = (task: Task) => ({
+	...task,
+	createdAt: new Date(task.createdAt),
+});
 
-/** The server's order without its tie-breakers; the sort keeps ties as they were. */
+/** The server's own order (`compareTasks`), so a list does not jump on refetch. */
 function sortTasks(tasks: Task[]): Task[] {
-	return [...tasks].sort(
-		(a, b) => a.priority - b.priority || dueDay(a).localeCompare(dueDay(b))
-	);
+	return [...tasks].sort((a, b) => compareTasks(asViewTask(a), asViewTask(b)));
 }
 
 /** Stops refetches in flight and keeps the lists as they are now. */
@@ -67,11 +68,7 @@ export function placeTask(queryClient: QueryClient, task: Task): void {
 			continue;
 		}
 		const others = tasks.filter((item) => item.id !== task.id);
-		const belongs = inView(
-			{ ...task, createdAt: new Date(task.createdAt) },
-			input.view,
-			input.today
-		);
+		const belongs = inView(asViewTask(task), input.view, input.today);
 		if (!belongs && others.length === tasks.length) {
 			continue;
 		}

@@ -1,5 +1,5 @@
-import { dayKey } from "@/lib/calendar-time";
-import { combineDayAndTime, formatClock, type TimeEntry } from "@/lib/time";
+import { dayKey, formatClock } from "@/lib/calendar-time";
+import { combineDayAndTime, type TimeEntry } from "@/lib/time";
 
 const DAY = 86_400_000;
 const FIVE_MINUTES = 300_000;

@@ -54,12 +54,6 @@ export function formatYen(amount: number): string {
 	return yen.format(amount);
 }
 
-/** 24-hour local clock time: 09:05. */
-export function formatClock(ms: number): string {
-	const date = new Date(ms);
-	return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 /** Local instant for a YYYY-MM-DD day and an HH:MM time, or null. */
 export function combineDayAndTime(day: string, time: string): number | null {
 	const date = parseDayKey(day);

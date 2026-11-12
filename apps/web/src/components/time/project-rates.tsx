@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button/button";
 import { Field, FieldError } from "@/components/ui/field/field";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
-import { useIsDesk } from "@/hooks/use-media-query";
+import { useControlSize } from "@/hooks/use-media-query";
 import { formatDay, todayKey } from "@/lib/tasks";
 import { formatYen } from "@/lib/time";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 
 /** Hourly rates of one project; saved immediately, separate from its form. */
 export function ProjectRates({
@@ -20,8 +20,7 @@ export function ProjectRates({
 	projectId: string;
 }) {
 	const id = useId();
-	const isDesk = useIsDesk();
-	const size = isDesk ? "default" : "xl";
+	const size = useControlSize();
 	const today = todayKey();
 	const queryClient = useQueryClient();
 	const rates = useQuery(trpc.rate.list.queryOptions());
@@ -124,7 +123,7 @@ export function ProjectRates({
 				<Button
 					disabled={set.isPending}
 					onClick={add}
-					size={isDesk ? "default" : "xl"}
+					size={size}
 					type="button"
 					variant="secondary"
 				>

@@ -5,7 +5,6 @@ import {
 	currentTimeZone,
 	dayRange,
 	entryDuration,
-	formatClock,
 	formatDuration,
 	formatElapsed,
 	formatHours,
@@ -44,7 +43,6 @@ describe("time formatting", () => {
 		expect(formatHours(2.54 * HOUR)).toBe("2.5h");
 		expect(formatHours(12.4 * HOUR)).toBe("12h");
 		expect(formatYen(12_000)).toContain("12,000");
-		expect(formatClock(NOV5_9AM + 5 * MINUTE)).toBe("09:05");
 		expect(currentTimeZone()).toBe("Asia/Tokyo");
 	});
 });

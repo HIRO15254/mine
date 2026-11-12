@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
+vi.mock("@/lib/trpc", () => import("../../../__tests__/test-api"));
 
 import { freezeNow, NOW } from "../../../__tests__/clock";
 import { renderWithQuery, useDesktopLayout } from "../../../__tests__/render";
