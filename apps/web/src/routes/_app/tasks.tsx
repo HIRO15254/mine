@@ -1,3 +1,4 @@
+import { descendants } from "@mine/api/projects/tree";
 import {
 	IconAlertTriangle,
 	IconChecklist,
@@ -45,18 +46,19 @@ interface TasksSearch {
 const VIEWS = new Set<string>(TASK_VIEW_OPTIONS.map((option) => option.value));
 
 export const Route = createFileRoute("/_app/tasks")({
-	validateSearch: (search: Record<string, unknown>): TasksSearch => {
-		const add = quickAddText(search);
-		return {
-			...(add === undefined ? {} : { add }),
-			...(typeof search.view === "string" && VIEWS.has(search.view)
-				? { view: search.view as TaskView }
-				: {}),
-			...(typeof search.project === "string" && search.project
-				? { project: search.project }
-				: {}),
-		};
-	},
+	// Every key is answered, even with undefined: the router lays the result
+	// over the raw search, so a key left out would keep its unchecked value.
+	validateSearch: (search: Record<string, unknown>): TasksSearch => ({
+		add: quickAddText(search),
+		project:
+			typeof search.project === "string" && search.project
+				? search.project
+				: undefined,
+		view:
+			typeof search.view === "string" && VIEWS.has(search.view)
+				? (search.view as TaskView)
+				: undefined,
+	}),
 	component: TasksPage,
 });
 
@@ -66,29 +68,6 @@ const EMPTY_MESSAGE: Record<TaskView, string> = {
 	inbox: "インボックスは空です",
 	open: "未完了のタスクはありません",
 };
-
-/** The project and everything nested under it. */
-function descendantIds(
-	projects: Array<{ id: string; parentId: string | null }>,
-	rootId: string
-): Set<string> {
-	const ids = new Set([rootId]);
-	let grew = true;
-	while (grew) {
-		grew = false;
-		for (const project of projects) {
-			if (
-				project.parentId &&
-				ids.has(project.parentId) &&
-				!ids.has(project.id)
-			) {
-				ids.add(project.id);
-				grew = true;
-			}
-		}
-	}
-	return ids;
-}
 
 function TasksPage() {
 	const search = Route.useSearch();
@@ -112,7 +91,7 @@ function TasksPage() {
 	const groups = useMemo(() => {
 		let items = tasks.data ?? [];
 		if (projectFilter) {
-			const ids = descendantIds(projects, projectFilter);
+			const ids = descendants(projects, projectFilter);
 			items = items.filter((task) => task.projectId && ids.has(task.projectId));
 		}
 		return groupTasks(items, view, { projects, today });

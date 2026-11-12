@@ -23,7 +23,7 @@ Before writing a helper, look for it; these exist once and are meant to be reuse
 
 ## Adding a screen
 
-1. Create `src/routes/_app/<name>.tsx` with `createFileRoute("/_app/<name>")`, and wrap the content in `Page` with a Japanese title. Validate search parameters in `validateSearch`.
+1. Create `src/routes/_app/<name>.tsx` with `createFileRoute("/_app/<name>")`, and wrap the content in `Page` with a Japanese title. Validate search parameters in `validateSearch`, and return every key, `undefined` when the value is not acceptable: the router lays the result over the raw search, so a key left out keeps whatever the address said. Add the screen to `src/__tests__/routes.test.tsx`, which opens each address in the real route tree.
 2. Add it to `src/components/app-shell/navigation.ts` when it belongs in the navigation: widen the `to` union and add the item. The tab bar holds five items; a sixth needs a design decision first.
 3. Add a row to `screens/screens.ts` and fixtures for its queries to `queries` in `screens/fixtures.ts`. `bun run screens -- --only <name>` names every query it could not answer.
 4. Draw or update the artboard on the Mine UI canvas, or leave a note there (see the `ui-design` skill).
@@ -52,3 +52,4 @@ Before writing a helper, look for it; these exist once and are meant to be reuse
 - Call `freezeNow()` when a test shows or sends a time. It stops `Date` only, so waiting and user events still work; the server's clock follows it unless the test sets `api.clock.now`.
 - `makeTask()`, `makeProject()` and `makeLabel()` from `task-fixtures.ts` build rows for tests of pure logic and of components that take everything as props.
 - `useDesktopLayout()` from `src/__tests__/render.tsx` switches a test to the desk layout.
+- `src/__tests__/routes.test.tsx` covers what only the assembled app shows: the sign-in guard (signed out, no answer, offline start), each screen opening under its title, and search parameters. `components/tasks/__tests__/use-tasks.test.tsx` shows how to test a data hook: `renderHook` beside the lists a screen would have loaded, `api.fail(path, delayMs)` to look at the optimistic state before the refusal arrives.

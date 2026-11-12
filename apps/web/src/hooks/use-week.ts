@@ -4,13 +4,20 @@ import { dayKey, parseDayKey, startOfWeek } from "@/lib/calendar-time";
 
 import { useTodayDate } from "./use-today";
 
-/** `?week=YYYY-MM-DD` for the screens that show one week; anything else is dropped. */
+/**
+ * `?week=YYYY-MM-DD` for the screens that show one week; anything else is
+ * dropped. The key is always answered: the router lays the result over the
+ * raw search, so leaving it out would keep the unchecked value.
+ */
 export function validateWeekSearch(search: Record<string, unknown>): {
 	week?: string;
 } {
-	return typeof search.week === "string" && parseDayKey(search.week)
-		? { week: search.week }
-		: {};
+	return {
+		week:
+			typeof search.week === "string" && parseDayKey(search.week)
+				? search.week
+				: undefined,
+	};
 }
 
 /** The week a screen shows: the one in the URL, or the current one. */

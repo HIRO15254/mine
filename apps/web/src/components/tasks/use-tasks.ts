@@ -155,11 +155,12 @@ export function useCompleteTask() {
 				}
 				toast.error("完了にできませんでした");
 			},
-			// Refetch only after the row has left, so it does not come back.
-			onSettled: async (_data, _error, _input, context) => {
-				await wait(
-					context ? COMPLETE_POP_MS - (Date.now() - context.startedAt) : 0
-				);
+			// Refetch only after the row has left, so it does not come back. A
+			// refused row stays, and must not keep its check while we wait.
+			onSettled: async (_data, error, _input, context) => {
+				if (context && !error) {
+					await wait(COMPLETE_POP_MS - (Date.now() - context.startedAt));
+				}
 				await invalidate();
 			},
 			onSuccess: (result) => {

@@ -15,8 +15,11 @@ export function renderWithQuery(element: ReactElement) {
 export function useDesktopLayout() {
 	window.matchMedia = ((query: string) => ({
 		addEventListener: () => undefined,
+		// The older pair, which next-themes still calls.
+		addListener: () => undefined,
 		matches: true,
 		media: query,
 		removeEventListener: () => undefined,
+		removeListener: () => undefined,
 	})) as unknown as typeof window.matchMedia;
 }
