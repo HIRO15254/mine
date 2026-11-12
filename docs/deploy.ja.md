@@ -1,4 +1,4 @@
-# Cloudflareデプロイ
+# デプロイと運用
 
 ## 初回セットアップ
 
@@ -8,13 +8,27 @@
 2. `mine`というPages project
 3. `mine-api`というWorker API（最初の本番deployで作成しても構いません）
 
-本番D1 UUIDを`apps/server/wrangler.jsonc`へ設定します。deploy可能な派生プロジェクトでは、全ゼロのplaceholderをcommitしないでください。GitHub repository variablesに次を設定します。
+本番D1 UUIDを`apps/server/wrangler.jsonc`の`d1_databases[0].database_id`へ設定します。GitHub repository variablesに次を設定します。
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `PRODUCTION_WEB_URL`（CORSで許可する完全一致のorigin）
 - `PRODUCTION_API_URL`（Web buildへ埋め込むWorker base URL）
 
 GitHub Actions secretとして`CLOUDFLARE_API_TOKEN`を設定します。tokenにはWorkers Scripts、Pages、D1を管理するために必要なaccount権限が必要です。
+
+コマンドラインで用意する場合は次のとおりです。既にあるリソースを二重に作らないよう、先に一覧で確かめます。secret は対話入力にして、shell の履歴に残さないようにします。
+
+```sh
+bunx wrangler d1 list
+bunx wrangler pages project list
+bunx wrangler d1 create mine-db
+bunx wrangler pages project create mine --production-branch master
+
+gh variable set CLOUDFLARE_ACCOUNT_ID --body "<account-id>"
+gh variable set PRODUCTION_WEB_URL --body "<web-origin>"
+gh variable set PRODUCTION_API_URL --body "<worker-base-url>"
+gh secret set CLOUDFLARE_API_TOKEN
+```
 
 `wrangler.jsonc`を変更した後は`bun run cf:typegen`を実行し、生成されたbinding型をcommitします。
 
@@ -41,7 +55,7 @@ GitHub Actions secretとして`CLOUDFLARE_API_TOKEN`を設定します。token�
 
 `BETTER_AUTH_URL` は deploy 時に `PRODUCTION_API_URL` から自動で設定されます。ローカルでは `apps/server/.dev.vars.example` を `.dev.vars` にコピーして値を入れます。
 
-Web（Pages）と API（Worker）は別ドメインなので、セッション cookie は `SameSite=None; Secure` のサードパーティ cookie になります。Safari などで弾かれる場合は、両方を同じ独自ドメインのサブドメインに置いてください。PR preview の Worker には secret が無いため、preview ではログインできません。
+Web（Pages）と API（Worker）は別ドメインなので、セッション cookie は `SameSite=None; Secure` のサードパーティ cookie になります。Safari などで弾かれる場合は、両方を同じ独自ドメインのサブドメインに置いてください。
 
 ## 本番
 
@@ -49,21 +63,21 @@ Web（Pages）と API（Worker）は別ドメインなので、セッション c
 
 migration は `packages/db/src/migrations` にあり、deploy 前に本番 D1 へ適用されます。
 
-## Pull request preview
+## 手動でデプロイする
 
-同一リポジトリ内のbranchから作成したPRには、PRごとに安定した次のリソースを作成します。
+ふだんは `master` への push に任せます。GitHub Actions を使えないときだけ、同じ順番を手で行います。
 
-- Worker: `<slug>-api-pr-<number>`
-- Pages deployment: `<slug>` project内の`pr-<number>` branch
-- D1 database: `<slug>-db-pr-<number>`
+```sh
+bun run verify
+bun run db:migrate:remote
 
-fork PRではpreviewを作成しません。repository secretを利用できず、信頼していないcodeへ本番dataを渡さないためです。
+cd apps/server
+bunx wrangler deploy --var "CORS_ORIGIN:<PRODUCTION_WEB_URL>" --var "BETTER_AUTH_URL:<PRODUCTION_API_URL>"
+cd ../..
 
-PR databaseを初めて作成したとき、本番適用済みmigrationまでschemaを揃え、本番D1の全dataをexportし、triggerを一時的に外してからimportし、必ずtriggerを復元した後にPR branchだけの新しいmigrationを適用します。空schema、migrationなし、空dumpはいずれも正常系です。以後のpushでは同じpreview databaseを再利用し、未適用migrationだけを追加適用します。PR close時はWorker、Pages deployment、D1 databaseを冪等に削除します。
-
-> **データ公開範囲の警告:** 最初のpreview snapshotは、匿名化していない本番D1の完全な複製です。このリポジトリへbranchを作成できる全員を、本番dataへアクセス可能な信頼済み利用者として扱うことになります。この前提が合わない場合は、preview deployを有効にする前にsnapshot手順を無効化するか、匿名化したfixture生成へ置き換えてください。
-
-export中はsource D1への他のrequestが一時的にblockされるため、大規模snapshotの実行時刻には注意してください。
+VITE_SERVER_URL="<PRODUCTION_API_URL>" bun run --filter @mine/web build
+bunx wrangler pages deploy apps/web/dist --project-name mine --branch master
+```
 
 ## ローカル受け入れ検査
 

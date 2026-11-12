@@ -26,7 +26,6 @@ This file is the source of truth for every coding agent working in this reposito
 - `bun run db:migrate:local`: apply migrations to the local D1 database
 - `bun run check:design-tokens`: compare the app's tokens with the Mine Design System snapshot in `design/mine/`
 - `bun run screens`: screenshot every screen with sample data into `test-results/screens/`
-- `$better-t-app-setup`: use the bundled repository skill for template renaming and command-line Cloudflare deployment setup
 - `$ui-design`: use the bundled repository skill to design on the Mine UI canvas and to apply canvas or design-system changes to `apps/web`
 
 ## Package boundaries
@@ -58,7 +57,7 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 - The layout switches at the `desk` breakpoint (720px): sidebar and 13px desktop scale above it, bottom tab bar, `m-*` sizes and `xl` controls below it.
 - Icons come from `@tabler/icons-react` only. No emoji. The one image is the Mine mark (`BrandMark`, `apps/web/public/logo.png`) in the sidebar, the mobile header and the sign-in screen.
 - The accent is light, not a hue: `primary` is white in dark and ink in light. `glow` marks what is live or chosen (the running timer, the current nav item); project colors are the five `chart-*` prism hues.
-- UI copy is Japanese, short and in plain form; sentence case for any English.
+- UI copy is Japanese and short. Messages and descriptions use polite form (です・ます); labels on buttons, menus and fields are short noun or verb phrases. Sentence case for any English.
 
 ## Design workflow
 

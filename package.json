@@ -32,7 +32,6 @@
     "cf:typegen:check": "bunx wrangler types apps/server/worker-configuration.d.ts --check -c apps/server/wrangler.jsonc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ci": "vitest run --reporter=verbose",
     "test:coverage": "vitest run --coverage",
     "check:test-discovery": "bun scripts/check-test-discovery.ts",
     "check:design-tokens": "bun scripts/design-tokens.ts",
@@ -40,7 +39,6 @@
     "verify": "bun run cf:typegen:check && bun run check-types && bun run check && bun run check:test-discovery && bun run test:coverage && bun run build",
     "check": "ultracite check",
     "fix": "ultracite fix",
-    "template:init": "bun scripts/template-init.ts",
     "prepare": "husky"
   },
   "devDependencies": {
