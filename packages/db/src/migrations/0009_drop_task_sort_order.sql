@@ -1,0 +1,1 @@
+ALTER TABLE `task` DROP COLUMN `sort_order`;

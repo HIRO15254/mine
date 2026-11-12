@@ -11,7 +11,7 @@ import { createTestDb } from "../testing";
  * README): the first removes it from the code and lists it here, the second
  * adds the migration and takes it off this list.
  */
-const PENDING_DROPS: string[] = ["task.sort_order"];
+const PENDING_DROPS: string[] = [];
 
 const tables = (Object.values(schema) as unknown[])
 	.filter((value): value is SQLiteTable => is(value, SQLiteTable))
