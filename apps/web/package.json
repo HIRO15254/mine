@@ -23,7 +23,7 @@
     "@tanstack/react-query-persist-client": "5.102.8",
     "@tanstack/react-router": "^1.168.10",
     "@trpc/client": "catalog:",
-    "@trpc/tanstack-react-query": "11.16.0",
+    "@trpc/tanstack-react-query": "catalog:",
     "better-auth": "catalog:",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -55,6 +55,6 @@
     "tailwindcss": "^4.2.2",
     "typescript": "catalog:",
     "vite": "8.0.5",
-    "vitest": "4.1.2"
+    "vitest": "catalog:"
   }
 }

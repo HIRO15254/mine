@@ -13,6 +13,7 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 - Hono Worker with tRPC and Better Auth (Google sign-in only)
 - Cloudflare D1 through Drizzle ORM
 - Vitest for all automated tests
+- A version used by more than one workspace is set once, in `catalog` in the root `package.json` (`"vitest": "catalog:"`). The Bun version is in `.bun-version` (read by the deploy workflow) and `packageManager`; change both together.
 
 ## Commands
 

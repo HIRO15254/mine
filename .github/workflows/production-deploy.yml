@@ -30,7 +30,7 @@ jobs:
           node-version: 22.19.0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.10
+          bun-version-file: .bun-version
       - run: bun install --frozen-lockfile
       # Types, lint, tests and both builds: nothing is deployed unless all pass.
       - run: bun run verify
@@ -47,7 +47,7 @@ jobs:
           node-version: 22.19.0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.10
+          bun-version-file: .bun-version
       - run: bun install --frozen-lockfile
       - name: Require a configured production D1 database
         run: |
@@ -76,7 +76,7 @@ jobs:
           node-version: 22.19.0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.10
+          bun-version-file: .bun-version
       - run: bun install --frozen-lockfile
       - name: Deploy Worker
         working-directory: apps/server
@@ -96,7 +96,7 @@ jobs:
           node-version: 22.19.0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.10
+          bun-version-file: .bun-version
       - run: bun install --frozen-lockfile
       - name: Build web
         env:
