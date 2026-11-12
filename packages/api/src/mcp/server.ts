@@ -20,7 +20,7 @@ const LATEST_PROTOCOL_VERSION = "2025-06-18";
 export const DEFAULT_TIME_ZONE = "Asia/Tokyo";
 
 const INSTRUCTIONS = [
-	"Mine is the user's personal dashboard: tasks (with projects, labels and recurrence), time tracking (a timer and entries per project, with hourly rates) and their Google Calendar (read-only).",
+	"Mine is the user's personal dashboard: tasks (with projects, labels and recurrence), time tracking (a timer and entries per project, with hourly rates) and their Google Calendar (events can be listed, added, changed and deleted).",
 	"Dates are YYYY-MM-DD and times are in the user's time zone (Asia/Tokyo). Work out relative dates such as 明日 or 来週の月曜 yourself.",
 	"A task has three optional dates: startDate (最速実行可能日, the earliest day it can be started), scheduledDate (予定日, the day planned to do it) and deadline (締め切り). Priority 1 is the most urgent; 4 is the default. The label next marks next actions, which show on Today.",
 	"Projects are shared by tasks and time tracking. Refer to them by name or by path such as 大学 / 研究; call list_projects when unsure.",

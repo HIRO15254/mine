@@ -11,24 +11,31 @@ import { cn } from "@/lib/utils";
 
 import { DraggableTask } from "./time-grid";
 
-export type TrayFilter = "all" | "today";
+/** The tasks of the days on screen, or every open one. */
+export type TrayFilter = "all" | "period";
 
 /**
- * Tasks without a time, to drag onto the calendar. Dropping a placed task
- * here takes its time away again.
+ * Tasks not on the calendar yet, to drag onto it: those of the days on
+ * screen (planned, due, or on Today), or every open one. Dropping a placed
+ * task here takes its time away again.
  */
 export function TaskTray({
 	filter,
 	layout,
 	onFilterChange,
 	onOpenTask,
+	hint,
+	periodLabel,
 	projects,
 	tasks,
 }: {
+	hint: string;
 	filter: TrayFilter;
 	layout: "column" | "row";
 	onFilterChange: (filter: TrayFilter) => void;
 	onOpenTask: (task: Task) => void;
+	/** この週, この日 or この月: what the period filter covers. */
+	periodLabel: string;
 	projects: Project[];
 	tasks: Task[];
 }) {
@@ -49,8 +56,8 @@ export function TaskTray({
 			type="single"
 			value={filter}
 		>
-			<ToggleGroupItem className="h-7 px-2.5 text-xs" value="today">
-				今日
+			<ToggleGroupItem className="h-7 px-2.5 text-xs" value="period">
+				{periodLabel}
 			</ToggleGroupItem>
 			<ToggleGroupItem className="h-7 px-2.5 text-xs" value="all">
 				すべて
@@ -125,9 +132,7 @@ export function TaskTray({
 			) : (
 				<ul className="m-0 flex list-none flex-col gap-1 p-0">{chips}</ul>
 			)}
-			<p className="m-0 text-[11px] text-muted-foreground">
-				時間の欄へドラッグすると、その時刻に置けます。戻すと時刻だけ外れます
-			</p>
+			<p className="m-0 text-[11px] text-muted-foreground">{hint}</p>
 		</section>
 	);
 }

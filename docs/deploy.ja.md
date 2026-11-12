@@ -41,7 +41,7 @@ gh secret set CLOUDFLARE_API_TOKEN
    - 本番: `<PRODUCTION_API_URL>/api/auth/callback/google`
 2. OAuth 同意画面の公開ステータスを「本番」にします。「テスト」のままだと、カレンダー連携に使うリフレッシュトークンが7日で失効します。
    - 同じプロジェクトで「Google Calendar API」を有効にします（API とサービス → ライブラリ）。
-   - ログイン時に `https://www.googleapis.com/auth/calendar.readonly`（カレンダーの閲覧）とオフラインアクセスを要求します。審査を受けていないアプリなので、同意画面に「Google はこのアプリを確認していません」と出ます。自分専用なら「詳細」から続行して構いません。
+   - ログイン時に `https://www.googleapis.com/auth/calendar.readonly`（カレンダーの閲覧）、`https://www.googleapis.com/auth/calendar.events`（予定の編集）とオフラインアクセスを要求します。審査を受けていないアプリなので、同意画面に「Google はこのアプリを確認していません」と出ます。自分専用なら「詳細」から続行して構いません。
    - スコープを追加する前にログインしていた場合は、アプリの「カレンダーを連携」から一度ログインし直すと権限が付きます。
 3. 本番 Worker に secret を設定します（deploy をまたいで保持されます）。
 

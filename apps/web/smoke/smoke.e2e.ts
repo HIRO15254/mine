@@ -1,7 +1,8 @@
 /**
  * The few paths that must work in a real browser for Mine to be usable:
  * signing in is asked for, a task can be added, completed and brought back,
- * the timer starts and stops, and a task can be dragged onto the calendar.
+ * the timer starts and stops, and a task and an event can be dragged on the
+ * calendar.
  * Each test checks what the server holds afterwards, not only the screen.
  *
  *   bun run smoke
@@ -9,6 +10,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 
 import {
+	googleWrites,
 	newSession,
 	type Session,
 	startSmoke,
@@ -17,6 +19,8 @@ import {
 } from "./harness";
 
 const TOMORROW = "2026-11-11";
+const DAY_AFTER = "2026-11-12";
+const EVENT_TITLE = /打ち合わせ/;
 const HOUR_AND_MINUTE = /^\d{2}:\d{2}$/;
 /** A height inside the 860px window, below the page and grid headers. */
 const DROP_Y = 500;
@@ -139,4 +143,41 @@ it("plans a task by dragging it onto the calendar", async () => {
 			scheduledDate: TOMORROW,
 			scheduledTime: expect.stringMatching(HOUR_AND_MINUTE),
 		});
+});
+
+it("moves an event by dragging it to another day and time", async () => {
+	const { page } = session;
+	googleWrites.length = 0;
+	await session.open("/calendar");
+
+	const block = page
+		.locator(`[data-day-column="${TOMORROW}"]`)
+		.getByRole("button", { name: EVENT_TITLE });
+	await block.waitFor();
+	const from = await block.boundingBox();
+	const column = await page
+		.locator(`[data-day-column="${DAY_AFTER}"]`)
+		.boundingBox();
+	if (!(from && column)) {
+		throw new Error("The event or the day after tomorrow is not on the screen");
+	}
+	const grab = { x: from.x + from.width / 2, y: from.y + 6 };
+	await page.mouse.move(grab.x, grab.y);
+	await page.mouse.down();
+	await page.mouse.move(grab.x + 12, grab.y + 12, { steps: 4 });
+	await page.mouse.move(column.x + column.width / 2, DROP_Y, { steps: 12 });
+	await page.locator('[data-slot="drop-preview"]').waitFor();
+	await page.mouse.up();
+
+	await expect.poll(() => googleWrites.length).toBe(1);
+	const [write] = googleWrites;
+	expect(write?.method).toBe("PATCH");
+	expect(write?.url).toContain("/calendars/primary/events/meeting");
+	const start = (write?.body.start as { dateTime: string }).dateTime;
+	const end = (write?.body.end as { dateTime: string }).dateTime;
+	// On the day after tomorrow, still an hour long.
+	expect(
+		new Date(start).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" })
+	).toBe(DAY_AFTER);
+	expect(Date.parse(end) - Date.parse(start)).toBe(60 * 60_000);
 });

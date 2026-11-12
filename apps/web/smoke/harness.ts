@@ -49,15 +49,48 @@ export async function stopSmoke() {
 	await server?.close();
 }
 
-/** Google with one calendar and nothing in it. */
-const google = (input: RequestInfo | URL) =>
-	Promise.resolve(
+/** The one event Google holds: tomorrow 15:00–16:00 on the user's calendar. */
+export const GOOGLE_EVENT = {
+	end: { dateTime: "2026-11-11T16:00:00+09:00" },
+	id: "meeting",
+	start: { dateTime: "2026-11-11T15:00:00+09:00" },
+	summary: "打ち合わせ",
+};
+
+/** Every change the app sent to Google, oldest first. */
+export const googleWrites: Array<{
+	body: Record<string, unknown>;
+	method: string;
+	url: string;
+}> = [];
+
+/** Google with one calendar the user owns and one event in it. */
+const google = (input: RequestInfo | URL, init?: RequestInit) => {
+	const url = String(input);
+	const method = init?.method ?? "GET";
+	if (method !== "GET") {
+		const body = JSON.parse(String(init?.body ?? "{}"));
+		googleWrites.push({ body, method, url });
+		return Promise.resolve(Response.json({ ...GOOGLE_EVENT, ...body }));
+	}
+	return Promise.resolve(
 		Response.json(
-			String(input).includes("/calendarList")
-				? { items: [{ id: "primary", primary: true, summary: "予定" }] }
-				: { items: [] }
+			url.includes("/calendarList")
+				? {
+						items: [
+							{
+								accessRole: "owner",
+								id: "primary",
+								primary: true,
+								selected: true,
+								summary: "予定",
+							},
+						],
+					}
+				: { items: [GOOGLE_EVENT] }
 		)
 	);
+};
 
 export interface Session {
 	app: TestApp;

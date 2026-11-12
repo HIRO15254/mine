@@ -9,7 +9,17 @@ import {
 	createGoogleCalendarClient,
 	GoogleCalendarAuthError,
 	type GoogleCalendarClient,
+	GoogleCalendarForbiddenError,
+	GoogleCalendarNotFoundError,
 } from "../google/calendar";
+import {
+	calendarId,
+	eventDescription,
+	eventId,
+	eventLocation,
+	eventTiming,
+	eventTitle,
+} from "../google/schema";
 import { protectedProcedure, router } from "../index";
 import { MAX_LIST_SPAN } from "../time/schema";
 
@@ -50,6 +60,15 @@ async function withGoogle<T>(
 		if (error instanceof GoogleCalendarAuthError) {
 			throw notConnected();
 		}
+		if (error instanceof GoogleCalendarForbiddenError) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "This calendar or event cannot be changed",
+			});
+		}
+		if (error instanceof GoogleCalendarNotFoundError) {
+			throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+		}
 		throw error;
 	}
 }
@@ -79,6 +98,7 @@ async function calendarsWithVisibility(
 			name: calendar.name,
 			primary: calendar.primary,
 			visible: visibility.get(calendar.id) ?? calendar.selected,
+			writable: calendar.writable,
 		}))
 		.sort((a, b) => Number(b.primary) - Number(a.primary));
 }
@@ -123,13 +143,67 @@ export const calendarRouter = router({
 				)
 			);
 			return {
-				calendars: calendars.map(({ color, id, name }) => ({
+				calendars: calendars.map(({ color, id, name, writable }) => ({
 					color,
 					id,
 					name,
+					writable,
 				})),
 				events: perCalendar.flat(),
 			};
 		})
 	),
+
+	/** Adds an event to one of the user's writable calendars. */
+	createEvent: protectedProcedure
+		.input(
+			z.object({
+				calendarId,
+				description: eventDescription.nullish(),
+				location: eventLocation.nullish(),
+				title: eventTitle,
+				when: eventTiming,
+			})
+		)
+		.mutation(({ ctx, input }) =>
+			withGoogle(ctx, (client) =>
+				client.insertEvent(input.calendarId, {
+					description: input.description ?? null,
+					location: input.location ?? null,
+					title: input.title,
+					when: input.when,
+				})
+			)
+		),
+
+	/**
+	 * Changes an event. Fields left out stay as they are; one occurrence of a
+	 * repeating event changes only that occurrence.
+	 */
+	updateEvent: protectedProcedure
+		.input(
+			z.object({
+				calendarId,
+				description: eventDescription.nullish(),
+				eventId,
+				location: eventLocation.nullish(),
+				title: eventTitle.optional(),
+				when: eventTiming.optional(),
+			})
+		)
+		.mutation(({ ctx, input }) => {
+			const { calendarId: calendar, eventId: event, ...changes } = input;
+			return withGoogle(ctx, (client) =>
+				client.patchEvent(calendar, event, changes)
+			);
+		}),
+
+	deleteEvent: protectedProcedure
+		.input(z.object({ calendarId, eventId }))
+		.mutation(({ ctx, input }) =>
+			withGoogle(ctx, async (client) => {
+				await client.deleteEvent(input.calendarId, input.eventId);
+				return { calendarId: input.calendarId, eventId: input.eventId };
+			})
+		),
 });

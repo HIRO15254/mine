@@ -2,6 +2,13 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { formatDuration, formatLocalTime } from "../format";
+import {
+	calendarId,
+	eventDescription,
+	eventId,
+	eventLocation,
+	eventTitle,
+} from "../google/schema";
 import { resolveProject } from "../projects/resolve";
 import { descendants, projectPath, treeOrder } from "../projects/tree";
 import type { Caller } from "../routers/index";
@@ -444,7 +451,7 @@ const listEvents = defineTool({
 	name: "list_events",
 	title: "予定を見る",
 	description:
-		"Lists Google Calendar events from the calendars shown in Mine, for a date range (inclusive, up to 31 days). Read-only.",
+		"Lists Google Calendar events from the calendars shown in Mine, for a date range (inclusive, up to 31 days). Each event has the id and calendarId that update_event and delete_event take.",
 	annotations: { openWorldHint: true, readOnlyHint: true },
 	input: z.object({ from: day, to: day.optional() }),
 	run: async (input, env) => {
@@ -464,11 +471,15 @@ const listEvents = defineTool({
 					compact({
 						allDay: event.allDay || undefined,
 						calendar: names.get(event.calendarId),
+						calendarId: event.calendarId,
+						description: event.description,
 						// Google ends an all-day event on the day after its last.
 						end: event.allDay
 							? addDays(event.end, -1)
 							: formatLocalTime(Date.parse(event.end), env.timeZone),
 						location: event.location,
+						id: event.id,
+						recurring: event.recurring || undefined,
 						start: event.allDay
 							? event.start
 							: formatLocalTime(Date.parse(event.start), env.timeZone),
@@ -476,6 +487,142 @@ const listEvents = defineTool({
 					})
 				),
 		};
+	},
+});
+
+const eventEdge = z
+	.union([offsetDateTime, day])
+	.describe(
+		"ISO 8601 with offset for a timed event, or YYYY-MM-DD for an all-day one"
+	);
+
+/**
+ * The event's times as the calendar router takes them. Both ends are days
+ * (an all-day event, the end being its last day) or both are instants.
+ */
+function eventTimes(start: string, end: string, timeZone: string) {
+	const startIsDay = day.safeParse(start).success;
+	if (startIsDay !== day.safeParse(end).success) {
+		fail("start and end must both be dates or both be date-times");
+	}
+	return startIsDay
+		? { allDay: true as const, end: addDays(end, 1), start }
+		: { allDay: false as const, end, start, timeZone };
+}
+
+function describeEvent(
+	event: Awaited<ReturnType<Caller["calendar"]["createEvent"]>>,
+	timeZone: string
+) {
+	return compact({
+		allDay: event.allDay || undefined,
+		calendarId: event.calendarId,
+		end: event.allDay
+			? addDays(event.end, -1)
+			: formatLocalTime(Date.parse(event.end), timeZone),
+		id: event.id,
+		location: event.location,
+		start: event.allDay
+			? event.start
+			: formatLocalTime(Date.parse(event.start), timeZone),
+		title: event.title,
+	});
+}
+
+const addEvent = defineTool({
+	name: "add_event",
+	title: "予定を追加",
+	description:
+		"Adds an event to Google Calendar: the primary calendar unless calendar names another one the user can edit. For an all-day event give dates, end being the last day (the same day for one day).",
+	annotations: { openWorldHint: true },
+	input: z.object({
+		calendar: z
+			.string()
+			.trim()
+			.min(1)
+			.optional()
+			.describe("Calendar name or id; the primary calendar by default"),
+		description: eventDescription.optional(),
+		end: eventEdge,
+		location: eventLocation.optional(),
+		start: eventEdge,
+		title: eventTitle,
+	}),
+	run: async (input, env) => {
+		const calendars = await env.caller.calendar.calendars();
+		const wanted = input.calendar?.toLowerCase();
+		const calendar = wanted
+			? calendars.find(
+					(item) =>
+						item.id.toLowerCase() === wanted ||
+						item.name.toLowerCase() === wanted
+				)
+			: calendars.find((item) => item.primary);
+		if (!calendar) {
+			const known = calendars.map((item) => item.name).join(", ");
+			fail(`Unknown calendar "${input.calendar}". Calendars: ${known}`);
+		}
+		if (!calendar.writable) {
+			fail(`The calendar "${calendar.name}" cannot be edited`);
+		}
+		const event = await env.caller.calendar.createEvent({
+			calendarId: calendar.id,
+			description: input.description,
+			location: input.location,
+			title: input.title,
+			when: eventTimes(input.start, input.end, env.timeZone),
+		});
+		return describeEvent(event, env.timeZone);
+	},
+});
+
+const updateEvent = defineTool({
+	name: "update_event",
+	title: "予定を変更",
+	description:
+		"Changes a Google Calendar event found with list_events. Fields left out stay; give start and end together. On a repeating event only that occurrence changes.",
+	annotations: { idempotentHint: true, openWorldHint: true },
+	input: z.object({
+		calendarId,
+		description: eventDescription.optional(),
+		end: eventEdge.optional(),
+		id: eventId,
+		location: eventLocation.optional(),
+		start: eventEdge.optional(),
+		title: eventTitle.optional(),
+	}),
+	run: async (input, env) => {
+		if ((input.start === undefined) !== (input.end === undefined)) {
+			fail("Give start and end together");
+		}
+		const event = await env.caller.calendar.updateEvent({
+			calendarId: input.calendarId,
+			description: input.description,
+			eventId: input.id,
+			location: input.location,
+			title: input.title,
+			when:
+				input.start && input.end
+					? eventTimes(input.start, input.end, env.timeZone)
+					: undefined,
+		});
+		return describeEvent(event, env.timeZone);
+	},
+});
+
+const deleteEvent = defineTool({
+	name: "delete_event",
+	title: "予定を削除",
+	description:
+		"Deletes a Google Calendar event found with list_events. On a repeating event only that occurrence is deleted.",
+	annotations: { destructiveHint: true, openWorldHint: true },
+	input: z.object({ calendarId, id: eventId }),
+	run: async (input, env) => {
+		await env.caller.calendar.deleteEvent({
+			calendarId: input.calendarId,
+			eventId: input.id,
+		});
+		return { deleted: input.id };
 	},
 });
 
@@ -554,6 +701,9 @@ export const TOOLS: Tool[] = [
 	addTimeEntry,
 	timeReport,
 	listEvents,
+	addEvent,
+	updateEvent,
+	deleteEvent,
 	reportThread,
 	listThreads,
 ];

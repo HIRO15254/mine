@@ -1,7 +1,7 @@
 import { createDb } from "@mine/db";
 import { describe, expect, it } from "vitest";
 
-import { createAuth, GOOGLE_CALENDAR_SCOPE } from "../index";
+import { createAuth, GOOGLE_CALENDAR_SCOPES } from "../index";
 
 function testAuth() {
 	return createAuth(createDb({} as Parameters<typeof createDb>[0]), {
@@ -34,13 +34,17 @@ describe("createAuth", () => {
 		);
 	});
 
-	it("asks Google for offline calendar access", () => {
+	it("asks Google for offline access to read calendars and write events", () => {
 		const auth = testAuth();
 
 		expect(auth.options.socialProviders?.google).toMatchObject({
 			accessType: "offline",
 			prompt: "select_account consent",
-			scope: [GOOGLE_CALENDAR_SCOPE],
+			scope: GOOGLE_CALENDAR_SCOPES,
 		});
+		expect(GOOGLE_CALENDAR_SCOPES).toEqual([
+			"https://www.googleapis.com/auth/calendar.readonly",
+			"https://www.googleapis.com/auth/calendar.events",
+		]);
 	});
 });

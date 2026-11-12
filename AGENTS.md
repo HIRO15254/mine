@@ -4,7 +4,7 @@ This file is the source of truth for every coding agent working in this reposito
 
 ## Product
 
-Mine is a single-user personal dashboard for schedule, tasks and time tracking. Google Calendar stays the source of truth for events and is only read; tasks and time entries live in D1. The same data is reached three ways: the web app, a small REST API for shortcuts (`/v1`) and an MCP server for Claude (`/mcp`).
+Mine is a single-user personal dashboard for schedule, tasks and time tracking. Google Calendar stays the source of truth for events: Mine reads them and writes changes straight to Google, never storing events itself; tasks and time entries live in D1. The same data is reached three ways: the web app, a small REST API for shortcuts (`/v1`) and an MCP server for Claude (`/mcp`).
 
 ## Stack
 

@@ -1,11 +1,12 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { IconChecklist } from "@tabler/icons-react";
-import { type CSSProperties, useEffect, useRef } from "react";
+import { type CSSProperties, type MouseEvent, useEffect, useRef } from "react";
 
 import {
 	type DisplayEvent,
 	dayKey,
 	eventsOnDay,
+	formatDayLabel,
 	formatEventTime,
 } from "@/lib/calendar-time";
 import {
@@ -17,15 +18,33 @@ import {
 	minutesIntoDay,
 	type PlacedItem,
 	parseTime,
+	spanCss,
 	timedEventsOn,
 } from "@/lib/day-grid";
 import type { Project, Task } from "@/lib/tasks";
+import type { TimeEntry } from "@/lib/time";
 import { cn } from "@/lib/utils";
+
+import type { EventSeed } from "./event-draft";
+import { RAIL_WIDTH_PX, TimeRail } from "./time-rail";
 
 /** Blocks shorter than this put their time beside the title. */
 const SHORT_MINUTES = 45;
+/** The height of a block's title line: blocks that start closer than this sit side by side. */
+const TITLE_PX = 20;
+/** A click on the empty grid starts a new event on this step. */
+const CREATE_STEP_MINUTES = 30;
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 const weekday = new Intl.DateTimeFormat("ja-JP", { weekday: "short" });
+
+/** What the grid hands back to the planner: opening, creating and editing. */
+export interface GridActions {
+	canEdit: (event: DisplayEvent) => boolean;
+	onCreate: (seed: Omit<EventSeed, "calendarId">) => void;
+	onEditEntry: (entry: TimeEntry) => void;
+	onOpenEvent: (event: DisplayEvent) => void;
+	onOpenTask: (task: Task) => void;
+}
 
 /** Where a dragged task would land, drawn as a ghost block. */
 export interface DropPreview {
@@ -114,26 +133,45 @@ function blockStyle(item: PlacedItem, hourHeight: number): CSSProperties {
 	const length = Math.max(item.end - item.start, 20);
 	return {
 		height: Math.max((length / 60) * hourHeight - 2, 16),
-		left: `calc(${(item.column / item.columns) * 100}% + 2px)`,
+		left: spanCss(item.left, 1),
 		top: (item.start / 60) * hourHeight + 1,
-		width: `calc(${100 / item.columns}% - 4px)`,
+		width: spanCss(item.width, -3),
+		zIndex: 1 + item.depth,
+		// A block drawn over another is outlined so the two stay apart.
+		...(item.depth > 0 ? { boxShadow: "0 0 0 1px var(--background)" } : {}),
 	};
 }
 
+const eventKey = (event: DisplayEvent) =>
+	`event:${event.calendarId}:${event.id}`;
+
 function EventBlock({
+	day,
+	editable,
 	event,
+	onOpen,
 	short,
 	style,
 	time,
 }: {
+	day: string;
+	editable: boolean;
 	event: DisplayEvent;
+	onOpen: (event: DisplayEvent) => void;
 	short: boolean;
 	style: CSSProperties;
 	time: string;
 }) {
+	const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
+		data: { event, fromDay: day },
+		disabled: !editable,
+		// An event over midnight shows in two columns.
+		id: `${eventKey(event)}:${day}`,
+	});
 	const className = cn(
-		"@container absolute z-[1] flex flex-col overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-foreground text-xs no-underline",
-		short && "flex-row items-center gap-1.5 py-0"
+		"@container absolute flex flex-col overflow-hidden rounded-md border-l-[3px] px-1.5 py-0.5 text-left text-foreground text-xs no-underline",
+		short && "flex-row items-center gap-1.5 py-0",
+		isDragging && "opacity-40"
 	);
 	const look = {
 		...style,
@@ -142,13 +180,18 @@ function EventBlock({
 	};
 	const content = (
 		<>
-			<span className={cn("truncate font-medium", short && "min-w-0 flex-1")}>
+			<span
+				className={cn(
+					"w-full truncate font-medium",
+					short && "w-auto min-w-0 flex-1"
+				)}
+			>
 				{event.title || "（タイトルなし）"}
 			</span>
 			<span
 				className={cn(
-					"truncate text-[11px] text-muted-foreground tabular-nums",
-					short && "@[9rem]:inline hidden shrink-0"
+					"w-full truncate text-[11px] text-muted-foreground tabular-nums",
+					short && "@[9rem]:inline hidden w-auto shrink-0"
 				)}
 			>
 				{time}
@@ -156,6 +199,29 @@ function EventBlock({
 			</span>
 		</>
 	);
+	const interactive =
+		"outline-none hover:brightness-110 focus-visible:shadow-[0_0_0_2px_var(--ring)]";
+	if (editable) {
+		return (
+			<button
+				{...attributes}
+				{...listeners}
+				aria-roledescription="ドラッグできる予定"
+				className={cn(
+					className,
+					interactive,
+					"cursor-pointer touch-manipulation items-start border-0 border-l-[3px] border-solid"
+				)}
+				data-slot="calendar-event"
+				onClick={() => onOpen(event)}
+				ref={setNodeRef}
+				style={look}
+				type="button"
+			>
+				{content}
+			</button>
+		);
+	}
 	if (!event.htmlLink) {
 		return (
 			<div className={className} data-slot="calendar-event" style={look}>
@@ -165,10 +231,7 @@ function EventBlock({
 	}
 	return (
 		<a
-			className={cn(
-				className,
-				"outline-none hover:brightness-110 focus-visible:shadow-[0_0_0_2px_var(--ring)]"
-			)}
+			className={cn(className, interactive)}
 			data-slot="calendar-event"
 			href={event.htmlLink}
 			rel="noopener"
@@ -190,7 +253,7 @@ function NowLine({
 	return (
 		<div
 			aria-hidden
-			className="pointer-events-none absolute inset-x-0 z-[3]"
+			className="pointer-events-none absolute inset-x-0 z-[20]"
 			data-slot="now-line"
 			style={{ top: (minutes / 60) * hourHeight }}
 		>
@@ -201,20 +264,26 @@ function NowLine({
 }
 
 function DayColumn({
+	actions,
 	day,
+	entries,
 	events,
+	flipRail,
 	hourHeight,
 	now,
-	onOpenTask,
+	nowMs,
 	preview,
 	projects,
 	tasks,
 }: {
+	actions: GridActions;
 	day: Date;
+	entries: TimeEntry[];
 	events: DisplayEvent[];
+	flipRail: boolean;
 	hourHeight: number;
 	now: number | null;
-	onOpenTask: (task: Task) => void;
+	nowMs: number;
 	preview: DropPreview | null;
 	projects: Project[];
 	tasks: Task[];
@@ -231,9 +300,29 @@ function DayColumn({
 			? [{ end: start + taskLength(task), key: `task:${task.id}`, start, task }]
 			: [];
 	});
+	const stackMinutes = Math.ceil((TITLE_PX / hourHeight) * 60);
 	const placed = new Map(
-		layoutDay([...timedEvents, ...timedTasks]).map((item) => [item.key, item])
+		layoutDay([...timedEvents, ...timedTasks], stackMinutes).map((item) => [
+			item.key,
+			item,
+		])
 	);
+	// A click on the empty grid starts an event at that half hour.
+	const create = (event: MouseEvent<HTMLButtonElement>) => {
+		const offset =
+			event.clientY - event.currentTarget.getBoundingClientRect().top;
+		const minutes =
+			Math.floor(((offset / hourHeight) * 60) / CREATE_STEP_MINUTES) *
+			CREATE_STEP_MINUTES;
+		actions.onCreate({
+			allDay: false,
+			day: key,
+			minutes: Math.min(
+				Math.max(minutes, 0),
+				DAY_MINUTES - CREATE_STEP_MINUTES
+			),
+		});
+	};
 	return (
 		<div
 			className={cn(
@@ -244,37 +333,64 @@ function DayColumn({
 			ref={setNodeRef}
 			style={{ height: 24 * hourHeight }}
 		>
-			{timedEvents.map((item) => {
-				const place = placed.get(item.key);
-				return place ? (
-					<EventBlock
-						event={item.event}
-						key={item.key}
-						short={item.end - item.start < SHORT_MINUTES}
-						style={blockStyle(place, hourHeight)}
-						time={formatEventTime(item.event, day)}
-					/>
-				) : null;
-			})}
-			{timedTasks.map((item) => {
-				const place = placed.get(item.key);
-				return place ? (
-					<DraggableTask
-						className="absolute z-[2]"
-						key={item.key}
-						onOpen={onOpenTask}
-						projects={projects}
-						short={item.end - item.start < SHORT_MINUTES}
-						style={blockStyle(place, hourHeight)}
-						task={item.task}
-						variant="block"
-					/>
-				) : null;
-			})}
+			<div
+				className="absolute inset-y-0 right-0"
+				data-slot="day-items"
+				style={{ left: RAIL_WIDTH_PX }}
+			>
+				{/* Under the blocks: what a click on an empty spot lands on. */}
+				<button
+					aria-label={`${formatDayLabel(day)}に予定を追加`}
+					className="absolute inset-0 cursor-cell border-0 bg-transparent p-0 outline-none"
+					data-slot="add-event"
+					onClick={create}
+					tabIndex={-1}
+					type="button"
+				/>
+				{timedEvents.map((item) => {
+					const place = placed.get(item.key);
+					return place ? (
+						<EventBlock
+							day={key}
+							editable={actions.canEdit(item.event)}
+							event={item.event}
+							key={item.key}
+							onOpen={actions.onOpenEvent}
+							short={item.end - item.start < SHORT_MINUTES}
+							style={blockStyle(place, hourHeight)}
+							time={formatEventTime(item.event, day)}
+						/>
+					) : null;
+				})}
+				{timedTasks.map((item) => {
+					const place = placed.get(item.key);
+					return place ? (
+						<DraggableTask
+							className="absolute"
+							key={item.key}
+							onOpen={actions.onOpenTask}
+							projects={projects}
+							short={item.end - item.start < SHORT_MINUTES}
+							style={blockStyle(place, hourHeight)}
+							task={item.task}
+							variant="block"
+						/>
+					) : null;
+				})}
+			</div>
+			<TimeRail
+				day={day}
+				entries={entries}
+				flip={flipRail}
+				hourHeight={hourHeight}
+				now={nowMs}
+				onEditEntry={actions.onEditEntry}
+				projects={projects}
+			/>
 			{preview && preview.day === key ? (
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-x-0.5 z-[4] flex items-start rounded-md border-2 border-primary-text border-dashed bg-primary-soft px-1.5 py-0.5 font-mono text-[11px] text-primary-text tabular-nums"
+					className="pointer-events-none absolute inset-x-0.5 z-[21] flex items-start rounded-md border-2 border-primary-text border-dashed bg-primary-soft px-1.5 py-0.5 font-mono text-[11px] text-primary-text tabular-nums"
 					data-slot="drop-preview"
 					style={{
 						height: (preview.length / 60) * hourHeight,
@@ -289,16 +405,76 @@ function DayColumn({
 	);
 }
 
+function AllDayEvent({
+	day,
+	editable,
+	event,
+	onOpen,
+}: {
+	day: string;
+	editable: boolean;
+	event: DisplayEvent;
+	onOpen: (event: DisplayEvent) => void;
+}) {
+	const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
+		data: { event, fromDay: day },
+		disabled: !editable,
+		id: `allday:${eventKey(event)}:${day}`,
+	});
+	const className =
+		"block w-full min-w-0 truncate rounded-sm border-0 px-1.5 py-0.5 text-left text-foreground text-xs no-underline";
+	const style = {
+		backgroundColor: `color-mix(in srgb, ${event.color} 22%, var(--card))`,
+	};
+	const title = event.title || "（タイトルなし）";
+	if (!editable) {
+		return event.htmlLink ? (
+			<a
+				className={className}
+				href={event.htmlLink}
+				rel="noopener"
+				style={style}
+				target="_blank"
+			>
+				{title}
+			</a>
+		) : (
+			<span className={className} style={style}>
+				{title}
+			</span>
+		);
+	}
+	return (
+		<button
+			{...attributes}
+			{...listeners}
+			aria-roledescription="ドラッグできる予定"
+			className={cn(
+				className,
+				"cursor-pointer touch-manipulation outline-none hover:brightness-110 focus-visible:shadow-[0_0_0_2px_var(--ring)]",
+				isDragging && "opacity-40"
+			)}
+			data-slot="calendar-event"
+			onClick={() => onOpen(event)}
+			ref={setNodeRef}
+			style={style}
+			type="button"
+		>
+			{title}
+		</button>
+	);
+}
+
 function AllDayCell({
+	actions,
 	day,
 	events,
-	onOpenTask,
 	projects,
 	tasks,
 }: {
+	actions: GridActions;
 	day: Date;
 	events: DisplayEvent[];
-	onOpenTask: (task: Task) => void;
 	projects: Project[];
 	tasks: Task[];
 }) {
@@ -315,27 +491,33 @@ function AllDayCell({
 	return (
 		<div
 			className={cn(
-				"flex min-h-8 min-w-0 flex-col gap-0.5 border-border-subtle border-l p-0.5",
+				"relative flex min-h-8 min-w-0 flex-col gap-0.5 border-border-subtle border-l p-0.5 [&>:not([data-slot=add-event])]:relative",
 				isOver && "bg-primary-soft/40"
 			)}
 			data-slot="all-day"
 			ref={setNodeRef}
 		>
+			<button
+				aria-label={`${formatDayLabel(day)}に終日の予定を追加`}
+				className="absolute inset-0 cursor-cell border-0 bg-transparent p-0 outline-none"
+				data-slot="add-event"
+				onClick={() => actions.onCreate({ allDay: true, day: key })}
+				tabIndex={-1}
+				type="button"
+			/>
 			{allDay.map((event) => (
-				<span
-					className="truncate rounded-sm px-1.5 py-0.5 text-foreground text-xs"
+				<AllDayEvent
+					day={key}
+					editable={actions.canEdit(event)}
+					event={event}
 					key={`${event.calendarId}:${event.id}`}
-					style={{
-						backgroundColor: `color-mix(in srgb, ${event.color} 22%, var(--card))`,
-					}}
-				>
-					{event.title || "（タイトルなし）"}
-				</span>
+					onOpen={actions.onOpenEvent}
+				/>
 			))}
 			{untimed.map((task) => (
 				<DraggableTask
 					key={task.id}
-					onOpen={onOpenTask}
+					onOpen={actions.onOpenTask}
 					projects={projects}
 					task={task}
 					variant="chip"
@@ -351,22 +533,24 @@ function AllDayCell({
  * column take that time; dropped on the 終日 row, they keep only the day.
  */
 export function TimeGrid({
+	actions,
 	days,
+	entries,
 	events,
 	hourHeight,
 	now,
-	onOpenTask,
 	preview,
 	projects,
 	showDayHeader,
 	tasks,
 	today,
 }: {
+	actions: GridActions;
 	days: Date[];
+	entries: TimeEntry[];
 	events: DisplayEvent[];
 	hourHeight: number;
 	now: number;
-	onOpenTask: (task: Task) => void;
 	preview: DropPreview | null;
 	projects: Project[];
 	showDayHeader: boolean;
@@ -432,10 +616,10 @@ export function TimeGrid({
 				</span>
 				{days.map((day) => (
 					<AllDayCell
+						actions={actions}
 						day={day}
 						events={events}
 						key={dayKey(day)}
-						onOpenTask={onOpenTask}
 						projects={projects}
 						tasks={tasks}
 					/>
@@ -468,14 +652,17 @@ export function TimeGrid({
 						</span>
 					) : null}
 				</div>
-				{days.map((day) => (
+				{days.map((day, index) => (
 					<DayColumn
+						actions={actions}
 						day={day}
+						entries={entries}
 						events={events}
+						flipRail={days.length > 2 && index >= days.length - 2}
 						hourHeight={hourHeight}
 						key={dayKey(day)}
 						now={dayKey(day) === todayKey ? nowMinutes : null}
-						onOpenTask={onOpenTask}
+						nowMs={now}
 						preview={preview}
 						projects={projects}
 						tasks={tasks}

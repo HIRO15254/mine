@@ -6,6 +6,8 @@ import {
 	layoutDay,
 	parseTime,
 	placementForDrop,
+	STACK_INDENT_PX,
+	spanCss,
 	timedEventsOn,
 } from "../day-grid";
 
@@ -19,17 +21,102 @@ describe("parseTime and formatTime", () => {
 });
 
 describe("layoutDay", () => {
-	it("puts overlapping items side by side and the rest full width", () => {
-		const placed = layoutDay([
-			{ end: 660, key: "a", start: 600 },
-			{ end: 630, key: "b", start: 610 },
-			{ end: 720, key: "c", start: 640 },
-			{ end: 800, key: "d", start: 760 },
-		]);
-		const byKey = Object.fromEntries(
-			placed.map((item) => [item.key, [item.column, item.columns]])
+	const at = (placed: ReturnType<typeof layoutDay>) =>
+		Object.fromEntries(
+			placed.map((item) => [
+				item.key,
+				{ depth: item.depth, left: item.left, width: item.width },
+			])
 		);
-		expect(byKey).toEqual({ a: [0, 2], b: [1, 2], c: [1, 2], d: [0, 1] });
+
+	it("puts items that start together side by side and the rest full width", () => {
+		const placed = at(
+			layoutDay(
+				[
+					{ end: 660, key: "a", start: 600 },
+					{ end: 630, key: "b", start: 610 },
+					{ end: 800, key: "d", start: 760 },
+				],
+				25
+			)
+		);
+		expect(placed).toEqual({
+			a: { depth: 0, left: { pct: 0, px: 0 }, width: { pct: 50, px: 0 } },
+			b: { depth: 0, left: { pct: 50, px: 0 }, width: { pct: 50, px: 0 } },
+			d: { depth: 0, left: { pct: 0, px: 0 }, width: { pct: 100, px: 0 } },
+		});
+	});
+
+	it("draws a later item on top of the running one, moved in so its title shows", () => {
+		const placed = at(
+			layoutDay(
+				[
+					{ end: 720, key: "long", start: 540 },
+					{ end: 660, key: "later", start: 600 },
+					{ end: 700, key: "latest", start: 640 },
+				],
+				25
+			)
+		);
+		expect(placed).toEqual({
+			long: { depth: 0, left: { pct: 0, px: 0 }, width: { pct: 100, px: 0 } },
+			later: {
+				depth: 1,
+				left: { pct: 0, px: STACK_INDENT_PX },
+				width: { pct: 100, px: -STACK_INDENT_PX },
+			},
+			latest: {
+				depth: 2,
+				left: { pct: 0, px: 2 * STACK_INDENT_PX },
+				width: { pct: 100, px: -2 * STACK_INDENT_PX },
+			},
+		});
+	});
+
+	it("splits a stacked block's width with an item that starts beside it", () => {
+		const placed = at(
+			layoutDay(
+				[
+					{ end: 720, key: "long", start: 540 },
+					{ end: 660, key: "x", start: 600 },
+					{ end: 660, key: "y", start: 610 },
+				],
+				25
+			)
+		);
+		expect(placed.x).toEqual({
+			depth: 1,
+			left: { pct: 0, px: STACK_INDENT_PX },
+			width: { pct: 50, px: -STACK_INDENT_PX / 2 },
+		});
+		expect(placed.y).toEqual({
+			depth: 1,
+			left: { pct: 50, px: STACK_INDENT_PX / 2 },
+			width: { pct: 50, px: -STACK_INDENT_PX / 2 },
+		});
+	});
+
+	it("stacks only on the column of the item it overlaps", () => {
+		const placed = at(
+			layoutDay(
+				[
+					{ end: 630, key: "a", start: 600 },
+					{ end: 720, key: "b", start: 600 },
+					{ end: 700, key: "c", start: 660 },
+				],
+				25
+			)
+		);
+		// The longer b takes the left half; a has ended by 11:00, so c sits on b.
+		expect(placed.c).toEqual({
+			depth: 1,
+			left: { pct: 0, px: STACK_INDENT_PX },
+			width: { pct: 50, px: -STACK_INDENT_PX },
+		});
+	});
+
+	it("writes a span as calc()", () => {
+		expect(spanCss({ pct: 50, px: -6 }, 2)).toBe("calc(50% + -4px)");
 	});
 });
 
@@ -43,7 +130,9 @@ describe("timedEventsOn", () => {
 					calendarId: "c",
 					color: "#000",
 					end: new Date(2026, 10, 10, 2).toISOString(),
+					description: null,
 					htmlLink: null,
+					recurring: false,
 					id: "late",
 					location: null,
 					start: new Date(2026, 10, 9, 22).toISOString(),
@@ -54,7 +143,9 @@ describe("timedEventsOn", () => {
 					calendarId: "c",
 					color: "#000",
 					end: "2026-11-11",
+					description: null,
 					htmlLink: null,
+					recurring: false,
 					id: "holiday",
 					location: null,
 					start: "2026-11-10",
@@ -93,6 +184,15 @@ describe("placementForDrop", () => {
 		expect(
 			placementForDrop(timed, { day: "2026-11-11", kind: "allday" }, null)
 		).toEqual({ scheduledDate: "2026-11-11", scheduledTime: null });
+	});
+
+	it("moves the day and keeps the time on a day of the month view", () => {
+		expect(
+			placementForDrop(timed, { day: "2026-11-20", kind: "day" }, null)
+		).toEqual({ scheduledDate: "2026-11-20", scheduledTime: "09:00" });
+		expect(
+			placementForDrop(unplanned, { day: "2026-11-20", kind: "day" }, null)
+		).toEqual({ scheduledDate: "2026-11-20", scheduledTime: null });
 	});
 
 	it("keeps the day when a timed task goes back to the tray", () => {

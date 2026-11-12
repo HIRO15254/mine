@@ -29,12 +29,18 @@ interface Seed {
 
 /** The fewest arguments each tool accepts: its required ones and no more. */
 const MINIMAL: Record<string, (seed: Seed) => Record<string, unknown>> = {
+	add_event: () => ({
+		end: "2026-11-06T11:00:00+09:00",
+		start: "2026-11-06T10:00:00+09:00",
+		title: "打ち合わせ",
+	}),
 	add_task: () => ({ title: "牛乳を買う" }),
 	add_time_entry: () => ({
 		end: "2026-11-06T09:30:00+09:00",
 		start: "2026-11-06T09:00:00+09:00",
 	}),
 	complete_task: ({ taskId }) => ({ id: taskId }),
+	delete_event: () => ({ calendarId: "primary", id: "e1" }),
 	delete_task: ({ taskId }) => ({ id: taskId }),
 	get_timer: () => ({}),
 	list_events: () => ({ from: "2026-11-06" }),
@@ -45,6 +51,7 @@ const MINIMAL: Record<string, (seed: Seed) => Record<string, unknown>> = {
 	start_timer: () => ({}),
 	stop_timer: () => ({}),
 	time_report: () => ({ from: "2026-11-06" }),
+	update_event: () => ({ calendarId: "primary", id: "e1" }),
 	update_task: ({ taskId }) => ({ id: taskId }),
 };
 
@@ -53,7 +60,10 @@ const MINIMAL: Record<string, (seed: Seed) => Record<string, unknown>> = {
  * Google is not reachable here, and saying so by name is the contract.
  */
 const REFUSES: Record<string, string> = {
+	add_event: "GOOGLE_CALENDAR_NOT_CONNECTED",
+	delete_event: "GOOGLE_CALENDAR_NOT_CONNECTED",
 	list_events: "GOOGLE_CALENDAR_NOT_CONNECTED",
+	update_event: "GOOGLE_CALENDAR_NOT_CONNECTED",
 };
 
 /** A reference to something that does not exist, for each tool that takes one. */

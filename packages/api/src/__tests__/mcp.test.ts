@@ -269,6 +269,7 @@ describe("MCP tools", () => {
 							{
 								allDay: true,
 								calendarId: "c1",
+								id: "gakkai",
 								end: "2026-11-09",
 								start: "2026-11-07",
 								title: "学会",
@@ -276,6 +277,8 @@ describe("MCP tools", () => {
 							{
 								allDay: false,
 								calendarId: "c1",
+								id: "zemi",
+								recurring: true,
 								end: "2026-11-06T02:00:00Z",
 								start: "2026-11-06T01:00:00Z",
 								title: "ゼミ",
@@ -293,18 +296,154 @@ describe("MCP tools", () => {
 		expect(events.data.events).toEqual([
 			{
 				calendar: "予定",
+				calendarId: "c1",
 				end: "2026-11-06 11:00",
+				id: "zemi",
+				recurring: true,
 				start: "2026-11-06 10:00",
 				title: "ゼミ",
 			},
 			{
 				allDay: true,
 				calendar: "予定",
+				calendarId: "c1",
 				end: "2026-11-08",
+				id: "gakkai",
 				start: "2026-11-07",
 				title: "学会",
 			},
 		]);
+	});
+
+	it("adds an event to the calendar named, with an all-day end on its last day", async () => {
+		const { call, env } = await setup();
+		const created: unknown[] = [];
+		env.caller = {
+			calendar: {
+				calendars: () =>
+					Promise.resolve([
+						{ id: "me", name: "マイ", primary: true, writable: true },
+						{ id: "work", name: "仕事", primary: false, writable: true },
+						{ id: "jp", name: "日本の祝日", primary: false, writable: false },
+					]),
+				createEvent: (input: {
+					calendarId: string;
+					title: string;
+					when: { allDay: boolean; end: string; start: string };
+				}) => {
+					created.push(input);
+					return Promise.resolve({
+						allDay: input.when.allDay,
+						calendarId: input.calendarId,
+						end: input.when.end,
+						id: "new",
+						location: null,
+						start: input.when.start,
+						title: input.title,
+					});
+				},
+			},
+		} as unknown as ToolEnv["caller"];
+
+		const allDay = await call("add_event", {
+			calendar: "仕事",
+			end: "2026-11-08",
+			start: "2026-11-07",
+			title: "学会",
+		});
+		const timed = await call("add_event", {
+			end: "2026-11-06T11:00:00+09:00",
+			start: "2026-11-06T10:00:00+09:00",
+			title: "面談",
+		});
+		const readOnly = await call("add_event", {
+			calendar: "日本の祝日",
+			end: "2026-11-07",
+			start: "2026-11-07",
+			title: "x",
+		});
+		const mixed = await call("add_event", {
+			end: "2026-11-07",
+			start: "2026-11-06T10:00:00+09:00",
+			title: "x",
+		});
+
+		expect(created).toEqual([
+			{
+				calendarId: "work",
+				title: "学会",
+				when: { allDay: true, end: "2026-11-09", start: "2026-11-07" },
+			},
+			{
+				calendarId: "me",
+				title: "面談",
+				when: {
+					allDay: false,
+					end: "2026-11-06T11:00:00+09:00",
+					start: "2026-11-06T10:00:00+09:00",
+					timeZone: "Asia/Tokyo",
+				},
+			},
+		]);
+		expect(allDay.data).toEqual({
+			allDay: true,
+			calendarId: "work",
+			end: "2026-11-08",
+			id: "new",
+			start: "2026-11-07",
+			title: "学会",
+		});
+		expect(timed.data).toMatchObject({ start: "2026-11-06 10:00" });
+		expect(readOnly.isError).toBe(true);
+		expect(mixed.isError).toBe(true);
+	});
+
+	it("changes an event only with start and end together", async () => {
+		const { call, env } = await setup();
+		const updates: unknown[] = [];
+		env.caller = {
+			calendar: {
+				updateEvent: (input: Record<string, unknown>) => {
+					updates.push(input);
+					return Promise.resolve({
+						allDay: false,
+						calendarId: "me",
+						end: "2026-11-06T03:00:00Z",
+						id: "e1",
+						location: null,
+						start: "2026-11-06T02:00:00Z",
+						title: "移動後",
+					});
+				},
+			},
+		} as unknown as ToolEnv["caller"];
+
+		const half = await call("update_event", {
+			calendarId: "me",
+			id: "e1",
+			start: "2026-11-06T11:00:00+09:00",
+		});
+		const moved = await call("update_event", {
+			calendarId: "me",
+			end: "2026-11-06T12:00:00+09:00",
+			id: "e1",
+			start: "2026-11-06T11:00:00+09:00",
+		});
+
+		expect(half.isError).toBe(true);
+		expect(updates).toEqual([
+			{
+				calendarId: "me",
+				eventId: "e1",
+				when: {
+					allDay: false,
+					end: "2026-11-06T12:00:00+09:00",
+					start: "2026-11-06T11:00:00+09:00",
+					timeZone: "Asia/Tokyo",
+				},
+			},
+		]);
+		expect(moved.data).toMatchObject({ end: "2026-11-06 12:00", id: "e1" });
 	});
 
 	it("needs Google for events", async () => {

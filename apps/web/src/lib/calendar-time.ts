@@ -130,3 +130,48 @@ export function formatWeekLabel(weekStart: Date): string {
 			: `${weekEnd.getMonth() + 1}月${weekEnd.getDate()}日`;
 	return `${startLabel}〜${endLabel}`;
 }
+
+const MONTH_KEY = /^(\d{4})-(\d{2})$/;
+
+export function startOfMonth(date: Date): Date {
+	return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function addMonths(date: Date, months: number): Date {
+	return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+/** "2026-11": the month a date falls in. */
+export function monthKey(date: Date): string {
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+}
+
+/** The first day of a "YYYY-MM" month, or null. */
+export function parseMonthKey(value: string | undefined): Date | null {
+	const match = value ? MONTH_KEY.exec(value) : null;
+	if (!match) {
+		return null;
+	}
+	const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+	return monthKey(date) === value ? date : null;
+}
+
+/**
+ * The days a month view shows: whole weeks, Monday first, from the week of
+ * the 1st to the week of the last day (four to six weeks).
+ */
+export function monthGridDays(month: Date): Date[] {
+	const first = startOfWeek(startOfMonth(month));
+	const last = addDays(addMonths(month, 1), -1);
+	const days: Date[] = [];
+	for (let day = first; day <= last || days.length % 7 !== 0; ) {
+		days.push(day);
+		day = addDays(day, 1);
+	}
+	return days;
+}
+
+/** "2026年11月" */
+export function formatMonthLabel(month: Date): string {
+	return `${month.getFullYear()}年${month.getMonth() + 1}月`;
+}

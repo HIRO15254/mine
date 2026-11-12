@@ -10,7 +10,7 @@ const USER_KEY = "mine-user";
 export const CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 /** Saved copies from another version are dropped; raise it when the API's shapes change. */
-export const CACHE_VERSION = "1";
+export const CACHE_VERSION = "2";
 
 /** Token and connection lists are only needed online. */
 const SKIPPED_ROUTERS = new Set(["token", "oauth"]);

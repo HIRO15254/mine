@@ -56,17 +56,25 @@ export function CalendarError({
 	);
 }
 
+/**
+ * Signs in with Google again, which asks for the calendar permissions the
+ * app needs now, and comes back to this page. False if it could not start.
+ */
+export async function connectGoogle(): Promise<boolean> {
+	const result = await authClient.signIn.social({
+		provider: "google",
+		callbackURL: window.location.href,
+		errorCallbackURL: `${window.location.origin}/login`,
+	});
+	return !result.error;
+}
+
 function ConnectCalendar() {
 	const [isRedirecting, setIsRedirecting] = useState(false);
 
 	const connect = async () => {
 		setIsRedirecting(true);
-		const result = await authClient.signIn.social({
-			provider: "google",
-			callbackURL: window.location.href,
-			errorCallbackURL: `${window.location.origin}/login`,
-		});
-		if (result.error) {
+		if (!(await connectGoogle())) {
 			setIsRedirecting(false);
 		}
 	};
@@ -79,7 +87,7 @@ function ConnectCalendar() {
 				</EmptyMedia>
 				<EmptyTitle>Google カレンダーと連携していません</EmptyTitle>
 				<EmptyDescription>
-					予定を表示するには、カレンダーの閲覧を許可してください。
+					予定を表示・編集するには、カレンダーへのアクセスを許可してください。
 				</EmptyDescription>
 			</EmptyHeader>
 			<EmptyContent>

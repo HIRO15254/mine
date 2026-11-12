@@ -255,6 +255,7 @@ export const calendars: Outputs["calendar"]["calendars"] = [
 		name: "マイカレンダー",
 		primary: true,
 		visible: true,
+		writable: true,
 	},
 	{
 		color: "#4cb782",
@@ -262,6 +263,7 @@ export const calendars: Outputs["calendar"]["calendars"] = [
 		name: "日本の祝日",
 		primary: false,
 		visible: true,
+		writable: false,
 	},
 ];
 
@@ -276,7 +278,9 @@ const event = (
 	calendarId: "primary",
 	color: "#4593f8",
 	end: new Date(`${end}+09:00`).toISOString(),
+	description: null,
 	htmlLink: null,
+	recurring: false,
 	id,
 	location: null,
 	start: new Date(`${start}+09:00`).toISOString(),
@@ -306,12 +310,21 @@ const allEvents: Outputs["calendar"]["events"]["events"] = [
 		location: "講義室 A",
 	}),
 	event("ev-6", "ブリッジ練習会", "2026-11-15T13:00:00", "2026-11-15T17:00:00"),
+	event("ev-8", "課題の相談", "2026-11-12T11:20:00", "2026-11-12T12:30:00", {
+		color: "#33b679",
+	}),
+	event("ev-9", "面談", "2026-11-13T15:00:00", "2026-11-13T16:00:00"),
+	event("ev-10", "電話", "2026-11-13T15:00:00", "2026-11-13T15:30:00", {
+		color: "#f6bf26",
+	}),
 	{
 		allDay: true,
 		calendarId: "holidays",
 		color: "#4cb782",
 		end: "2026-11-24",
+		description: null,
 		htmlLink: null,
+		recurring: false,
 		id: "ev-7",
 		location: null,
 		start: "2026-11-23",

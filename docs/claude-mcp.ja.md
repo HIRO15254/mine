@@ -17,7 +17,10 @@ MCP の URL: `https://api.mine.hiro15254.com/mcp`
 | `get_timer` / `start_timer` / `stop_timer` | タイマー |
 | `add_time_entry` | あとから記録を追加 |
 | `time_report` | 期間の記録をプロジェクト別・日別に集計（金額つき） |
-| `list_events` | Google カレンダーの予定を見る（読むだけ） |
+| `list_events` | Google カレンダーの予定を見る |
+| `add_event` | Google カレンダーに予定を追加（指定がなければメインのカレンダー） |
+| `update_event` | 予定を変更（繰り返しの予定はその回だけ） |
+| `delete_event` | 予定を削除（繰り返しの予定はその回だけ） |
 | `report_thread_status` | その会話の状況（作業中・あなた待ち・完了）を Mine に記録 |
 | `list_threads` | 記録されたスレッドの一覧 |
 
@@ -41,6 +44,7 @@ Web で追加したコネクタは Android アプリでも使えます。項目�
 - 「論文を読むの計測を始めて」「タイマー止めて」
 - 「今週どのプロジェクトに何時間使った？」
 - 「昨日 10 時から 2 時間、研究をしていたことにして」
+- 「金曜の 15 時から 1 時間、面談の予定を入れて」
 
 ## Claude のスレッドを Mine で見る
 

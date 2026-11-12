@@ -160,6 +160,18 @@ describe("routes", () => {
 			expect(await heading(THIS_WEEK)).toBeVisible();
 		});
 
+		it("shows the month view of the month in the address", async () => {
+			open("/calendar?view=month&month=2026-12");
+
+			expect(await heading("2026年12月")).toBeVisible();
+		});
+
+		it("drops a month that is not one and shows this month", async () => {
+			open("/calendar?view=month&month=2026-13");
+
+			expect(await heading("2026年11月")).toBeVisible();
+		});
+
 		it("shows the week in the address", async () => {
 			open("/time?week=2026-10-05");
 

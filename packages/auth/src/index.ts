@@ -6,9 +6,15 @@ import { APIError } from "better-auth/api";
 
 import { isEmailAllowed } from "./allowlist";
 
-/** Read-only access to the user's calendars and events (phase 2). */
-export const GOOGLE_CALENDAR_SCOPE =
-	"https://www.googleapis.com/auth/calendar.readonly";
+/**
+ * Reading the user's calendars and events, and writing events: the calendar
+ * screen creates, changes and deletes events (calendars themselves are only
+ * read).
+ */
+export const GOOGLE_CALENDAR_SCOPES = [
+	"https://www.googleapis.com/auth/calendar.readonly",
+	"https://www.googleapis.com/auth/calendar.events",
+];
 
 export interface AuthOptions {
 	allowedEmails: readonly string[];
@@ -38,7 +44,7 @@ export function createAuth(db: Database, options: AuthOptions) {
 				clientSecret: options.googleClientSecret,
 				accessType: "offline",
 				prompt: "select_account consent",
-				scope: [GOOGLE_CALENDAR_SCOPE],
+				scope: GOOGLE_CALENDAR_SCOPES,
 			},
 		},
 		databaseHooks: {

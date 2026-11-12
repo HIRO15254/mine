@@ -12,6 +12,7 @@ const calendarList = {
 			summary: "日本の祝日",
 			backgroundColor: "#16a765",
 			selected: true,
+			accessRole: "reader",
 		},
 		{
 			id: "me@example.com",
@@ -19,6 +20,7 @@ const calendarList = {
 			backgroundColor: "#9fe1e7",
 			primary: true,
 			selected: true,
+			accessRole: "owner",
 		},
 		{ id: "hidden", summary: "Hidden", selected: false },
 	],
@@ -30,6 +32,8 @@ const eventsByCalendar: Record<string, unknown> = {
 			{
 				id: "e1",
 				summary: "打ち合わせ",
+				description: "議題",
+				recurringEventId: "weekly",
 				start: { dateTime: "2026-11-05T10:00:00+09:00" },
 				end: { dateTime: "2026-11-05T11:00:00+09:00" },
 				htmlLink: "https://calendar.google.com/e1",
@@ -99,6 +103,7 @@ describe("calendar.calendars", () => {
 				name: "me@example.com",
 				primary: true,
 				visible: true,
+				writable: true,
 			},
 			{
 				color: "#16a765",
@@ -106,6 +111,7 @@ describe("calendar.calendars", () => {
 				name: "日本の祝日",
 				primary: false,
 				visible: true,
+				writable: false,
 			},
 			{
 				color: "#4285f4",
@@ -113,6 +119,7 @@ describe("calendar.calendars", () => {
 				name: "Hidden",
 				primary: false,
 				visible: false,
+				writable: false,
 			},
 		]);
 	});
@@ -212,19 +219,26 @@ describe("calendar.events", () => {
 
 		const result = await caller.calendar.events(range);
 
-		expect(result.calendars.map((c) => c.id)).toEqual([
-			"me@example.com",
-			"holidays",
+		expect(result.calendars).toEqual([
+			{
+				color: "#9fe1e7",
+				id: "me@example.com",
+				name: "me@example.com",
+				writable: true,
+			},
+			{ color: "#16a765", id: "holidays", name: "日本の祝日", writable: false },
 		]);
 		expect(result.events).toEqual([
 			{
 				allDay: false,
 				calendarId: "me@example.com",
 				color: "#9fe1e7",
+				description: "議題",
 				end: "2026-11-05T11:00:00+09:00",
 				htmlLink: "https://calendar.google.com/e1",
 				id: "e1",
 				location: null,
+				recurring: true,
 				start: "2026-11-05T10:00:00+09:00",
 				title: "打ち合わせ",
 			},
@@ -232,10 +246,12 @@ describe("calendar.events", () => {
 				allDay: true,
 				calendarId: "holidays",
 				color: "#16a765",
+				description: null,
 				end: "2026-11-04",
 				htmlLink: null,
 				id: "h1",
 				location: null,
+				recurring: false,
 				start: "2026-11-03",
 				title: "文化の日",
 			},
@@ -261,5 +277,257 @@ describe("calendar.events", () => {
 				timeMax: "2026-06-01T00:00:00Z",
 			})
 		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+});
+
+/** Answers event writes like Google does, and records what was sent. */
+function writeFetch(answer: { status?: number; body?: string } = {}) {
+	return vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+		if (answer.status) {
+			return Promise.resolve(
+				new Response(answer.body ?? "", { status: answer.status })
+			);
+		}
+		if (init?.method === "DELETE") {
+			return Promise.resolve(new Response(null, { status: 204 }));
+		}
+		const body = JSON.parse(String(init?.body ?? "{}"));
+		return Promise.resolve(
+			Response.json({
+				id: String(input).split("/events/")[1] ?? "new-event",
+				htmlLink: "https://calendar.google.com/new",
+				summary: body.summary ?? "既存",
+				location: body.location,
+				description: body.description,
+				start: body.start ?? { dateTime: "2026-11-05T10:00:00+09:00" },
+				end: body.end ?? { dateTime: "2026-11-05T11:00:00+09:00" },
+			})
+		);
+	});
+}
+
+function sent(fetchMock: ReturnType<typeof writeFetch>, index = 0) {
+	const [input, init] = fetchMock.mock.calls[index] ?? [];
+	return {
+		body: init?.body ? JSON.parse(String(init.body)) : undefined,
+		method: init?.method,
+		url: new URL(String(input)),
+	};
+}
+
+const timed = {
+	allDay: false as const,
+	start: "2026-11-05T10:00:00+09:00",
+	end: "2026-11-05T11:30:00+09:00",
+	timeZone: "Asia/Tokyo",
+};
+
+describe("calendar.createEvent", () => {
+	it("adds a timed event to the calendar and returns it", async () => {
+		const fetchMock = writeFetch();
+		const caller = await callerWith({ fetch: fetchMock });
+
+		const event = await caller.calendar.createEvent({
+			calendarId: "me@example.com",
+			location: "研究室",
+			title: "  ゼミ  ",
+			when: timed,
+		});
+
+		const request = sent(fetchMock);
+		expect(request.method).toBe("POST");
+		expect(request.url.pathname).toBe(
+			"/calendar/v3/calendars/me%40example.com/events"
+		);
+		expect(request.body).toEqual({
+			description: "",
+			end: {
+				date: null,
+				dateTime: "2026-11-05T11:30:00+09:00",
+				timeZone: "Asia/Tokyo",
+			},
+			location: "研究室",
+			start: {
+				date: null,
+				dateTime: "2026-11-05T10:00:00+09:00",
+				timeZone: "Asia/Tokyo",
+			},
+			summary: "ゼミ",
+		});
+		expect(event).toMatchObject({
+			allDay: false,
+			calendarId: "me@example.com",
+			id: "new-event",
+			location: "研究室",
+			title: "ゼミ",
+		});
+	});
+
+	it("adds an all-day event with Google's exclusive end day", async () => {
+		const fetchMock = writeFetch();
+		const caller = await callerWith({ fetch: fetchMock });
+
+		const event = await caller.calendar.createEvent({
+			calendarId: "me@example.com",
+			title: "旅行",
+			when: { allDay: true, start: "2026-11-05", end: "2026-11-07" },
+		});
+
+		expect(sent(fetchMock).body).toMatchObject({
+			end: { date: "2026-11-07", dateTime: null },
+			start: { date: "2026-11-05", dateTime: null },
+		});
+		expect(event).toMatchObject({
+			allDay: true,
+			end: "2026-11-07",
+			start: "2026-11-05",
+		});
+	});
+
+	it("refuses an end before the start, a bad time zone and an empty title", async () => {
+		const fetchMock = writeFetch();
+		const caller = await callerWith({ fetch: fetchMock });
+		const base = { calendarId: "me@example.com", title: "x" };
+
+		await expect(
+			caller.calendar.createEvent({
+				...base,
+				when: { ...timed, start: timed.end, end: timed.start },
+			})
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(
+			caller.calendar.createEvent({
+				...base,
+				when: { allDay: true, start: "2026-11-05", end: "2026-11-05" },
+			})
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(
+			caller.calendar.createEvent({
+				...base,
+				when: { ...timed, timeZone: "Mars/Olympus" },
+			})
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(
+			caller.calendar.createEvent({ ...base, title: "   ", when: timed })
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("reports a token granted before events could be written", async () => {
+		const caller = await callerWith({
+			fetch: writeFetch({
+				status: 403,
+				body: '{"error":{"message":"Request had insufficient authentication scopes."}}',
+			}),
+		});
+
+		await expect(
+			caller.calendar.createEvent({
+				calendarId: "me@example.com",
+				title: "x",
+				when: timed,
+			})
+		).rejects.toMatchObject({
+			code: "PRECONDITION_FAILED",
+			message: "GOOGLE_CALENDAR_NOT_CONNECTED",
+		});
+	});
+
+	it("refuses a calendar the user may only read", async () => {
+		const caller = await callerWith({
+			fetch: writeFetch({
+				status: 403,
+				body: '{"error":{"errors":[{"domain":"calendar","reason":"requiredAccessLevel"}],"code":403}}',
+			}),
+		});
+
+		await expect(
+			caller.calendar.createEvent({
+				calendarId: "holidays",
+				title: "x",
+				when: timed,
+			})
+		).rejects.toMatchObject({ code: "FORBIDDEN" });
+	});
+});
+
+describe("calendar.updateEvent", () => {
+	it("patches only the fields it is given", async () => {
+		const fetchMock = writeFetch();
+		const caller = await callerWith({ fetch: fetchMock });
+
+		const event = await caller.calendar.updateEvent({
+			calendarId: "me@example.com",
+			eventId: "e1_20261105",
+			when: { allDay: true, start: "2026-11-06", end: "2026-11-07" },
+		});
+
+		const request = sent(fetchMock);
+		expect(request.method).toBe("PATCH");
+		expect(request.url.pathname).toBe(
+			"/calendar/v3/calendars/me%40example.com/events/e1_20261105"
+		);
+		expect(request.body).toEqual({
+			end: { date: "2026-11-07", dateTime: null },
+			start: { date: "2026-11-06", dateTime: null },
+		});
+		expect(event).toMatchObject({ allDay: true, id: "e1_20261105" });
+	});
+
+	it("clears the location and the description when sent null", async () => {
+		const fetchMock = writeFetch();
+		const caller = await callerWith({ fetch: fetchMock });
+
+		await caller.calendar.updateEvent({
+			calendarId: "me@example.com",
+			description: null,
+			eventId: "e1",
+			location: null,
+			title: "新しい名前",
+		});
+
+		expect(sent(fetchMock).body).toEqual({
+			description: "",
+			location: "",
+			summary: "新しい名前",
+		});
+	});
+
+	it("reports an event that no longer exists", async () => {
+		const caller = await callerWith({ fetch: writeFetch({ status: 404 }) });
+
+		await expect(
+			caller.calendar.updateEvent({
+				calendarId: "me@example.com",
+				eventId: "gone",
+				title: "x",
+			})
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+});
+
+describe("calendar.deleteEvent", () => {
+	it("deletes the event", async () => {
+		const fetchMock = writeFetch();
+		const caller = await callerWith({ fetch: fetchMock });
+
+		await expect(
+			caller.calendar.deleteEvent({
+				calendarId: "me@example.com",
+				eventId: "e1",
+			})
+		).resolves.toEqual({ calendarId: "me@example.com", eventId: "e1" });
+		expect(sent(fetchMock)).toMatchObject({ method: "DELETE" });
+	});
+
+	it("treats an event Google already deleted as not found", async () => {
+		const caller = await callerWith({ fetch: writeFetch({ status: 410 }) });
+
+		await expect(
+			caller.calendar.deleteEvent({
+				calendarId: "me@example.com",
+				eventId: "e1",
+			})
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
 	});
 });
