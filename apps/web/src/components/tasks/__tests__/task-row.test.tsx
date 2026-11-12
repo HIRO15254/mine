@@ -65,4 +65,51 @@ describe("TaskRow", () => {
 		expect(onComplete).toHaveBeenCalledWith(task);
 		expect(onOpen).toHaveBeenCalledWith(task);
 	});
+
+	it("buzzes on a phone when the task is checked", async () => {
+		const vibrate = vi.fn(() => true);
+		Object.defineProperty(navigator, "vibrate", {
+			configurable: true,
+			value: vibrate,
+		});
+		try {
+			render(
+				<TaskRow
+					onComplete={vi.fn()}
+					onOpen={vi.fn()}
+					projects={[]}
+					task={makeTask()}
+					today="2026-11-05"
+				/>
+			);
+
+			await userEvent.click(
+				screen.getByRole("button", { name: "「牛乳を買う」を完了にする" })
+			);
+
+			expect(vibrate).toHaveBeenCalledOnce();
+		} finally {
+			Reflect.deleteProperty(navigator, "vibrate");
+		}
+	});
+
+	it("shows the check and strikes the title while completing", () => {
+		render(
+			<TaskRow
+				isCompleting
+				onComplete={vi.fn()}
+				onOpen={vi.fn()}
+				projects={[]}
+				task={makeTask()}
+				today="2026-11-05"
+			/>
+		);
+
+		const check = screen.getByRole("button", {
+			name: "「牛乳を買う」を完了にする",
+		});
+		expect(check).toBeDisabled();
+		expect(check).toHaveClass("check-done");
+		expect(screen.getByText("牛乳を買う")).toHaveClass("line-through");
+	});
 });

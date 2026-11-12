@@ -86,6 +86,7 @@ function TodayPage() {
 						<CardTitle>今日やるタスク</CardTitle>
 						<Link
 							className="inline-flex items-center gap-0.5 text-primary-text text-xs no-underline hover:underline"
+							search={{ view: "today" }}
 							to="/tasks"
 						>
 							タスク

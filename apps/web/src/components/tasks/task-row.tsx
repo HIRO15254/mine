@@ -27,6 +27,13 @@ import { cn } from "@/lib/utils";
 
 import { ProjectName } from "./project-name";
 
+/** A short buzz on phones that have one, so the check is felt as well as seen. */
+function tap() {
+	if ("vibrate" in navigator) {
+		navigator.vibrate(12);
+	}
+}
+
 const TONE_CLASS = {
 	overdue: "text-destructive-text",
 	today: "text-success-text",
@@ -70,7 +77,8 @@ export function TaskRow({
 			aria-busy={isSaving || undefined}
 			className={cn(
 				"group/task flex min-h-[var(--m-list-row)] items-start gap-2.5 rounded-md px-2 desk:py-2.5 py-3",
-				isSaving && "pointer-events-none opacity-60"
+				isSaving && "pointer-events-none opacity-60",
+				isCompleting && "task-done"
 			)}
 		>
 			<button
@@ -81,7 +89,10 @@ export function TaskRow({
 					isCompleting && "check-done"
 				)}
 				disabled={isCompleting || isSaving}
-				onClick={() => onComplete(task)}
+				onClick={() => {
+					tap();
+					onComplete(task);
+				}}
 				style={
 					project
 						? ({ "--c": `var(--${project.color})` } as CSSProperties)
@@ -93,8 +104,9 @@ export function TaskRow({
 					aria-hidden
 					className={cn(
 						"size-3 opacity-0 transition-opacity group-hover/task:opacity-60",
-						isCompleting && "opacity-100"
+						isCompleting && "size-3.5 opacity-100"
 					)}
+					stroke={isCompleting ? 3 : 2}
 				/>
 			</button>
 			<button
@@ -102,7 +114,12 @@ export function TaskRow({
 				onClick={() => onOpen(task)}
 				type="button"
 			>
-				<span className="desk:text-sm text-[length:var(--m-text-body)] leading-5">
+				<span
+					className={cn(
+						"desk:text-sm text-[length:var(--m-text-body)] leading-5",
+						isCompleting && "text-muted-foreground line-through"
+					)}
+				>
 					{task.title}
 				</span>
 				{hasMeta && (

@@ -322,15 +322,40 @@
 	}
 }
 
+/* Completing a task: the circle dips and springs out as it fills, the check
+   draws itself, a ring and a burst go out, then the row fades away. */
 @keyframes check-pop {
 	0% {
-		transform: scale(0.6);
+		transform: scale(1);
 	}
-	60% {
-		transform: scale(1.2);
+	25% {
+		transform: scale(0.78);
+	}
+	65% {
+		transform: scale(1.22);
 	}
 	100% {
 		transform: scale(1);
+	}
+}
+
+@keyframes check-draw {
+	from {
+		stroke-dashoffset: 22;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+@keyframes check-ring {
+	0% {
+		opacity: 0.7;
+		transform: scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(2.1);
 	}
 }
 
@@ -342,6 +367,13 @@
 	100% {
 		opacity: 0;
 		transform: scale(1.6);
+	}
+}
+
+@keyframes task-leave {
+	to {
+		opacity: 0;
+		transform: translateX(12px);
 	}
 }
 
@@ -367,13 +399,29 @@
 }
 
 @layer components {
-	/* The completion circle fills with the project hue and gives off a burst. */
+	/* The completion circle fills with the project hue, the check draws
+	   itself, and a ring and a burst go out. The row then fades; the list drops
+	   it at COMPLETE_POP_MS in components/tasks/use-tasks.ts (800ms). */
 	.check-done {
 		position: relative;
 		color: var(--background) !important;
-		background: var(--c, var(--primary));
+		background: var(--c, var(--primary)) !important;
 		border-color: var(--c, var(--primary)) !important;
-		animation: check-pop 0.5s var(--ease-spring);
+		animation: check-pop 0.45s var(--ease-spring);
+	}
+	.check-done svg path {
+		stroke-dasharray: 22;
+		animation: check-draw 0.3s var(--ease-out) 0.12s backwards;
+	}
+	.check-done::before {
+		position: absolute;
+		inset: -1.5px;
+		pointer-events: none;
+		content: "";
+		border: 2px solid var(--c, var(--primary));
+		border-radius: 50%;
+		opacity: 0;
+		animation: check-ring 0.5s var(--ease-out) 0.1s;
 	}
 	.check-done::after {
 		position: absolute;
@@ -390,7 +438,11 @@
 			10px 13px 0 var(--chart-3),
 			-10px 13px 0 var(--chart-4),
 			-15px -5px 0 var(--chart-5);
-		animation: check-burst 0.6s var(--ease-out) forwards;
+		opacity: 0;
+		animation: check-burst 0.6s var(--ease-out) 0.12s;
+	}
+	.task-done {
+		animation: task-leave 0.25s var(--ease-out) 0.55s forwards;
 	}
 	/* Pressing sinks a control a little and lets it spring back. */
 	.press {
@@ -416,7 +468,10 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.check-done,
-		.check-done::after {
+		.check-done svg path,
+		.check-done::before,
+		.check-done::after,
+		.task-done {
 			animation: none;
 		}
 		.press:active:not(:disabled),

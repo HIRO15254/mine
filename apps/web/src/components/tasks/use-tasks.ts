@@ -18,8 +18,11 @@ import {
 	taskFromInput,
 } from "./optimistic";
 
-/** How long a completed row stays to show its check before it leaves. */
-const COMPLETE_POP_MS = 420;
+/**
+ * How long a completed row stays before it leaves: the check fills and draws
+ * itself, then the row fades (`.task-done` in index.css keeps the same beat).
+ */
+const COMPLETE_POP_MS = 800;
 
 const wait = (ms: number) =>
 	new Promise<void>((resolve) => window.setTimeout(resolve, Math.max(ms, 0)));

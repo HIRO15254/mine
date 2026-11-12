@@ -31,11 +31,11 @@ export interface Screen {
  */
 export const SCREENS: Screen[] = [
 	{ name: "today", path: "/" },
-	{ name: "tasks", path: "/tasks" },
+	{ name: "tasks", path: "/tasks?view=today" },
 	{
 		clip: true,
 		name: "task-editor",
-		path: "/tasks",
+		path: "/tasks?view=today",
 		prepare: async (page) => {
 			await page.getByText("ゼミ発表のスライドを仕上げる").first().click();
 		},

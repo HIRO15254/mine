@@ -44,6 +44,8 @@ interface TasksSearch {
 }
 
 const VIEWS = new Set<string>(TASK_VIEW_OPTIONS.map((option) => option.value));
+/** The view an address without one opens on. */
+const DEFAULT_VIEW: TaskView = "upcoming";
 
 export const Route = createFileRoute("/_app/tasks")({
 	// Every key is answered, even with undefined: the router lays the result
@@ -71,7 +73,7 @@ const EMPTY_MESSAGE: Record<TaskView, string> = {
 
 function TasksPage() {
 	const search = Route.useSearch();
-	const view = search.view ?? "today";
+	const view = search.view ?? DEFAULT_VIEW;
 	const navigate = useNavigate({ from: Route.fullPath });
 	const size = useControlSize();
 	const today = useToday();
@@ -105,7 +107,8 @@ function TasksPage() {
 					onValueChange={(value) => {
 						if (value) {
 							navigate({
-								search: value === "today" ? {} : { view: value as TaskView },
+								search:
+									value === DEFAULT_VIEW ? {} : { view: value as TaskView },
 							});
 						}
 					}}

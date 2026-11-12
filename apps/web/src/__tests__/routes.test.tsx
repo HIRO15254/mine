@@ -5,6 +5,7 @@ import {
 	RouterProvider,
 } from "@tanstack/react-router";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSession = vi.hoisted(() => vi.fn());
@@ -165,21 +166,58 @@ describe("routes", () => {
 			expect(await heading(EARLIER_WEEK)).toBeVisible();
 		});
 
-		it("falls back to Today's tasks for an unknown view", async () => {
-			await api.caller.task.create({ title: "いつかやる" });
+		it("opens on the upcoming tasks when the address names no view", async () => {
 			await api.caller.task.create({
 				scheduledDate: "2026-11-10",
 				title: "今日やる",
 			});
+			await api.caller.task.create({
+				scheduledDate: "2026-11-12",
+				title: "あさってやる",
+			});
+
+			open("/tasks");
+
+			expect(await screen.findByText("あさってやる")).toBeVisible();
+			expect(screen.getByRole("radio", { name: "近日" })).toBeChecked();
+			expect(screen.queryByText("今日やる")).not.toBeInTheDocument();
+		});
+
+		it("falls back to the upcoming tasks for an unknown view", async () => {
+			await api.caller.task.create({ title: "いつかやる" });
+			await api.caller.task.create({
+				scheduledDate: "2026-11-11",
+				title: "明日やる",
+			});
 
 			open("/tasks?view=everything");
 
-			expect(await screen.findByText("今日やる")).toBeVisible();
+			expect(await screen.findByText("明日やる")).toBeVisible();
 			expect(screen.queryByText("いつかやる")).not.toBeInTheDocument();
 			// The server never saw the view it would have refused.
 			expect(api.calls("task.list")).toEqual([
-				{ today: "2026-11-10", view: "today" },
+				{ today: "2026-11-10", view: "upcoming" },
 			]);
+		});
+
+		it("opens Today's tasks from the Today screen", async () => {
+			await api.caller.task.create({
+				scheduledDate: "2026-11-10",
+				title: "今日やる",
+			});
+			const { router } = open("/");
+			await screen.findByText("今日やる");
+
+			// The sidebar links to the tasks too; this one is on the Today card.
+			const link = screen
+				.getAllByRole("link", { name: "タスク" })
+				.find((item) => item.getAttribute("href")?.includes("view=today"));
+			expect(link).toBeDefined();
+			await userEvent.click(link as HTMLElement);
+
+			expect(await heading("タスク")).toBeVisible();
+			expect(router.state.location.search).toEqual({ view: "today" });
+			expect(screen.getByRole("radio", { name: "今日" })).toBeChecked();
 		});
 
 		it("opens the view and the project the address names", async () => {

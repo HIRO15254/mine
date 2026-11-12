@@ -46,7 +46,7 @@ it("asks a signed-out visitor to sign in", async () => {
 
 it("adds a task from the quick-add box", async () => {
 	const { page } = session;
-	await session.open("/tasks");
+	await session.open("/tasks?view=today");
 
 	await page.getByPlaceholder("タスクを追加").fill("牛乳を買う 今日 p2");
 	await page.keyboard.press("Enter");
@@ -65,7 +65,7 @@ it("completes a task and brings it back with the undo", async () => {
 		scheduledDate: TODAY,
 		title: "レポートを出す",
 	});
-	await session.open("/tasks");
+	await session.open("/tasks?view=today");
 
 	await page
 		.getByRole("button", { name: "「レポートを出す」を完了にする" })
