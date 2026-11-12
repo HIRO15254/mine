@@ -28,6 +28,7 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 - `bun run db:migrate:local`: apply migrations to the local D1 database
 - `bun run check:design-tokens`: compare the app's tokens with the Mine Design System snapshot in `design/mine/`
 - `bun run screens`: screenshot every screen with sample data into `test-results/screens/`; it boots the real web app against a mocked API, so it also works as a boot smoke test
+- `bun run smoke`: drive the web app in a real browser against the real routers on a test database (sign-in redirect, quick add, complete and undo, timer, drag onto the calendar). It needs Chromium, so it is not part of `verify`; run it after changing how the app boots, the router, the tRPC client, drag and drop, or a dependency
 - `$ui-design`: use the bundled repository skill to design on the Mine UI canvas and to apply canvas or design-system changes to `apps/web`
 
 ## Shipping
