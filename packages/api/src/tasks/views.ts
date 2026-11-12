@@ -14,7 +14,6 @@ export interface ViewTask {
 	priority: number;
 	projectId: string | null;
 	scheduledDate: string | null;
-	sortOrder: number;
 	startDate: string | null;
 }
 
@@ -53,12 +52,11 @@ function dueDay(task: ViewTask): string {
 	return task.scheduledDate ?? task.deadline ?? "9999-12-31";
 }
 
-/** Priority first, then the earliest date, then manual order and age. */
+/** Priority first, then the earliest date, then the older task. */
 export function compareTasks(a: ViewTask, b: ViewTask): number {
 	return (
 		a.priority - b.priority ||
 		dueDay(a).localeCompare(dueDay(b)) ||
-		a.sortOrder - b.sortOrder ||
 		a.createdAt.getTime() - b.createdAt.getTime()
 	);
 }

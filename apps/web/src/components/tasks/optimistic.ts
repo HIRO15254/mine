@@ -124,7 +124,6 @@ export function taskFromInput(
 		recurrence: pick("recurrence", base?.recurrence ?? null),
 		scheduledDate: pick("scheduledDate", base?.scheduledDate ?? null),
 		scheduledTime: pick("scheduledTime", base?.scheduledTime ?? null),
-		sortOrder: base?.sortOrder ?? Number.MAX_SAFE_INTEGER,
 		startDate: pick("startDate", base?.startDate ?? null),
 		title: pick("title", base?.title ?? ""),
 	};

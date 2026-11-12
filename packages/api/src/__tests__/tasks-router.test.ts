@@ -103,6 +103,20 @@ describe("label router", () => {
 		await expect(me.label.create({ name: "@PC" })).rejects.toMatchObject({
 			code: "CONFLICT",
 		});
+		// Lookups ignore case, so a name that differs only in case is taken too.
+		await expect(me.label.create({ name: "@pc" })).rejects.toMatchObject({
+			code: "CONFLICT",
+		});
+		await expect(
+			me.label.update({ id: pc.id, name: "NEXT" })
+		).rejects.toMatchObject({
+			code: "CONFLICT",
+		});
+		await expect(me.label.update({ id: pc.id, name: "@pc" })).resolves.toEqual({
+			id: pc.id,
+			name: "@pc",
+		});
+		await me.label.update({ id: pc.id, name: "@PC" });
 		await expect(other.label.create({ name: "@PC" })).resolves.toBeDefined();
 		await expect(
 			me.label.update({ id: pc.id, name: "next" })

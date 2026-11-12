@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
 	type AnySQLiteColumn,
 	index,
@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
+import { createdAt, updatedAt } from "./columns";
 
 /** Theme color keys a project may use; the web maps them to Mine Design System tokens. */
 export const PROJECT_COLORS = [
@@ -20,16 +21,6 @@ export const PROJECT_COLORS = [
 	"chart-5",
 ] as const;
 export type ProjectColor = (typeof PROJECT_COLORS)[number];
-
-const createdAt = () =>
-	integer("created_at", { mode: "timestamp" })
-		.default(sql`(unixepoch())`)
-		.notNull();
-const updatedAt = () =>
-	integer("updated_at", { mode: "timestamp" })
-		.default(sql`(unixepoch())`)
-		.$onUpdate(() => /* @__PURE__ */ new Date())
-		.notNull();
 
 /** Shared by tasks and (later) time entries. Nested through parentId. */
 export const project = sqliteTable(
@@ -99,7 +90,6 @@ export const task = sqliteTable(
 		recurrence: text("recurrence"),
 		estimateMinutes: integer("estimate_minutes"),
 		completedAt: integer("completed_at", { mode: "timestamp" }),
-		sortOrder: integer("sort_order").notNull().default(0),
 		createdAt: createdAt(),
 		updatedAt: updatedAt(),
 	},

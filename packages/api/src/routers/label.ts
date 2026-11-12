@@ -8,17 +8,23 @@ import { protectedProcedure, router } from "../index";
 
 const nameSchema = z.string().trim().min(1).max(50);
 
+/**
+ * A label is looked up without regard to case everywhere ("@Next", "next"),
+ * so two names that differ only in case would be one label to every lookup.
+ * The unique index compares exactly; this check is the one that sees case.
+ */
 async function assertNameFree(
 	ctx: Pick<Context, "db">,
 	userId: string,
 	name: string,
 	exceptId?: string
 ) {
-	const [existing] = await ctx.db
-		.select({ id: label.id })
+	const wanted = name.toLowerCase();
+	const labels = await ctx.db
+		.select({ id: label.id, name: label.name })
 		.from(label)
-		.where(and(eq(label.userId, userId), eq(label.name, name)))
-		.limit(1);
+		.where(eq(label.userId, userId));
+	const existing = labels.find((item) => item.name.toLowerCase() === wanted);
 	if (existing && existing.id !== exceptId) {
 		throw new TRPCError({
 			code: "CONFLICT",

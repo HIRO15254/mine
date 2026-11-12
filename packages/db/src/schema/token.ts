@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import {
 	index,
 	integer,
@@ -8,6 +7,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
+import { createdAt } from "./columns";
 
 /**
  * Personal API tokens for third-party apps and shortcuts. Only a SHA-256
@@ -25,9 +25,7 @@ export const apiToken = sqliteTable(
 		/** The first characters of the token, to tell tokens apart. */
 		prefix: text("prefix").notNull(),
 		lastUsedAt: integer("last_used_at", { mode: "timestamp" }),
-		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sql`(unixepoch())`)
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(table) => [
 		uniqueIndex("api_token_hash_idx").on(table.tokenHash),

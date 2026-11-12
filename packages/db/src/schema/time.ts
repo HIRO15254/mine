@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { user } from "./auth";
+import { createdAt } from "./columns";
 import { project, task } from "./tasks";
 
 /**
@@ -31,9 +32,7 @@ export const timeEntry = sqliteTable(
 		billable: integer("billable", { mode: "boolean" }).notNull().default(true),
 		startedAt: integer("started_at").notNull(),
 		endedAt: integer("ended_at"),
-		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sql`(unixepoch())`)
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(table) => [
 		index("time_entry_user_started_idx").on(table.userId, table.startedAt),
@@ -59,9 +58,7 @@ export const projectRate = sqliteTable(
 		hourlyRate: integer("hourly_rate").notNull(),
 		/** YYYY-MM-DD */
 		effectiveFrom: text("effective_from").notNull(),
-		createdAt: integer("created_at", { mode: "timestamp" })
-			.default(sql`(unixepoch())`)
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(table) => [
 		uniqueIndex("project_rate_project_day_idx").on(

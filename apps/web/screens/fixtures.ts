@@ -112,7 +112,6 @@ const task = (fields: Partial<Task> & Pick<Task, "id" | "title">): Task => ({
 	recurrence: null,
 	scheduledDate: null,
 	scheduledTime: null,
-	sortOrder: 0,
 	startDate: null,
 	...fields,
 });

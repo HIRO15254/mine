@@ -34,7 +34,6 @@ function toTask(row: TaskRow, labels: Array<{ id: string; name: string }>) {
 		recurrence: parseRecurrence(row.recurrence),
 		scheduledDate: row.scheduledDate,
 		scheduledTime: row.scheduledTime,
-		sortOrder: row.sortOrder,
 		startDate: row.startDate,
 		title: row.title,
 	};

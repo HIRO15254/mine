@@ -21,7 +21,7 @@ export default defineConfig({
 			],
 			exclude: [
 				"**/__tests__/**",
-				"packages/api/src/testing.ts",
+				"packages/*/src/testing.ts",
 				"**/*.test.{ts,tsx}",
 				"**/*.d.ts",
 				"**/routeTree.gen.ts",

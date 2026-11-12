@@ -12,7 +12,6 @@ function item(overrides: Partial<ViewTask>): ViewTask {
 		priority: 4,
 		projectId: "p",
 		scheduledDate: null,
-		sortOrder: 0,
 		startDate: null,
 		...overrides,
 	};
@@ -61,12 +60,20 @@ describe("inView", () => {
 });
 
 describe("compareTasks", () => {
-	it("orders by priority, then date, then manual order", () => {
+	it("orders by priority, then date, then age", () => {
 		const tasks = [
-			item({ priority: 4, scheduledDate: "2026-11-01" }),
+			item({
+				createdAt: new Date("2026-10-02T00:00:00Z"),
+				priority: 4,
+				scheduledDate: "2026-11-01",
+			}),
 			item({ priority: 1 }),
-			item({ priority: 4, deadline: "2026-11-02", sortOrder: 1 }),
-			item({ priority: 4, scheduledDate: "2026-11-01", sortOrder: -1 }),
+			item({ priority: 4, deadline: "2026-11-02" }),
+			item({
+				createdAt: new Date("2026-10-01T00:00:00Z"),
+				priority: 4,
+				scheduledDate: "2026-11-01",
+			}),
 		];
 		expect([...tasks].sort(compareTasks)).toEqual([
 			tasks[1],

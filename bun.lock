@@ -122,6 +122,7 @@
       },
       "devDependencies": {
         "@mine/config": "workspace:*",
+        "@types/bun": "catalog:",
         "drizzle-kit": "^0.31.10",
         "typescript": "catalog:",
         "vitest": "catalog:",
