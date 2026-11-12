@@ -20,10 +20,11 @@ packages/config 共有の TypeScript 設定
 
 | 入口 | 使う人 | 認証 | 場所 |
 |---|---|---|---|
-| `/trpc` | Web アプリ | セッション cookie、または個人用 API トークン | `apps/server/src/worker.ts` と `packages/api/src/routers/` |
-| `/v1` | ショートカットなどの外部アプリ | 個人用 API トークンだけ | `packages/api/src/rest/` |
-| `/mcp` | Claude | Mine の OAuth のアクセストークン、または個人用 API トークン | `packages/api/src/mcp/` |
+| `/trpc` | Web アプリ | セッション cookie、または個人用 API トークン | `apps/server/src/routes/trpc.ts` と `packages/api/src/routers/` |
+| `/v1` | ショートカットなどの外部アプリ | 個人用 API トークンだけ | `apps/server/src/routes/v1.ts` と `packages/api/src/rest/` |
+| `/mcp` | Claude | Mine の OAuth のアクセストークン、または個人用 API トークン | `apps/server/src/routes/mcp.ts` と `packages/api/src/mcp/` |
 
+- 「誰からの依頼か」を決めるのは `apps/server/src/session.ts` の 1 か所です。それぞれの入口は、受け付ける認証の種類（cookie、API トークン、OAuth）を並べて渡すだけです。
 - cookie は `SameSite=None` なので、`/trpc` への書き込みは Web アプリの `Origin` が付いたものだけを受け付けます（別サイトのフォームからの送信を断るため）。
 - OAuth のトークンは `/mcp` だけで使えます。同意画面が約束したのは MCP のツールだけだからです。
 - トークンの発行と削除、接続したアプリの管理は、どのトークンからもできず、ブラウザのログインからだけです。
@@ -41,6 +42,7 @@ packages/config 共有の TypeScript 設定
 ## 認証
 
 - ログインは Better Auth の Google ログインです。コールバックは API 側（`/api/auth/*`）で受けます。
+- `ALLOWED_EMAILS` は、アカウントを作るときだけでなく、依頼のたびに確かめます。一覧から外したメールアドレスは、ログインや発行済みのトークンが残っていても、その時点から使えなくなります。
 - Google カレンダーは、ログインのときにもらった読み取り専用の権限で読みます。トークンの更新は Better Auth が行います。
 - Claude の接続は Mine 自身の OAuth 2.1 サーバー（動的クライアント登録、PKCE、同意画面）です。同意画面は API 側が配信します。Web 側に置くと、cookie が届かないブラウザでログインが失敗するためです。
 

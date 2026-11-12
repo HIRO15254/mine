@@ -66,7 +66,7 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 
 ## The three API surfaces
 
-`docs/architecture.ja.md` has the picture. All three end in the same tRPC procedures, which hold validation and ownership checks.
+`docs/architecture.ja.md` has the picture. All three end in the same tRPC procedures, which hold validation and ownership checks. Each surface has one file in `apps/server/src/routes/`, and `apps/server/src/session.ts` alone decides who a request is from: a route passes the kinds of sign-in it accepts (`"cookie"`, `"api-token"`, `"oauth"`) to `requestContext()` or `resolveCaller()`. The allowlist is checked there on every request.
 
 - `/trpc`: the web app, with the session cookie (writes must carry the web app's `Origin`) or a personal API token.
 - `/v1`: REST for shortcuts and other apps; personal API tokens only. Documented in `docs/app-api.ja.md`.

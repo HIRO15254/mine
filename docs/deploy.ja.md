@@ -88,7 +88,7 @@ migration は Worker より先に出るので、「前の Worker でも動く変
 ### secret と設定を変えるとき
 
 - Worker の secret は `apps/server` で `bunx wrangler secret put <名前>` を実行して入れ替えます。deploy をまたいで保持されます。
-- 利用者を足すときは `ALLOWED_EMAILS` を入れ替えます。
+- 利用者を足すときは `ALLOWED_EMAILS` を入れ替えます。一覧から外したメールアドレスは、ログイン中でも発行済みのトークンがあっても、すぐに使えなくなります。
 - URL を変えるときは、GitHub の variables（`PRODUCTION_WEB_URL` と `PRODUCTION_API_URL`）と、Google の OAuth クライアントのリダイレクト URI を両方直します。
 
 ## 手動でデプロイする

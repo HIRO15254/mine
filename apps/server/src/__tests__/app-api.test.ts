@@ -383,6 +383,28 @@ async function sessionCookie(
 	return `${SESSION_COOKIE}=${encodeURIComponent(value)}`;
 }
 
+describe("the allowlist", () => {
+	it("locks out an account taken off the list, whatever it still holds", async () => {
+		const { bindings, call, raw, sqlite } = await setup();
+		const cookie = await sessionCookie(sqlite, bindings.BETTER_AUTH_SECRET);
+		const withCookie = { headers: { Cookie: cookie } };
+		const listTools = {
+			body: JSON.stringify({ id: 1, jsonrpc: "2.0", method: "tools/list" }),
+			method: "POST",
+		};
+		expect((await call("/v1/timer")).status).toBe(200);
+		expect((await call("/mcp", listTools)).status).toBe(200);
+		expect((await raw("/trpc/me", withCookie)).status).toBe(200);
+
+		bindings.ALLOWED_EMAILS = "someone-else@example.com";
+
+		expect((await call("/v1/timer")).status).toBe(401);
+		expect((await call("/mcp", listTools)).status).toBe(401);
+		expect((await call("/trpc/project.list")).status).toBe(401);
+		expect((await raw("/trpc/me", withCookie)).status).toBe(401);
+	});
+});
+
 describe("OAuth consent page", () => {
 	async function authorizeUrl(raw: Awaited<ReturnType<typeof setup>>["raw"]) {
 		const registered = await raw("/oauth/register", {
