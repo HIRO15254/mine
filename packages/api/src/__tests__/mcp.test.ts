@@ -1,21 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { createContextFactory } from "../context";
 import { handleMcp, listTools } from "../mcp/server";
 import type { ToolEnv } from "../mcp/tools";
-import { appRouter } from "../routers/index";
+import { createTestApp, TEST_USER } from "../testing";
 import { startOfDayIn, zoneOffsetMs } from "../time/zone";
-import { createTestDb } from "./d1";
 
 // 2026-11-06 10:00 in Tokyo.
 const NOW = Date.parse("2026-11-06T01:00:00Z");
 const TOKYO = "Asia/Tokyo";
 
 async function setup() {
-	const { db, sqlite } = createTestDb();
-	sqlite
-		.prepare("insert into user (id, name, email) values (?, ?, ?)")
-		.run("u1", "Me", "me@example.com");
+	const app = await createTestApp({ now: NOW });
+	const { sqlite } = app;
 	sqlite.exec(`
 		insert into project (id, user_id, name, parent_id) values
 			('p1', 'u1', '大学', null),
@@ -23,17 +19,8 @@ async function setup() {
 			('p3', 'u1', '生活', null);
 		insert into label (id, user_id, name) values ('l1', 'u1', 'next');
 	`);
-	const ctx = await createContextFactory(
-		db,
-		() =>
-			Promise.resolve({
-				user: { email: "me@example.com", id: "u1", name: "Me" },
-				via: "api-token" as const,
-			}),
-		{ now: () => NOW }
-	)();
 	const env: ToolEnv = {
-		caller: appRouter.createCaller(ctx),
+		caller: await app.callerFor(TEST_USER, "api-token"),
 		now: NOW,
 		timeZone: TOKYO,
 	};

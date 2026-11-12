@@ -2,34 +2,18 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { createContextFactory } from "../context";
-import { appRouter } from "../routers/index";
-import { createTestDb } from "./d1";
+import { createTestApp, OTHER_USER } from "../testing";
 
 const HOUR = 3_600_000;
 const NOV5 = Date.UTC(2026, 10, 4, 15);
 
 async function setup() {
-	const { db, sqlite } = createTestDb();
-	for (const id of ["u1", "u2"]) {
-		sqlite
-			.prepare("insert into user (id, name, email) values (?, ?, ?)")
-			.run(id, id, `${id}@example.com`);
-	}
-	const clock = { now: NOV5 };
-	const callerFor = async (id: string) =>
-		appRouter.createCaller(
-			await createContextFactory(
-				db,
-				() => Promise.resolve({ user: { id, email: `${id}@x`, name: id } }),
-				{ now: () => clock.now }
-			)()
-		);
+	const app = await createTestApp({ now: NOV5 });
 	return {
-		clock,
-		me: await callerFor("u1"),
-		other: await callerFor("u2"),
-		sqlite,
+		clock: app.clock,
+		me: app.caller,
+		other: await app.callerFor(OTHER_USER),
+		sqlite: app.sqlite,
 	};
 }
 

@@ -2,34 +2,57 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
 
+import { freezeNow, NOW } from "../../../__tests__/clock";
 import { renderWithQuery } from "../../../__tests__/render";
-import { makeProject, makeTask } from "../../../__tests__/task-fixtures";
-import { trpcMock } from "../../../__tests__/trpc-mock";
+import { api } from "../../../__tests__/test-api";
 import { TimerBar } from "../timer-bar";
 
-const ELAPSED = /^0:01:0\d$/;
+const MINUTE = 60_000;
 const ESTIMATE = /見積もり/;
 const WORK = /仕事/;
 const REPORT = /週次レポートを送る/;
 const MEETING = /研究室ミーティング/;
 const DOCS = /資料/;
 const CAMP = /合宿の準備/;
-const RECORD_SEMINAR = /^ゼミ発表を\d\d:\d\dから記録$/;
-const projects = [makeProject({ color: "chart-2", id: "work", name: "仕事" })];
+
+async function seed() {
+	const work = await api.caller.project.create({
+		color: "chart-2",
+		name: "仕事",
+	});
+	return { projects: await api.client.project.list.query(), work };
+}
+
+/** A calendar event around the frozen clock, as Google would return it. */
+function stubEvent(id: string, title: string, startsAt: number) {
+	api.stub("calendar.events", () => ({
+		calendars: [],
+		events: [
+			{
+				allDay: false,
+				calendarId: "primary",
+				color: "#e67c73",
+				end: new Date(startsAt + 60 * MINUTE).toISOString(),
+				htmlLink: null,
+				id,
+				location: null,
+				start: new Date(startsAt).toISOString(),
+				title,
+			},
+		],
+	}));
+}
 
 describe("TimerBar", () => {
-	beforeEach(() => {
-		trpcMock.calls.timeStart.mockClear();
-		trpcMock.calls.timeStop.mockClear();
-		trpcMock.state.current = null;
-		trpcMock.state.entries = [];
-		trpcMock.state.events = [];
-		trpcMock.state.tasks = [];
+	beforeEach(async () => {
+		await api.reset();
+		freezeNow();
 	});
 
 	it("starts a timer with a description and a #project", async () => {
+		const { projects, work } = await seed();
 		const { container } = renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.type(
@@ -37,19 +60,22 @@ describe("TimerBar", () => {
 			"資料作り #仕事 "
 		);
 		expect(
-			container.querySelector('mark[data-project="work"]')
+			container.querySelector(`mark[data-project="${work.id}"]`)
 		).toHaveTextContent("#仕事");
 		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
 
-		await waitFor(() =>
-			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
-				{ description: "資料作り", projectId: "work", taskId: undefined },
-				expect.anything()
-			)
+		await waitFor(async () =>
+			expect(await api.caller.time.current()).toMatchObject({
+				description: "資料作り",
+				projectId: work.id,
+				startedAt: NOW,
+				taskId: null,
+			})
 		);
 	});
 
 	it("completes a #project from the suggestions", async () => {
+		const { projects } = await seed();
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		const input = await screen.findByLabelText("何をしていますか");
@@ -58,10 +84,11 @@ describe("TimerBar", () => {
 		await userEvent.keyboard("{Enter}");
 
 		expect(input).toHaveValue("会議 #仕事 ");
-		expect(trpcMock.calls.timeStart).not.toHaveBeenCalled();
+		expect(api.calls("time.start")).toEqual([]);
 	});
 
 	it("leaves keys to the IME while kana is being converted", async () => {
+		const { projects } = await seed();
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		const input = await screen.findByLabelText("何をしていますか");
@@ -74,9 +101,11 @@ describe("TimerBar", () => {
 	});
 
 	it("starts a suggested task with its project", async () => {
-		trpcMock.state.tasks = [
-			makeTask({ id: "t1", projectId: "work", title: "週次レポートを送る" }),
-		];
+		const { projects, work } = await seed();
+		const task = await api.caller.task.create({
+			projectId: work.id,
+			title: "週次レポートを送る",
+		});
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.type(
@@ -86,18 +115,18 @@ describe("TimerBar", () => {
 		await userEvent.click(await screen.findByRole("option", { name: REPORT }));
 		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
 
-		await waitFor(() =>
-			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
-				{ description: "週次レポートを送る", projectId: "work", taskId: "t1" },
-				expect.anything()
-			)
+		await waitFor(async () =>
+			expect(await api.caller.time.current()).toMatchObject({
+				description: "週次レポートを送る",
+				projectId: work.id,
+				taskId: task.id,
+			})
 		);
 	});
 
 	it("links a picked task whose title has a full-width space", async () => {
-		trpcMock.state.tasks = [
-			makeTask({ id: "t2", projectId: null, title: "資料　確認" }),
-		];
+		const { projects } = await seed();
+		const task = await api.caller.task.create({ title: "資料　確認" });
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.type(
@@ -108,23 +137,26 @@ describe("TimerBar", () => {
 		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
 
 		await waitFor(() =>
-			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
-				{ description: "資料 確認", projectId: null, taskId: "t2" },
-				expect.anything()
-			)
+			expect(api.calls("time.start")).toEqual([
+				{ description: "資料 確認", projectId: null, taskId: task.id },
+			])
 		);
 	});
 
 	it("starts on the picked project when another has the same name", async () => {
-		const twins = [
-			makeProject({ id: "uni-lab", name: "研究" }),
-			makeProject({ id: "club-lab", name: "研究", parentId: "club" }),
-			makeProject({ id: "club", name: "サークル" }),
-		];
-		trpcMock.state.tasks = [
-			makeTask({ id: "t3", projectId: "club-lab", title: "合宿の準備" }),
-		];
-		renderWithQuery(<TimerBar projects={twins} />);
+		await api.caller.project.create({ name: "研究" });
+		const club = await api.caller.project.create({ name: "サークル" });
+		const clubLab = await api.caller.project.create({
+			name: "研究",
+			parentId: club.id,
+		});
+		const task = await api.caller.task.create({
+			projectId: clubLab.id,
+			title: "合宿の準備",
+		});
+		renderWithQuery(
+			<TimerBar projects={await api.client.project.list.query()} />
+		);
 
 		await userEvent.type(
 			await screen.findByLabelText("何をしていますか"),
@@ -134,20 +166,15 @@ describe("TimerBar", () => {
 		await userEvent.click(screen.getByRole("button", { name: "計測を始める" }));
 
 		await waitFor(() =>
-			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
-				{ description: "合宿の準備", projectId: "club-lab", taskId: "t3" },
-				expect.anything()
-			)
+			expect(api.calls("time.start")).toEqual([
+				{ description: "合宿の準備", projectId: clubLab.id, taskId: task.id },
+			])
 		);
 	});
 
 	it("gives the text back when the start fails", async () => {
-		trpcMock.calls.timeStart.mockImplementationOnce(
-			() =>
-				new Promise((_resolve, reject) => {
-					setTimeout(() => reject(new Error("offline")), 50);
-				})
-		);
+		const { projects } = await seed();
+		api.fail("time.start", 50);
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.type(
@@ -166,20 +193,8 @@ describe("TimerBar", () => {
 	});
 
 	it("offers the event happening now when the box is empty", async () => {
-		const now = Date.now();
-		trpcMock.state.events = [
-			{
-				allDay: false,
-				calendarId: "primary",
-				color: "#4593f8",
-				end: new Date(now + 30 * 60_000).toISOString(),
-				htmlLink: null,
-				id: "ev",
-				location: null,
-				start: new Date(now - 30 * 60_000).toISOString(),
-				title: "研究室ミーティング",
-			},
-		];
+		const { projects } = await seed();
+		stubEvent("ev", "研究室ミーティング", NOW - 30 * MINUTE);
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.click(await screen.findByLabelText("何をしていますか"));
@@ -188,50 +203,27 @@ describe("TimerBar", () => {
 	});
 
 	it("records the unrecorded event under way from its start", async () => {
-		const now = Date.now();
-		const start = now - 20 * 60_000;
-		trpcMock.state.events = [
-			{
-				allDay: false,
-				calendarId: "primary",
-				color: "#e67c73",
-				end: new Date(now + 40 * 60_000).toISOString(),
-				htmlLink: null,
-				id: "seminar",
-				location: null,
-				start: new Date(start).toISOString(),
-				title: "ゼミ発表",
-			},
-		];
+		const { projects } = await seed();
+		stubEvent("seminar", "ゼミ発表", NOW - 20 * MINUTE);
 		renderWithQuery(<TimerBar projects={projects} />);
 
+		// The clock stands at 14:20, so the event began at 14:00.
 		await userEvent.click(
-			await screen.findByRole("button", { name: RECORD_SEMINAR })
+			await screen.findByRole("button", { name: "ゼミ発表を14:00から記録" })
 		);
 
-		await waitFor(() =>
-			expect(trpcMock.calls.timeStart).toHaveBeenCalledWith(
-				{ description: "ゼミ発表", projectId: null, startedAt: start },
-				expect.anything()
-			)
+		await waitFor(async () =>
+			expect(await api.caller.time.current()).toMatchObject({
+				description: "ゼミ発表",
+				projectId: null,
+				startedAt: NOW - 20 * MINUTE,
+			})
 		);
 	});
 
 	it("puts the event aside with ×", async () => {
-		const now = Date.now();
-		trpcMock.state.events = [
-			{
-				allDay: false,
-				calendarId: "primary",
-				color: "#e67c73",
-				end: new Date(now + 40 * 60_000).toISOString(),
-				htmlLink: null,
-				id: "seminar-2",
-				location: null,
-				start: new Date(now - 20 * 60_000).toISOString(),
-				title: "ゼミ発表",
-			},
-		];
+		const { projects } = await seed();
+		stubEvent("seminar-2", "ゼミ発表", NOW - 20 * MINUTE);
 		renderWithQuery(<TimerBar projects={projects} />);
 
 		await userEvent.click(
@@ -239,46 +231,48 @@ describe("TimerBar", () => {
 		);
 
 		expect(
-			screen.queryByRole("button", { name: RECORD_SEMINAR })
+			screen.queryByRole("button", { name: "ゼミ発表を14:00から記録" })
 		).not.toBeInTheDocument();
 	});
 
 	it("shows the running entry and stops it", async () => {
-		trpcMock.state.current = {
-			billable: true,
+		const { projects, work } = await seed();
+		const entry = await api.caller.time.start({
 			description: "会議",
-			endedAt: null,
-			id: "e",
-			projectId: "work",
-			startedAt: Date.now() - 65_000,
-			taskId: null,
-		};
+			projectId: work.id,
+			startedAt: NOW - 65_000,
+		});
 		const onEdit = vi.fn();
 		renderWithQuery(<TimerBar onEdit={onEdit} projects={projects} />);
 
 		expect(await screen.findByText("会議")).toBeInTheDocument();
 		expect(screen.getByText("仕事")).toBeInTheDocument();
-		expect(screen.getByText(ELAPSED)).toBeInTheDocument();
+		expect(screen.getByText("0:01:05")).toBeInTheDocument();
 
 		await userEvent.click(screen.getByText("会議"));
-		expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: "e" }));
+		expect(onEdit).toHaveBeenCalledWith(
+			expect.objectContaining({ id: entry.id })
+		);
 		await userEvent.click(screen.getByRole("button", { name: "計測を止める" }));
-		await waitFor(() => expect(trpcMock.calls.timeStop).toHaveBeenCalled());
+		await waitFor(async () =>
+			expect(await api.caller.time.current()).toBeNull()
+		);
 	});
 
 	it("draws the orbit against the task's estimate", async () => {
-		trpcMock.state.current = {
-			billable: true,
-			description: "スライド",
-			endedAt: null,
-			id: "e",
-			projectId: "work",
-			startedAt: Date.now() - 45 * 60_000,
-			taskId: "t",
-		};
+		const { projects, work } = await seed();
+		const task = await api.caller.task.create({
+			estimateMinutes: 90,
+			title: "スライド",
+		});
+		await api.caller.time.start({
+			projectId: work.id,
+			startedAt: NOW - 45 * MINUTE,
+			taskId: task.id,
+		});
 		const { container } = renderWithQuery(
 			<TimerBar
-				estimateOf={(entry) => (entry.taskId === "t" ? 90 : null)}
+				estimateOf={(entry) => (entry.taskId === task.id ? 90 : null)}
 				projects={projects}
 			/>
 		);
@@ -290,15 +284,12 @@ describe("TimerBar", () => {
 	});
 
 	it("leaves the orbit out when the entry has no estimate", async () => {
-		trpcMock.state.current = {
-			billable: true,
+		const { projects, work } = await seed();
+		await api.caller.time.start({
 			description: "会議",
-			endedAt: null,
-			id: "e",
-			projectId: "work",
-			startedAt: Date.now() - 65_000,
-			taskId: null,
-		};
+			projectId: work.id,
+			startedAt: NOW - 65_000,
+		});
 		const { container } = renderWithQuery(<TimerBar projects={projects} />);
 
 		expect(await screen.findByText("会議")).toBeInTheDocument();

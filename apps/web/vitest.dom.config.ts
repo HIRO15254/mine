@@ -14,6 +14,8 @@ export default defineConfig({
 	test: {
 		name: "web-dom",
 		environment: "jsdom",
+		// Components format in local time; pin it so results are stable.
+		env: { TZ: "Asia/Tokyo" },
 		setupFiles: ["./src/__tests__/setup.ts"],
 		include: ["src/**/*.test.tsx"],
 	},

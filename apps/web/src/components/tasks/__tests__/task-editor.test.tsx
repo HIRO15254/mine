@@ -2,43 +2,42 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
 
 import { renderWithQuery, useDesktopLayout } from "../../../__tests__/render";
-import {
-	makeLabel,
-	makeProject,
-	makeTask,
-} from "../../../__tests__/task-fixtures";
-import { trpcMock } from "../../../__tests__/trpc-mock";
+import { api } from "../../../__tests__/test-api";
 import { TaskEditor } from "../task-editor";
 
-const projects = [makeProject({ id: "lab", name: "研究" })];
 const TITLE = /タイトル/;
-const labels = [makeLabel({ id: "next", name: "next" })];
+const TODAY = "2026-11-10";
+
+const openTasks = () => api.caller.task.list({ today: TODAY, view: "open" });
 
 describe("TaskEditor", () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		useDesktopLayout();
-		for (const fn of Object.values(trpcMock.calls)) {
-			fn.mockClear();
-		}
+		await api.reset();
 	});
 
 	it("adds a recurring task", async () => {
+		const lab = await api.caller.project.create({ name: "研究" });
+		const next = await api.caller.label.create({ name: "next" });
 		const onOpenChange = vi.fn();
 		renderWithQuery(
 			<TaskEditor
-				labels={labels}
+				labels={await api.client.label.list.query()}
 				onOpenChange={onOpenChange}
 				open
-				projects={projects}
+				projects={await api.client.project.list.query()}
 				task={null}
 			/>
 		);
 
 		await userEvent.type(screen.getByLabelText(TITLE), "ゴミ出し");
-		await userEvent.selectOptions(screen.getByLabelText("プロジェクト"), "lab");
+		await userEvent.selectOptions(
+			screen.getByLabelText("プロジェクト"),
+			lab.id
+		);
 		await userEvent.click(screen.getByRole("radio", { name: "P1" }));
 		await userEvent.selectOptions(
 			screen.getByLabelText("繰り返し"),
@@ -50,20 +49,21 @@ describe("TaskEditor", () => {
 		await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
 		await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
-		expect(trpcMock.calls.create).toHaveBeenCalledWith(
-			expect.objectContaining({
-				labelIds: ["next"],
-				priority: 1,
-				projectId: "lab",
-				recurrence: {
-					basis: "schedule",
-					interval: 1,
-					unit: "week",
-					weekdays: [1, 4],
+		await waitFor(async () =>
+			expect(await openTasks()).toMatchObject([
+				{
+					labels: [{ id: next.id, name: "next" }],
+					priority: 1,
+					projectId: lab.id,
+					recurrence: {
+						basis: "schedule",
+						interval: 1,
+						unit: "week",
+						weekdays: [1, 4],
+					},
+					title: "ゴミ出し",
 				},
-				title: "ゴミ出し",
-			}),
-			expect.anything()
+			])
 		);
 	});
 
@@ -83,18 +83,22 @@ describe("TaskEditor", () => {
 		expect(screen.getByRole("alert")).toHaveTextContent(
 			"タイトルを入力してください"
 		);
-		expect(trpcMock.calls.create).not.toHaveBeenCalled();
+		expect(api.calls("task.create")).toEqual([]);
 	});
 
 	it("updates and deletes an existing task", async () => {
-		const task = makeTask({ id: "t1", title: "古い" });
+		const created = await api.caller.task.create({ title: "古い" });
+		const [task] = await api.client.task.list.query({
+			today: TODAY,
+			view: "open",
+		});
 		renderWithQuery(
 			<TaskEditor
 				labels={[]}
 				onOpenChange={vi.fn()}
 				open
 				projects={[]}
-				task={task}
+				task={task ?? null}
 			/>
 		);
 
@@ -102,23 +106,17 @@ describe("TaskEditor", () => {
 		await userEvent.clear(title);
 		await userEvent.type(title, "新しい");
 		await userEvent.click(screen.getByRole("button", { name: "保存" }));
-		await waitFor(() =>
-			expect(trpcMock.calls.update).toHaveBeenCalledWith(
-				expect.objectContaining({ id: "t1", title: "新しい" }),
-				expect.anything()
-			)
+		await waitFor(async () =>
+			expect(await openTasks()).toMatchObject([
+				{ id: created.id, title: "新しい" },
+			])
 		);
 
 		await userEvent.click(screen.getByRole("button", { name: "削除" }));
-		expect(trpcMock.calls.remove).not.toHaveBeenCalled();
+		expect(api.calls("task.delete")).toEqual([]);
 		await userEvent.click(
 			screen.getByRole("button", { name: "もう一度押して削除" })
 		);
-		await waitFor(() =>
-			expect(trpcMock.calls.remove).toHaveBeenCalledWith(
-				{ id: "t1" },
-				expect.anything()
-			)
-		);
+		await waitFor(async () => expect(await openTasks()).toEqual([]));
 	});
 });

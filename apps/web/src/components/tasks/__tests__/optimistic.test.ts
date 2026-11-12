@@ -1,9 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
 
+import { TODAY } from "../../../__tests__/clock";
 import { makeTask } from "../../../__tests__/task-fixtures";
+import { trpc } from "../../../__tests__/test-api";
 import {
 	findTask,
 	placeTask,
@@ -13,11 +15,9 @@ import {
 	taskFromInput,
 } from "../optimistic";
 
-const TODAY = "2026-11-10";
-const key = (view: string) => [
-	["task", "list"],
-	{ input: { today: TODAY, view } },
-];
+type View = "inbox" | "open" | "today";
+/** The keys the screens use, so a change in their shape fails here. */
+const key = (view: View) => trpc.task.list.queryKey({ today: TODAY, view });
 
 function setup() {
 	const queryClient = new QueryClient();
@@ -31,14 +31,11 @@ function setup() {
 	queryClient.setQueryData(key("today"), [milk]);
 	queryClient.setQueryData(key("open"), [report, milk]);
 	queryClient.setQueryData(key("inbox"), [milk]);
-	queryClient.setQueryData(
-		[["label", "list"]],
-		[{ id: "l-next", name: "next" }]
-	);
-	const list = (view: string) =>
-		(queryClient.getQueryData(key(view)) as Array<{ id: string }>).map(
-			(task) => task.id
-		);
+	queryClient.setQueryData(trpc.label.list.queryKey(), [
+		{ id: "l-next", name: "next", sortOrder: 0 },
+	]);
+	const list = (view: View) =>
+		(queryClient.getQueryData(key(view)) ?? []).map((task) => task.id);
 	return { list, milk, queryClient, report };
 }
 

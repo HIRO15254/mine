@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { createContextFactory, type Session } from "../context";
-import { appRouter } from "../routers/index";
+import type { Session } from "../context";
+import { createTestApp } from "../testing";
 import {
 	bearerToken,
 	generateToken,
@@ -9,24 +9,13 @@ import {
 	resolveTokenSession,
 	tokenPrefix,
 } from "../tokens";
-import { createTestDb } from "./d1";
 
 const TOKEN_FORMAT = /^mine_[\w-]{43}$/;
 const HEX_64 = /^[0-9a-f]{64}$/;
 
 async function setup() {
-	const { db, sqlite } = createTestDb();
-	sqlite
-		.prepare("insert into user (id, name, email) values (?, ?, ?)")
-		.run("u1", "Me", "me@example.com");
-	const callerWith = async (session: Session) =>
-		appRouter.createCaller(
-			await createContextFactory(db, () => Promise.resolve(session))()
-		);
-	const browser = await callerWith({
-		user: { email: "me@example.com", id: "u1", name: "Me" },
-	});
-	return { browser, callerWith, db };
+	const app = await createTestApp();
+	return { browser: app.caller, callerWith: app.callerWith, db: app.db };
 }
 
 describe("token helpers", () => {

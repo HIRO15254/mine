@@ -1,15 +1,10 @@
+import { createTestApp } from "@mine/api/testing";
 import { describe, expect, it } from "vitest";
-
-// The API package's node:sqlite D1 stand-in, with the real migrations.
-import { createTestDb } from "../../../../packages/api/src/__tests__/d1";
 import type { Bindings } from "../bindings";
 import { app } from "../worker";
 
 async function setup() {
-	const { d1, sqlite } = createTestDb();
-	sqlite
-		.prepare("insert into user (id, name, email) values (?, ?, ?)")
-		.run("u1", "Me", "me@example.com");
+	const { d1, sqlite } = await createTestApp();
 	const token = "mine_test-token-0000000000000000000000000000000";
 	const hash = [
 		...new Uint8Array(

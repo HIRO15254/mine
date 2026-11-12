@@ -1,28 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { createContextFactory } from "../context";
-import { appRouter } from "../routers/index";
-import { createTestDb } from "./d1";
+import { createTestApp, OTHER_USER } from "../testing";
 
 const today = "2026-11-05";
 
 async function setup() {
-	const { db, sqlite } = createTestDb();
-	for (const [id, email] of [
-		["u1", "me@example.com"],
-		["u2", "other@example.com"],
-	] as const) {
-		sqlite
-			.prepare("insert into user (id, name, email) values (?, ?, ?)")
-			.run(id, id, email);
-	}
-	const callerFor = async (id: string) =>
-		appRouter.createCaller(
-			await createContextFactory(db, () =>
-				Promise.resolve({ user: { id, email: `${id}@x`, name: id } })
-			)()
-		);
-	return { me: await callerFor("u1"), other: await callerFor("u2"), sqlite };
+	const app = await createTestApp();
+	return {
+		me: app.caller,
+		other: await app.callerFor(OTHER_USER),
+		sqlite: app.sqlite,
+	};
 }
 
 describe("project router", () => {

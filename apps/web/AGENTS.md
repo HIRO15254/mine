@@ -36,6 +36,10 @@ Adds to the root `AGENTS.md`, which holds the UI rules, the test conventions and
 
 ## Tests
 
-- A component test (`.test.tsx`) mocks `@/utils/trpc` with `src/__tests__/trpc-mock.ts`. When a component starts using a procedure the mock lacks, add it to the mock rather than mocking in the test file.
-- Reset `trpcMock.state` and clear `trpcMock.calls` in `beforeEach`; module-level state in components (such as the timer's unsent text) leaks between tests otherwise.
+- A component test (`.test.tsx`) mocks `@/utils/trpc` with `src/__tests__/test-api.ts` and starts with `beforeEach(() => api.reset())`, which gives a fresh database. Module-level state in components (such as the timer's unsent text) still leaks between tests, so do not rely on it.
+- Seed through `api.caller` (`await api.caller.project.create({ name: "仕事" })`) and pass components what the app would have loaded: `await api.client.project.list.query()`. Use the ids the server returned, never invented ones.
+- Prefer asserting on the result (`await api.caller.task.list(...)`) over the call. `api.calls(path)` is for "nothing was sent" and for input the result does not show.
+- `api.stub(path, answer)` answers a procedure without the server, for data the database cannot hold (calendar events); `api.fail(path, delayMs)` makes it fail.
+- Call `freezeNow()` when a test shows or sends a time. It stops `Date` only, so waiting and user events still work; the server's clock follows it unless the test sets `api.clock.now`.
+- `makeTask()`, `makeProject()` and `makeLabel()` from `task-fixtures.ts` build rows for tests of pure logic and of components that take everything as props.
 - `useDesktopLayout()` from `src/__tests__/render.tsx` switches a test to the desk layout.

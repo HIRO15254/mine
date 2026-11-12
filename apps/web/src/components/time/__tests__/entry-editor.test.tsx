@@ -2,23 +2,27 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
 
+import { freezeNow, NOW } from "../../../__tests__/clock";
 import { renderWithQuery, useDesktopLayout } from "../../../__tests__/render";
-import { makeProject } from "../../../__tests__/task-fixtures";
-import { trpcMock } from "../../../__tests__/trpc-mock";
+import { api } from "../../../__tests__/test-api";
 import { EntryEditor } from "../entry-editor";
 
-const projects = [makeProject({ id: "work", name: "仕事" })];
+async function seed() {
+	const work = await api.caller.project.create({ name: "仕事" });
+	return { projects: await api.client.project.list.query(), work };
+}
 
 describe("EntryEditor", () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		useDesktopLayout();
-		trpcMock.calls.timeCreate.mockClear();
-		trpcMock.calls.update.mockClear();
+		await api.reset();
+		freezeNow();
 	});
 
 	it("adds a manual entry", async () => {
+		const { projects, work } = await seed();
 		const onOpenChange = vi.fn();
 		renderWithQuery(
 			<EntryEditor
@@ -32,7 +36,7 @@ describe("EntryEditor", () => {
 		await userEvent.type(screen.getByLabelText("説明"), "読書");
 		await userEvent.selectOptions(
 			screen.getByLabelText("プロジェクト"),
-			"work"
+			work.id
 		);
 		fireEvent.change(screen.getByLabelText("日付"), {
 			target: { value: "2026-11-05" },
@@ -47,31 +51,30 @@ describe("EntryEditor", () => {
 		await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
 		await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
-		expect(trpcMock.calls.timeCreate).toHaveBeenCalledWith(
+		// An end before the start means the entry runs past midnight.
+		const from = Date.parse("2026-11-05T22:30:00+09:00");
+		const to = Date.parse("2026-11-06T00:15:00+09:00");
+		expect(await api.caller.time.list({ from, to })).toMatchObject([
 			{
 				billable: false,
 				description: "読書",
-				endedAt: new Date(2026, 10, 6, 0, 15).getTime(),
-				projectId: "work",
-				startedAt: new Date(2026, 10, 5, 22, 30).getTime(),
+				endedAt: to,
+				projectId: work.id,
+				startedAt: from,
 			},
-			expect.anything()
-		);
+		]);
 	});
 
 	it("edits a running entry without an end time", async () => {
-		const startedAt = Date.now() - 600_000;
+		const { projects } = await seed();
+		await api.caller.time.start({
+			description: "作業",
+			startedAt: NOW - 600_000,
+		});
+		const entry = await api.client.time.current.query();
 		renderWithQuery(
 			<EntryEditor
-				entry={{
-					billable: true,
-					description: "作業",
-					endedAt: null,
-					id: "e",
-					projectId: null,
-					startedAt,
-					taskId: null,
-				}}
+				entry={entry}
 				onOpenChange={vi.fn()}
 				open
 				projects={projects}
@@ -81,15 +84,15 @@ describe("EntryEditor", () => {
 		expect(screen.getByText("計測中")).toBeInTheDocument();
 		await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
-		await waitFor(() =>
-			expect(trpcMock.calls.update).toHaveBeenCalledWith(
-				expect.not.objectContaining({ endedAt: expect.anything() }),
-				expect.anything()
-			)
-		);
-		expect(trpcMock.calls.update).toHaveBeenCalledWith(
-			expect.objectContaining({ description: "作業", id: "e" }),
-			expect.anything()
-		);
+		await waitFor(() => expect(api.calls("time.update")).toHaveLength(1));
+		expect(api.calls("time.update")[0]).toMatchObject({
+			description: "作業",
+			id: entry?.id,
+		});
+		expect(api.calls("time.update")[0]?.endedAt).toBeUndefined();
+		expect(await api.caller.time.current()).toMatchObject({
+			description: "作業",
+			endedAt: null,
+		});
 	});
 });

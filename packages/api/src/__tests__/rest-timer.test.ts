@@ -1,7 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { describe, expect, it } from "vitest";
 
-import { createContextFactory } from "../context";
 import {
 	formatElapsed,
 	projectChoices,
@@ -11,29 +10,15 @@ import {
 	stopTimer,
 	timerStatus,
 } from "../rest/timer";
-import { appRouter } from "../routers/index";
-import { createTestDb } from "./d1";
+import { createTestApp, TEST_USER } from "../testing";
 
 const MINUTE = 60_000;
 const START = Date.UTC(2026, 10, 6, 0);
 
 async function setup() {
-	const { db, sqlite } = createTestDb();
-	sqlite
-		.prepare("insert into user (id, name, email) values (?, ?, ?)")
-		.run("u1", "Me", "me@example.com");
-	const clock = { now: START };
-	const caller = appRouter.createCaller(
-		await createContextFactory(
-			db,
-			() =>
-				Promise.resolve({
-					user: { email: "me@example.com", id: "u1", name: "Me" },
-					via: "api-token" as const,
-				}),
-			{ now: () => clock.now }
-		)()
-	);
+	const app = await createTestApp({ now: START });
+	const { clock } = app;
+	const caller = await app.callerFor(TEST_USER, "api-token");
 	const uni = await caller.project.create({ name: "大学" });
 	const lab = await caller.project.create({ name: "研究", parentId: uni.id });
 	const old = await caller.project.create({ name: "旧" });

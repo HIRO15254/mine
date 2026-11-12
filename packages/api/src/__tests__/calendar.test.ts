@@ -1,13 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createContextFactory } from "../context";
 import type { FetchLike } from "../google/calendar";
-import { appRouter } from "../routers/index";
-import { createTestDb } from "./d1";
+import { createTestApp } from "../testing";
 
 const EVENTS_PATH = /\/calendars\/([^/]+)\/events$/;
-
-const user = { id: "u1", email: "me@example.com", name: "Me" };
 
 const calendarList = {
 	items: [
@@ -75,17 +71,16 @@ function googleFetch(overrides: { status?: number; body?: string } = {}) {
 	});
 }
 
-function callerWith(options: { fetch?: FetchLike; token?: string | null }) {
-	const { db, sqlite } = createTestDb();
-	sqlite
-		.prepare("insert into user (id, name, email) values (?, ?, ?)")
-		.run(user.id, user.name, user.email);
-	const factory = createContextFactory(db, () => Promise.resolve({ user }), {
+async function callerWith(options: {
+	fetch?: FetchLike;
+	token?: string | null;
+}) {
+	const app = await createTestApp({
 		fetch: options.fetch,
 		getGoogleAccessToken: () =>
 			Promise.resolve(options.token === undefined ? "token" : options.token),
 	});
-	return factory().then((ctx) => appRouter.createCaller(ctx));
+	return app.caller;
 }
 
 const range = {

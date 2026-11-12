@@ -1,58 +1,42 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/trpc", () => import("../../../__tests__/trpc-mock"));
+vi.mock("@/utils/trpc", () => import("../../../__tests__/test-api"));
 
+import { freezeNow, NOW } from "../../../__tests__/clock";
 import { renderWithQuery, useDesktopLayout } from "../../../__tests__/render";
-import { trpcMock } from "../../../__tests__/trpc-mock";
+import { api } from "../../../__tests__/test-api";
 import { ThreadList } from "../thread-list";
 
-const NOW = Date.now();
 const PROJECT_META = /^研究・/;
 const EMPTY = /動いているスレッドはありません/;
 
-afterEach(() => {
-	trpcMock.state.threads = [];
-	trpcMock.state.projects = [];
-	trpcMock.calls.update.mockClear();
-});
-
 describe("ThreadList", () => {
+	beforeEach(async () => {
+		await api.reset();
+		freezeNow();
+	});
+
 	it("shows waiting threads first with what to do", async () => {
 		useDesktopLayout();
-		trpcMock.state.projects = [
-			{
-				archived: false,
-				color: "chart-1",
-				id: "p1",
-				name: "研究",
-				parentId: null,
-				sortOrder: 0,
-			},
-		];
-		trpcMock.state.threads = [
-			{
-				id: "a",
-				nextAction: "",
-				projectId: null,
-				status: "working",
-				summary: "テストを書いています",
-				title: "API の修正",
-				updatedAt: NOW,
-				url: null,
-			},
-			{
-				id: "b",
-				nextAction: "要約の長さを決めてください",
-				projectId: "p1",
-				status: "waiting",
-				summary: "下書きができました",
-				title: "論文の要約",
-				updatedAt: NOW - 60_000,
-				url: "https://claude.ai/chat/abc",
-			},
-		];
+		const lab = await api.caller.project.create({ name: "研究" });
+		// The waiting thread reported first: it leads for its status, not its age.
+		api.clock.now = NOW - 60_000;
+		await api.caller.thread.report({
+			nextAction: "要約の長さを決めてください",
+			projectId: lab.id,
+			status: "waiting",
+			summary: "下書きができました",
+			title: "論文の要約",
+			url: "https://claude.ai/chat/abc",
+		});
+		api.clock.now = NOW;
+		const working = await api.caller.thread.report({
+			status: "working",
+			summary: "テストを書いています",
+			title: "API の修正",
+		});
 		renderWithQuery(<ThreadList />);
 
 		const items = await screen.findAllByRole("listitem");
@@ -72,9 +56,12 @@ describe("ThreadList", () => {
 		await userEvent.click(
 			screen.getByRole("button", { name: "「API の修正」を完了にする" })
 		);
-		expect(trpcMock.calls.update).toHaveBeenCalledWith(
-			{ id: "a", status: "done" },
-			expect.anything()
+
+		expect(api.calls("thread.setStatus")).toEqual([
+			{ id: working.id, status: "done" },
+		]);
+		await waitFor(() =>
+			expect(screen.queryByText("API の修正")).not.toBeInTheDocument()
 		);
 	});
 

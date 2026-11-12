@@ -1,9 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 
 afterEach(() => {
 	cleanup();
+	// Undoes freezeNow(); a no-op when the test left the clock alone.
+	vi.useRealTimers();
 });
 
 // Radix measures some controls (e.g. Switch); jsdom has no ResizeObserver.

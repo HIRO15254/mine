@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { createContextFactory, type Session } from "../context";
 import {
 	ACCESS_TTL_MS,
 	approveAuthorization,
@@ -14,9 +13,8 @@ import {
 	registerClient,
 	UNUSED_CLIENT_LIMIT,
 } from "../oauth";
-import { appRouter } from "../routers/index";
+import { createTestApp, TEST_USER, type TestApp } from "../testing";
 import { base64url, resolveTokenSession } from "../tokens";
-import { createTestDb } from "./d1";
 
 const CLAUDE = "https://claude.ai/api/mcp/auth_callback";
 const VERIFIER = "a-very-long-pkce-verifier-with-enough-entropy-0123456789";
@@ -31,14 +29,10 @@ async function challenge(verifier: string) {
 }
 
 function setup() {
-	const { db, sqlite } = createTestDb();
-	sqlite
-		.prepare("insert into user (id, name, email) values (?, ?, ?)")
-		.run("u1", "Me", "me@example.com");
-	return { db, sqlite };
+	return createTestApp();
 }
 
-async function authorize(db: ReturnType<typeof setup>["db"]) {
+async function authorize(db: TestApp["db"]) {
 	const client = await registerClient(db, {
 		client_name: "Claude",
 		redirect_uris: [CLAUDE],
@@ -87,14 +81,14 @@ describe("redirect URIs", () => {
 	});
 
 	it("rejects registration with another redirect URI", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		await expect(
 			registerClient(db, { redirect_uris: ["https://evil.example/cb"] })
 		).rejects.toBeInstanceOf(OAuthError);
 	});
 
 	it("rejects a redirect URI too long to be real", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		await expect(
 			registerClient(db, {
 				redirect_uris: [`http://localhost/${"a".repeat(3000)}`],
@@ -105,7 +99,7 @@ describe("redirect URIs", () => {
 
 describe("authorization code flow", () => {
 	it("exchanges a code for tokens that sign in as the user", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		const { client, code, redirect } = await authorize(db);
 		expect(redirect.origin + redirect.pathname).toBe(CLAUDE);
 		expect(redirect.searchParams.get("state")).toBe("xyz");
@@ -142,7 +136,7 @@ describe("authorization code flow", () => {
 	});
 
 	it("rejects a wrong verifier, a reused code and an expired code", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		const first = await authorize(db);
 		await expect(
 			exchangeToken(
@@ -174,7 +168,7 @@ describe("authorization code flow", () => {
 	});
 
 	it("rotates refresh tokens", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		const { client, code } = await authorize(db);
 		const tokens = await exchangeToken(
 			db,
@@ -202,7 +196,7 @@ describe("authorization code flow", () => {
 	});
 
 	it("requires the secret of a confidential client", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		const client = await registerClient(db, {
 			redirect_uris: [CLAUDE],
 			token_endpoint_auth_method: "client_secret_basic",
@@ -246,7 +240,7 @@ describe("authorization code flow", () => {
 	});
 
 	it("refuses unregistered redirect URIs and unknown clients", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		const { client } = await authorize(db);
 		await expect(
 			approveAuthorization(
@@ -285,7 +279,7 @@ describe("authorization code flow", () => {
 
 describe("checkAuthorization", () => {
 	it("accepts a registered client with an S256 challenge", async () => {
-		const { db } = setup();
+		const { db } = await setup();
 		const client = await registerClient(db, {
 			client_name: "Claude",
 			redirect_uris: [CLAUDE],
@@ -324,21 +318,17 @@ describe("checkAuthorization", () => {
 });
 
 describe("oauth router", () => {
-	async function callers(db: ReturnType<typeof setup>["db"]) {
-		const callerWith = async (session: Session) =>
-			appRouter.createCaller(
-				await createContextFactory(db, () => Promise.resolve(session))()
-			);
-		const user = { email: "me@example.com", id: "u1", name: "Me" };
+	async function callers(app: TestApp) {
 		return {
-			browser: await callerWith({ user }),
-			token: await callerWith({ user, via: "oauth" }),
+			browser: app.caller,
+			token: await app.callerFor(TEST_USER, "oauth"),
 		};
 	}
 
 	it("lists and revokes connections from the browser only", async () => {
-		const { db } = setup();
-		const { browser, token } = await callers(db);
+		const app = await setup();
+		const { db } = app;
+		const { browser, token } = await callers(app);
 		const client = await registerClient(db, {
 			client_name: "Claude",
 			redirect_uris: [CLAUDE],
@@ -375,8 +365,9 @@ describe("oauth router", () => {
 	});
 
 	it("leaves out a connection whose refresh token ran out", async () => {
-		const { db, sqlite } = setup();
-		const { browser } = await callers(db);
+		const app = await setup();
+		const { db, sqlite } = app;
+		const { browser } = await callers(app);
 		const { client, code } = await authorize(db);
 		await exchangeToken(db, codeParams(client.client_id, code), null, NOW);
 		expect(await browser.oauth.connections()).toHaveLength(1);
@@ -390,7 +381,7 @@ describe("oauth router", () => {
 
 describe("client registration", () => {
 	it("keeps connected clients and only the newest unused ones", async () => {
-		const { db, sqlite } = setup();
+		const { db, sqlite } = await setup();
 		const { client, code } = await authorize(db);
 		await exchangeToken(db, codeParams(client.client_id, code), null, NOW);
 		const insert = sqlite.prepare(
