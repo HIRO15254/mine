@@ -1,48 +1,22 @@
-import {
-	label,
-	project,
-	task,
-	taskCompletion,
-	taskLabel,
-} from "@mine/db/schema/tasks";
+import { label, task, taskCompletion, taskLabel } from "@mine/db/schema/tasks";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Context } from "../context";
 import { protectedProcedure, router } from "../index";
-import { isDayKey } from "../tasks/dates";
+import { assertProject } from "../projects/owned";
 import {
 	advanceDates,
 	anchorDay,
 	parseRecurrence,
 	pinDayOfMonth,
-	recurrenceSchema,
 	serializeRecurrence,
 } from "../tasks/recurrence";
+import { dayKey, taskFields } from "../tasks/schema";
 import { compareTasks, inView, TASK_VIEWS } from "../tasks/views";
 
 type Db = Pick<Context, "db">;
-
-const dayKey = z.string().refine(isDayKey, { message: "Expected YYYY-MM-DD" });
-
-const timeOfDay = z
-	.string()
-	.regex(/^([01]\d|2[0-3]):[0-5]\d$/, { message: "Expected HH:MM" });
-
-const taskFields = {
-	deadline: dayKey.nullish(),
-	estimateMinutes: z.number().int().min(1).max(10_000).nullish(),
-	labelIds: z.array(z.string().min(1)).max(20).optional(),
-	note: z.string().max(10_000).optional(),
-	priority: z.number().int().min(1).max(4).optional(),
-	projectId: z.string().min(1).nullish(),
-	recurrence: recurrenceSchema.nullish(),
-	scheduledDate: dayKey.nullish(),
-	scheduledTime: timeOfDay.nullish(),
-	startDate: dayKey.nullish(),
-	title: z.string().trim().min(1).max(500),
-};
 
 type TaskRow = typeof task.$inferSelect;
 
@@ -99,17 +73,6 @@ async function findTask(ctx: Db, userId: string, id: string) {
 async function loadTask(ctx: Db, userId: string, id: string): Promise<Task> {
 	const row = await findTask(ctx, userId, id);
 	return toTask(row, (await labelsByTask(ctx, userId)).get(id) ?? []);
-}
-
-async function assertProject(ctx: Db, userId: string, projectId: string) {
-	const [row] = await ctx.db
-		.select({ id: project.id })
-		.from(project)
-		.where(and(eq(project.id, projectId), eq(project.userId, userId)))
-		.limit(1);
-	if (!row) {
-		throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown project" });
-	}
 }
 
 /** The distinct label ids, once all of them are known to be the user's. */

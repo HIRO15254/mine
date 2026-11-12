@@ -6,25 +6,10 @@ import { z } from "zod";
 
 import type { Context } from "../context";
 import { protectedProcedure, router } from "../index";
+import { findProject } from "../projects/owned";
 
 const nameSchema = z.string().trim().min(1).max(100);
 const colorSchema = z.enum(PROJECT_COLORS);
-
-async function findProject(
-	ctx: Pick<Context, "db">,
-	userId: string,
-	id: string
-) {
-	const [row] = await ctx.db
-		.select()
-		.from(project)
-		.where(and(eq(project.id, id), eq(project.userId, userId)))
-		.limit(1);
-	if (!row) {
-		throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
-	}
-	return row;
-}
 
 /** Rejects a parent that is the project itself or one of its descendants. */
 async function assertNoCycle(

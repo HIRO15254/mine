@@ -11,11 +11,10 @@ import {
 	type GoogleCalendarClient,
 } from "../google/calendar";
 import { protectedProcedure, router } from "../index";
+import { MAX_LIST_SPAN } from "../time/schema";
 
 /** Shown to the web client so it can offer to reconnect Google. */
 export const CALENDAR_NOT_CONNECTED = "GOOGLE_CALENDAR_NOT_CONNECTED";
-
-const MAX_RANGE_MS = 62 * 24 * 60 * 60 * 1000;
 
 const rangeInput = z
 	.object({
@@ -25,7 +24,7 @@ const rangeInput = z
 	.refine(
 		(range) => {
 			const span = Date.parse(range.timeMax) - Date.parse(range.timeMin);
-			return span > 0 && span <= MAX_RANGE_MS;
+			return span > 0 && span <= MAX_LIST_SPAN;
 		},
 		{ message: "timeMax must be after timeMin and within 62 days" }
 	);

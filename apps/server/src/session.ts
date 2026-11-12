@@ -3,7 +3,7 @@ import {
 	type Session,
 	type TokenKind,
 } from "@mine/api/context";
-import { appRouter } from "@mine/api/routers/index";
+import { appRouter, type Caller } from "@mine/api/routers/index";
 import { bearerToken, resolveTokenSession } from "@mine/api/tokens";
 import { createAuth } from "@mine/auth";
 import { isEmailAllowed, parseAllowedEmails } from "@mine/auth/allowlist";
@@ -30,8 +30,6 @@ type Auth = ReturnType<typeof authFor>;
  * Claude. Each surface names the ones it takes.
  */
 export type AuthKind = "cookie" | TokenKind;
-
-export type Caller = ReturnType<typeof appRouter.createCaller>;
 
 /**
  * Sessions and tokens outlive a change to ALLOWED_EMAILS, so the list is

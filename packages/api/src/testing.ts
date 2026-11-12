@@ -14,7 +14,7 @@ import {
 	type Session,
 	type SessionUser,
 } from "./context";
-import { appRouter } from "./routers/index";
+import { appRouter, type Caller } from "./routers/index";
 
 // Asked of Node directly: Vite cannot resolve node:sqlite for the jsdom tests.
 const { DatabaseSync } = process.getBuiltinModule("node:sqlite");
@@ -88,8 +88,6 @@ export function createTestDb() {
 	return { d1, db: createDb(d1), sqlite };
 }
 
-export type TestCaller = ReturnType<typeof appRouter.createCaller>;
-
 /** The user every test signs in as unless it asks for another. */
 export const TEST_USER: SessionUser = {
 	email: "me@example.com",
@@ -140,7 +138,7 @@ export async function createTestApp(options: TestAppOptions = {}) {
 			...context,
 			now: () => clock.now,
 		});
-	const callerWith = async (session: Session | null): Promise<TestCaller> =>
+	const callerWith = async (session: Session | null): Promise<Caller> =>
 		appRouter.createCaller(await contextFor(session)());
 	const callerFor = (user: SessionUser = TEST_USER, via?: Session["via"]) =>
 		callerWith(via ? { user, via } : { user });

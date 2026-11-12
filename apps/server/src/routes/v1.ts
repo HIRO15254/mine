@@ -1,16 +1,16 @@
+import { projectChoices, statusOf } from "@mine/api/rest/v1";
+import type { Caller } from "@mine/api/routers/index";
 import {
-	projectChoices,
 	startInputSchema,
 	startTimer,
-	statusOf,
 	stopTimer,
 	timerStatus,
-} from "@mine/api/rest/timer";
+} from "@mine/api/time/timer";
 import { Hono } from "hono";
 
 import type { Bindings } from "../bindings";
 import { readJson } from "../http";
-import { type Caller, resolveCaller } from "../session";
+import { resolveCaller } from "../session";
 
 /**
  * `/v1`: JSON API for shortcuts and other apps. Only personal API tokens are

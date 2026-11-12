@@ -1,18 +1,23 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { formatDuration, formatLocalTime } from "../format";
+import { resolveProject } from "../projects/resolve";
+import { descendants, projectPath, treeOrder } from "../projects/tree";
+import type { Caller } from "../routers/index";
+import { addDays } from "../tasks/dates";
 import {
-	resolveProject,
-	startTimer,
-	stopTimer,
-	timerStatus,
-} from "../rest/timer";
-import type { appRouter } from "../routers/index";
-import { threadUrl } from "../routers/thread";
-import { addDays, isDayKey } from "../tasks/dates";
-import { recurrenceSchema } from "../tasks/recurrence";
+	dayKey,
+	MAX_TASK_LABELS,
+	taskPriority,
+	taskFields as taskShape,
+	taskTitle,
+} from "../tasks/schema";
 import { TASK_VIEWS } from "../tasks/views";
+import { threadFields } from "../threads/schema";
+import { DAY, entryDescription, MAX_LIST_SPAN } from "../time/schema";
 import { localDay } from "../time/summary";
+import { startTimer, stopTimer, timerStatus } from "../time/timer";
 import { startOfDayIn } from "../time/zone";
 
 /**
@@ -20,7 +25,6 @@ import { startOfDayIn } from "../time/zone";
  * procedures, so validation and ownership rules stay in one place.
  */
 
-export type Caller = ReturnType<typeof appRouter.createCaller>;
 type Project = Awaited<ReturnType<Caller["project"]["list"]>>[number];
 type Label = Awaited<ReturnType<Caller["label"]["list"]>>[number];
 type Task = Awaited<ReturnType<Caller["task"]["list"]>>[number];
@@ -52,21 +56,15 @@ function defineTool<Input extends z.ZodType>(tool: Tool<Input>): Tool {
 	return tool as unknown as Tool;
 }
 
-const MINUTE = 60_000;
 const LABEL_MARK = /^@/;
 const MAX_TASKS = 100;
 const MAX_ENTRIES = 100;
 const MAX_EVENT_DAYS = 31;
 
-const day = z
-	.string()
-	.refine(isDayKey, { message: "Expected a date as YYYY-MM-DD" });
-const priority = z
-	.number()
-	.int()
-	.min(1)
-	.max(4)
-	.describe("1 is the most urgent (p1), 4 is the default");
+const day = dayKey;
+const priority = taskPriority.describe(
+	"1 is the most urgent (p1), 4 is the default"
+);
 const projectRef = z
 	.string()
 	.trim()
@@ -90,17 +88,6 @@ function compact<T extends Record<string, unknown>>(value: T): Partial<T> {
 	) as Partial<T>;
 }
 
-function projectPath(projects: Project[], id: string | null): string | null {
-	const byId = new Map(projects.map((item) => [item.id, item]));
-	const names: string[] = [];
-	let current = id ? byId.get(id) : undefined;
-	for (let depth = 0; current && depth < 20; depth += 1) {
-		names.unshift(current.name);
-		current = current.parentId ? byId.get(current.parentId) : undefined;
-	}
-	return names.length > 0 ? names.join(" / ") : null;
-}
-
 function resolveLabels(labels: Label[], names: string[]): string[] {
 	return names.map((name) => {
 		const wanted = name.trim().replace(LABEL_MARK, "").toLowerCase();
@@ -111,43 +98,6 @@ function resolveLabels(labels: Label[], names: string[]): string[] {
 		}
 		return match.id;
 	});
-}
-
-function descendants(projects: Project[], rootId: string): Set<string> {
-	const ids = new Set([rootId]);
-	let grew = true;
-	while (grew) {
-		grew = false;
-		for (const item of projects) {
-			if (item.parentId && ids.has(item.parentId) && !ids.has(item.id)) {
-				ids.add(item.id);
-				grew = true;
-			}
-		}
-	}
-	return ids;
-}
-
-/** Parents before their children, keeping the app's order among siblings. */
-function treeOrder<T extends { id: string; parentId: string | null }>(
-	items: T[]
-): T[] {
-	const ids = new Set(items.map((item) => item.id));
-	const children = new Map<string | null, T[]>();
-	for (const item of items) {
-		const parent =
-			item.parentId && ids.has(item.parentId) ? item.parentId : null;
-		children.set(parent, [...(children.get(parent) ?? []), item]);
-	}
-	const ordered: T[] = [];
-	const visit = (parent: string | null) => {
-		for (const item of children.get(parent) ?? []) {
-			ordered.push(item);
-			visit(item.id);
-		}
-	};
-	visit(null);
-	return ordered;
 }
 
 function describeTask(task: Task, projects: Project[]) {
@@ -167,48 +117,29 @@ function describeTask(task: Task, projects: Project[]) {
 	});
 }
 
-const clock = (ms: number) => {
-	const minutes = Math.max(0, Math.floor(ms / MINUTE));
-	return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
-};
-
-function localTime(ms: number, timeZone: string): string {
-	return new Intl.DateTimeFormat("sv-SE", {
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		month: "2-digit",
-		timeZone,
-		year: "numeric",
-	}).format(new Date(ms));
-}
-
+/** The task router's fields, with labels by name and hints for the model. */
 const taskFields = {
-	deadline: day.nullish().describe("締め切り: the due date"),
-	estimateMinutes: z.number().int().min(1).max(10_000).nullish(),
+	deadline: taskShape.deadline.describe("締め切り: the due date"),
+	estimateMinutes: taskShape.estimateMinutes,
 	labels: z
 		.array(z.string())
-		.max(20)
+		.max(MAX_TASK_LABELS)
 		.optional()
 		.describe("Label names; replaces the task's labels"),
-	note: z.string().max(10_000).optional(),
+	note: taskShape.note,
 	priority: priority.optional(),
-	recurrence: recurrenceSchema
-		.nullish()
-		.describe(
-			'Repeat rule. basis "schedule" repeats on fixed dates, "completion" counts from the day it is done'
-		),
-	scheduledDate: day.nullish().describe("予定日: the day planned to do it"),
-	scheduledTime: z
-		.string()
-		.regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-		.nullish()
-		.describe(
-			"HH:MM on the scheduled day; places the task on the calendar for its estimate (30 minutes without one)"
-		),
-	startDate: day
-		.nullish()
-		.describe("最速実行可能日: hidden from Today until this day"),
+	recurrence: taskShape.recurrence.describe(
+		'Repeat rule. basis "schedule" repeats on fixed dates, "completion" counts from the day it is done'
+	),
+	scheduledDate: taskShape.scheduledDate.describe(
+		"予定日: the day planned to do it"
+	),
+	scheduledTime: taskShape.scheduledTime.describe(
+		"HH:MM on the scheduled day; places the task on the calendar for its estimate (30 minutes without one)"
+	),
+	startDate: taskShape.startDate.describe(
+		"最速実行可能日: hidden from Today until this day"
+	),
 };
 
 async function taskInput(
@@ -279,7 +210,7 @@ const addTask = defineTool({
 	input: z.object({
 		...taskFields,
 		project: projectRef.optional(),
-		title: z.string().trim().min(1).max(500),
+		title: taskTitle,
 	}),
 	run: async (input, env) => {
 		const { labels, project, ...fields } = input;
@@ -303,7 +234,7 @@ const updateTask = defineTool({
 		...taskFields,
 		id: z.string().min(1),
 		project: projectRef.nullish(),
-		title: z.string().trim().min(1).max(500).optional(),
+		title: taskTitle.optional(),
 	}),
 	run: async (input, env) => {
 		const { labels, project, ...fields } = input;
@@ -389,7 +320,7 @@ const startTimerTool = defineTool({
 		"Starts the timer, stopping any running entry. With taskId the description and project come from the task.",
 	annotations: {},
 	input: z.object({
-		description: z.string().trim().max(500).optional(),
+		description: entryDescription.optional(),
 		project: projectRef.optional(),
 		taskId: z.string().min(1).optional(),
 	}),
@@ -417,7 +348,7 @@ const addTimeEntry = defineTool({
 	annotations: {},
 	input: z.object({
 		billable: z.boolean().optional(),
-		description: z.string().trim().max(500).optional(),
+		description: entryDescription.optional(),
 		end: offsetDateTime,
 		project: projectRef.optional(),
 		start: offsetDateTime,
@@ -438,10 +369,12 @@ const addTimeEntry = defineTool({
 		return {
 			added: compact({
 				description: entry.description,
-				duration: clock((entry.endedAt ?? entry.startedAt) - entry.startedAt),
-				end: entry.endedAt && localTime(entry.endedAt, env.timeZone),
+				duration: formatDuration(
+					(entry.endedAt ?? entry.startedAt) - entry.startedAt
+				),
+				end: entry.endedAt && formatLocalTime(entry.endedAt, env.timeZone),
 				project: projectPath(projects, entry.projectId),
-				start: localTime(entry.startedAt, env.timeZone),
+				start: formatLocalTime(entry.startedAt, env.timeZone),
 			}),
 		};
 	},
@@ -472,35 +405,37 @@ const timeReport = defineTool({
 			env.caller.project.list(),
 		]);
 		const entries =
-			range.to - range.from <= 62 * 24 * 60 * MINUTE
+			range.to - range.from <= MAX_LIST_SPAN
 				? await env.caller.time.list(range)
 				: [];
 		return {
 			amountYen: summary.amount,
 			days: summary.days.map((item) => ({
 				day: item.day,
-				total: clock(item.durationMs),
+				total: formatDuration(item.durationMs),
 			})),
 			entries: entries.slice(0, MAX_ENTRIES).map((entry) =>
 				compact({
 					billable: entry.billable,
 					description: entry.description,
-					duration: clock((entry.endedAt ?? env.now) - entry.startedAt),
+					duration: formatDuration(
+						(entry.endedAt ?? env.now) - entry.startedAt
+					),
 					end: entry.endedAt
-						? localTime(entry.endedAt, env.timeZone)
+						? formatLocalTime(entry.endedAt, env.timeZone)
 						: "計測中",
 					project: projectPath(projects, entry.projectId),
-					start: localTime(entry.startedAt, env.timeZone),
+					start: formatLocalTime(entry.startedAt, env.timeZone),
 				})
 			),
 			projects: summary.projects.map((item) =>
 				compact({
 					amountYen: item.amount,
 					project: projectPath(projects, item.projectId) ?? "プロジェクトなし",
-					total: clock(item.durationMs),
+					total: formatDuration(item.durationMs),
 				})
 			),
-			total: clock(summary.durationMs),
+			total: formatDuration(summary.durationMs),
 		};
 	},
 });
@@ -514,7 +449,7 @@ const listEvents = defineTool({
 	input: z.object({ from: day, to: day.optional() }),
 	run: async (input, env) => {
 		const range = dayRange(input.from, input.to, env.timeZone);
-		if (range.to - range.from > MAX_EVENT_DAYS * 24 * 60 * MINUTE) {
+		if (range.to - range.from > MAX_EVENT_DAYS * DAY) {
 			fail(`The range must be ${MAX_EVENT_DAYS} days or less`);
 		}
 		const result = await env.caller.calendar.events({
@@ -532,11 +467,11 @@ const listEvents = defineTool({
 						// Google ends an all-day event on the day after its last.
 						end: event.allDay
 							? addDays(event.end, -1)
-							: localTime(Date.parse(event.end), env.timeZone),
+							: formatLocalTime(Date.parse(event.end), env.timeZone),
 						location: event.location,
 						start: event.allDay
 							? event.start
-							: localTime(Date.parse(event.start), env.timeZone),
+							: formatLocalTime(Date.parse(event.start), env.timeZone),
 						title: event.title,
 					})
 				),
@@ -557,22 +492,12 @@ const reportThread = defineTool({
 		"Records what this Claude conversation or session is doing, so the user can see all their threads in Mine. Report when substantial work starts (working), when you need the user (waiting, with nextAction saying exactly what they must do), and when finished (done). Pass the id from your previous report to update the same thread, and the conversation URL if you know it. Write title, summary and nextAction in short Japanese.",
 	annotations: { idempotentHint: true },
 	input: z.object({
-		id: z
-			.string()
-			.min(1)
-			.optional()
-			.describe("The id returned by your previous report"),
-		nextAction: z.string().trim().max(1000).optional(),
+		...threadFields,
+		id: threadFields.id.describe("The id returned by your previous report"),
 		project: projectRef.optional(),
-		status: z.enum(["working", "waiting", "done"]),
-		summary: z
-			.string()
-			.trim()
-			.max(2000)
-			.optional()
-			.describe("One or two sentences on the current state"),
-		title: z.string().trim().min(1).max(200),
-		url: threadUrl.optional(),
+		summary: threadFields.summary.describe(
+			"One or two sentences on the current state"
+		),
 	}),
 	run: async (input, env) => {
 		const { project, ...fields } = input;
@@ -608,7 +533,7 @@ const listThreads = defineTool({
 					status: thread.status,
 					summary: thread.summary,
 					title: thread.title,
-					updated: localTime(thread.updatedAt, env.timeZone),
+					updated: formatLocalTime(thread.updatedAt, env.timeZone),
 					url: thread.url,
 				})
 			),

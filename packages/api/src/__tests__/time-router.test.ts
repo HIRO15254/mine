@@ -241,7 +241,7 @@ describe("time router", () => {
 				hourlyRate: 1,
 				projectId: work.id,
 			})
-		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
 		await expect(other.rate.delete({ id: replaced.id })).rejects.toMatchObject({
 			code: "NOT_FOUND",
 		});

@@ -26,5 +26,7 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+/** The procedures as plain functions, for one signed-in user. */
+export type Caller = ReturnType<typeof appRouter.createCaller>;
 export type RouterInputs = inferRouterInputs<AppRouter>;
 export type RouterOutputs = inferRouterOutputs<AppRouter>;

@@ -4,22 +4,9 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import type { Context } from "../context";
 import { protectedProcedure, router } from "../index";
-import { isDayKey } from "../tasks/dates";
-
-type Db = Pick<Context, "db">;
-
-async function assertProject(ctx: Db, userId: string, projectId: string) {
-	const [row] = await ctx.db
-		.select({ id: project.id })
-		.from(project)
-		.where(and(eq(project.id, projectId), eq(project.userId, userId)))
-		.limit(1);
-	if (!row) {
-		throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
-	}
-}
+import { assertProject } from "../projects/owned";
+import { dayKey } from "../tasks/schema";
 
 const rateColumns = {
 	effectiveFrom: projectRate.effectiveFrom,
@@ -43,9 +30,7 @@ export const rateRouter = router({
 	set: protectedProcedure
 		.input(
 			z.object({
-				effectiveFrom: z
-					.string()
-					.refine(isDayKey, { message: "Expected YYYY-MM-DD" }),
+				effectiveFrom: dayKey,
 				hourlyRate: z.number().int().min(0).max(1_000_000),
 				projectId: z.string().min(1),
 			})

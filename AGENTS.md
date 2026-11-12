@@ -75,7 +75,7 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 A feature is not reachable from Claude until it has an MCP tool. When adding or changing a feature, go through this list:
 
 1. Schema and migration in `packages/db` (see `packages/db/src/migrations/README.md`).
-2. Procedure in `packages/api/src/routers/`, with tests beside it. Scope every query by `ctx.session.user.id`. D1 has no interactive transactions: writes that belong together go in one `db.batch([...])`.
+2. Procedure in `packages/api/src/routers/`, with tests beside it. Scope every query by `ctx.session.user.id`. D1 has no interactive transactions: writes that belong together go in one `db.batch([...])`. A field's shape and limits are defined once, in `tasks/schema.ts`, `time/schema.ts` or `threads/schema.ts`, and the routers and MCP tools import them. A project another row points at is checked with `assertProject()` from `projects/owned.ts`; the project tree, name lookup and text formats for `/v1` and MCP are in `projects/tree.ts`, `projects/resolve.ts` and `format.ts`.
 3. Web: hook, component, route, and a fixture for `bun run screens` (see `apps/web/AGENTS.md`).
 4. MCP tool in `packages/api/src/mcp/tools.ts` and its row in `docs/claude-mcp.ja.md`, when Claude should be able to use it.
 5. `/v1` endpoint and `docs/app-api.ja.md`, only when a shortcut needs it.

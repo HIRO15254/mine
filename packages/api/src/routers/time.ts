@@ -6,18 +6,18 @@ import { z } from "zod";
 
 import type { Context } from "../context";
 import { protectedProcedure, router } from "../index";
+import { assertProject } from "../projects/owned";
+import {
+	entryDescription,
+	instant,
+	MAX_ENTRY_SPAN,
+	MAX_LIST_SPAN,
+	MAX_SUMMARY_SPAN,
+} from "../time/schema";
 import { isTimeZone, summarize } from "../time/summary";
 
 type Db = Pick<Context, "db">;
 
-const DAY = 86_400_000;
-/** Longest span list and manual entries may cover. */
-const MAX_LIST_SPAN = 62 * DAY;
-const MAX_SUMMARY_SPAN = 366 * DAY;
-const MAX_ENTRY_SPAN = 7 * DAY;
-
-const instant = z.number().int().min(0);
-const description = z.string().trim().max(500);
 const timeZone = z
 	.string()
 	.refine(isTimeZone, { message: "Unknown time zone" });
@@ -40,17 +40,6 @@ export type TimeEntry = ReturnType<typeof toEntry>;
 
 function badRequest(message: string): never {
 	throw new TRPCError({ code: "BAD_REQUEST", message });
-}
-
-async function assertProject(ctx: Db, userId: string, projectId: string) {
-	const [row] = await ctx.db
-		.select({ id: project.id })
-		.from(project)
-		.where(and(eq(project.id, projectId), eq(project.userId, userId)))
-		.limit(1);
-	if (!row) {
-		badRequest("Unknown project");
-	}
 }
 
 async function findOwnedTask(ctx: Db, userId: string, taskId: string) {
@@ -171,7 +160,7 @@ const rangeInput = (maxSpan: number) =>
 
 const entryFields = {
 	billable: z.boolean().optional(),
-	description: description.optional(),
+	description: entryDescription.optional(),
 	projectId: z.string().min(1).nullish(),
 	taskId: z.string().min(1).nullish(),
 };

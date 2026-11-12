@@ -1,16 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { describe, expect, it } from "vitest";
 
-import {
-	formatElapsed,
-	projectChoices,
-	resolveProject,
-	startTimer,
-	statusOf,
-	stopTimer,
-	timerStatus,
-} from "../rest/timer";
+import { formatDuration } from "../format";
+import { resolveProject } from "../projects/resolve";
+import { projectChoices, statusOf } from "../rest/v1";
 import { createTestApp, TEST_USER } from "../testing";
+import { startTimer, stopTimer, timerStatus } from "../time/timer";
 
 const MINUTE = 60_000;
 const START = Date.UTC(2026, 10, 6, 0);
@@ -104,7 +99,7 @@ describe("REST timer", () => {
 	});
 
 	it("maps errors to HTTP statuses", () => {
-		expect(formatElapsed(-1)).toBe("0:00");
+		expect(formatDuration(-1)).toBe("0:00");
 		expect(statusOf(new TRPCError({ code: "BAD_REQUEST" }))).toBe(400);
 		expect(statusOf(new TRPCError({ code: "NOT_FOUND" }))).toBe(404);
 		expect(statusOf(new TRPCError({ code: "CONFLICT" }))).toBe(500);

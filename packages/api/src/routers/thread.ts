@@ -1,25 +1,14 @@
-import { CLAUDE_THREAD_STATUSES, claudeThread } from "@mine/db/schema/claude";
-import { project } from "@mine/db/schema/tasks";
+import { claudeThread } from "@mine/db/schema/claude";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import type { Context } from "../context";
 import { protectedProcedure, router } from "../index";
+import { assertProject } from "../projects/owned";
+import { threadFields } from "../threads/schema";
 
 type Db = Pick<Context, "db">;
-
-/** Only https links, so a report can never smuggle in a script URL. */
-export const threadUrl = z
-	.string()
-	.trim()
-	.max(2000)
-	.url()
-	.refine((value) => new URL(value).protocol === "https:", {
-		message: "Expected an https URL",
-	});
-
-const status = z.enum(CLAUDE_THREAD_STATUSES);
 
 type ThreadRow = typeof claudeThread.$inferSelect;
 
@@ -60,17 +49,6 @@ async function findByUrl(ctx: Db, userId: string, url: string) {
 	return row?.id ?? null;
 }
 
-async function assertProject(ctx: Db, userId: string, projectId: string) {
-	const [row] = await ctx.db
-		.select({ id: project.id })
-		.from(project)
-		.where(and(eq(project.id, projectId), eq(project.userId, userId)))
-		.limit(1);
-	if (!row) {
-		throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown project" });
-	}
-}
-
 export const threadRouter = router({
 	/** Newest first; finished threads only when asked. */
 	list: protectedProcedure
@@ -95,15 +73,7 @@ export const threadRouter = router({
 	 */
 	report: protectedProcedure
 		.input(
-			z.object({
-				id: z.string().min(1).optional(),
-				nextAction: z.string().trim().max(1000).optional(),
-				projectId: z.string().min(1).nullish(),
-				status,
-				summary: z.string().trim().max(2000).optional(),
-				title: z.string().trim().min(1).max(200),
-				url: threadUrl.optional(),
-			})
+			z.object({ ...threadFields, projectId: z.string().min(1).nullish() })
 		)
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
@@ -137,7 +107,7 @@ export const threadRouter = router({
 		}),
 
 	setStatus: protectedProcedure
-		.input(z.object({ id: z.string().min(1), status }))
+		.input(z.object({ id: z.string().min(1), status: threadFields.status }))
 		.mutation(async ({ ctx, input }) => {
 			const userId = ctx.session.user.id;
 			await findOwned(ctx, userId, input.id);
