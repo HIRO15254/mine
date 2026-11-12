@@ -377,15 +377,16 @@ describe("the editors", () => {
 });
 
 describe("the phone's week", () => {
-	it("keeps the day picker with the tray under the header", () => {
+	it("keeps the day picker and the tray still while the hours scroll", () => {
 		usePhoneLayout();
 		stubGoogle([]);
 		renderWithQuery(<Planner />);
 
-		const strip = document.querySelector("[data-slot=day-strip]");
-		// It cancels the page's top padding, so the space above the days is the
-		// same before and after it sticks.
-		expect(strip).toHaveClass("sticky", "-mt-3.5");
+		// Only the hours scroll; the day picker and the tray sit outside them.
+		const strip = document.querySelector("[data-slot=planner-top]");
+		const grid = document.querySelector("[data-slot=time-grid]");
+		expect(grid).toHaveClass("overflow-y-auto");
+		expect(grid).not.toContainElement(strip as HTMLElement);
 		expect(within(strip as HTMLElement).getByRole("tablist")).toBeVisible();
 		expect(strip).toContainElement(tray());
 	});

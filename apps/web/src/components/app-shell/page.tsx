@@ -8,15 +8,18 @@ export function Page({
 	actions,
 	children,
 	className,
+	fill = false,
 	title,
 }: {
 	actions?: ReactNode;
 	children: ReactNode;
 	className?: string;
+	/** Exactly the screen's height, for content that scrolls inside itself. */
+	fill?: boolean;
 	title: string;
 }) {
 	return (
-		<div className="flex min-h-full flex-col">
+		<div className={cn("flex flex-col", fill ? "h-full" : "min-h-full")}>
 			<header className="sticky top-0 z-10 flex desk:h-12 h-[var(--m-navbar-height)] shrink-0 items-center gap-2 border-border border-b bg-background desk:px-6 px-3.5 after:pointer-events-none after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-[image:var(--prism)] after:opacity-80">
 				<BrandMark className="mr-0.5 desk:hidden" size={24} />
 				<h1 className="m-0 min-w-0 flex-1 font-semibold desk:text-[15px] text-[length:var(--m-text-title)] tracking-[var(--tracking-heading)]">
@@ -29,6 +32,7 @@ export function Page({
 			<main
 				className={cn(
 					"mx-auto w-full desk:max-w-[var(--content-max)] flex-1 desk:px-6 px-3.5 desk:py-6 py-3.5",
+					fill && "flex min-h-0 flex-col",
 					className
 				)}
 			>

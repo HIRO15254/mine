@@ -58,10 +58,9 @@ export const SCREENS: Screen[] = [
 		prepare: async (page) => {
 			await page.getByRole("button", { name: "時間の縮尺を拡大" }).click();
 			await page.locator('[data-slot="time-grid-hours"]').evaluate((hours) => {
-				const scroller =
-					hours.closest(".overflow-auto") ?? document.scrollingElement;
-				if (scroller) {
-					scroller.scrollTop = 9.5 * 72 + 120;
+				// The hours scroll inside the grid; move them past the rail.
+				if (hours.parentElement) {
+					hours.parentElement.scrollTop = 9.5 * 72;
 				}
 			});
 		},

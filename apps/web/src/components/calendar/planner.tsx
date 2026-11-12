@@ -160,17 +160,6 @@ function eventMove(
 
 const WEEKDAY = new Intl.DateTimeFormat("ja-JP", { weekday: "short" });
 
-/** Where the grid's sticky rows start: under the header, and on the phone under what sticks above them. */
-function headTop(isDesk: boolean, pinnedStrip: boolean): string {
-	if (isDesk) {
-		return "3rem";
-	}
-	// The day picker (3.25rem and its 0.5rem padding) and the tray row (3rem).
-	return pinnedStrip
-		? "calc(var(--m-navbar-height) + 6.75rem)"
-		: "calc(var(--m-navbar-height) + 3rem)";
-}
-
 /** The phone's day picker: one day of the week at a time. */
 function DayStrip({
 	days,
@@ -589,8 +578,9 @@ export function CalendarPlanner({
 			zoom={zoom}
 		/>
 	);
-	// On the phone's week the day picker stays with the tray under the header.
-	const pinnedStrip = !isDesk && view === "week";
+	// The week fills the screen: the page header, the days and the tray stay
+	// put and only the hours scroll.
+	const fill = view === "week";
 
 	return (
 		<DndContext
@@ -602,31 +592,26 @@ export function CalendarPlanner({
 			sensors={sensors}
 		>
 			<div
-				className="grid desk:grid-cols-[minmax(0,1fr)_15rem] items-start desk:gap-5 gap-3"
-				style={
-					// The grid's day and 終日 rows stick under the page header, and on
-					// the phone under the day picker and the tray row too.
-					{
-						"--grid-head-top": headTop(isDesk, pinnedStrip),
-					} as CSSProperties
-				}
+				className={cn(
+					"grid desk:grid-cols-[minmax(0,1fr)_15rem] desk:gap-5 gap-3",
+					fill ? "min-h-0 flex-1 grid-rows-[minmax(0,1fr)]" : "items-start"
+				)}
+				data-slot="planner"
 			>
-				<div className="flex min-w-0 flex-col gap-3">
-					{pinnedStrip ? (
-						<div
-							className="sticky top-[var(--m-navbar-height)] z-[6] -mx-3.5 -mt-3.5 flex flex-col bg-background px-3.5 pt-2"
-							data-slot="day-strip"
-						>
-							<DayStrip
-								days={days}
-								onSelect={setSelected}
-								selected={selected}
-								today={today}
-							/>
+				<div className="flex min-h-0 min-w-0 flex-col gap-3">
+					{isDesk ? null : (
+						<div className="flex flex-col" data-slot="planner-top">
+							{fill ? (
+								<DayStrip
+									days={days}
+									onSelect={setSelected}
+									selected={selected}
+									today={today}
+								/>
+							) : null}
 							{tray}
 						</div>
-					) : null}
-					{isDesk || pinnedStrip ? null : tray}
+					)}
 					{events.isError ? (
 						<CalendarError
 							error={events.error}
@@ -636,7 +621,11 @@ export function CalendarPlanner({
 					{events.isPending ? <CalendarLoading /> : null}
 					{calendar}
 				</div>
-				{isDesk ? <div className="sticky top-16">{tray}</div> : null}
+				{isDesk ? (
+					<div className={fill ? "min-h-0 overflow-y-auto" : "sticky top-16"}>
+						{tray}
+					</div>
+				) : null}
 			</div>
 			<DragOverlay dropAnimation={null}>
 				{drag.dragging ? (

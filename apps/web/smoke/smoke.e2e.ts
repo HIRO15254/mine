@@ -181,3 +181,36 @@ it("moves an event by dragging it to another day and time", async () => {
 	).toBe(DAY_AFTER);
 	expect(Date.parse(end) - Date.parse(start)).toBe(60 * 60_000);
 });
+
+it("fits the whole day on the screen at the smallest scale, with nothing else scrolling", async () => {
+	const { page } = session;
+	await session.open("/calendar");
+	const zoomOut = page.getByRole("button", { name: "時間の縮尺を縮小" });
+	while (await zoomOut.isEnabled()) {
+		await zoomOut.click();
+	}
+
+	// Anything taller than its box that could scroll: the page, its shell, the grid.
+	const scrollable = await page.evaluate(() =>
+		[document.scrollingElement, ...document.querySelectorAll("*")]
+			.filter((element): element is Element => element !== null)
+			.filter((element) => {
+				const { overflowY } = getComputedStyle(element);
+				const scrolls =
+					element === document.scrollingElement ||
+					overflowY === "auto" ||
+					overflowY === "scroll";
+				return scrolls && element.scrollHeight > element.clientHeight + 1;
+			})
+			.map((element) => element.getAttribute("data-slot") ?? element.tagName)
+	);
+	expect(scrollable).toEqual([]);
+	// And the last hour ends at the bottom of the grid.
+	const grid = await page.locator('[data-slot="time-grid"]').boundingBox();
+	const hours = await page
+		.locator('[data-slot="time-grid-hours"]')
+		.boundingBox();
+	expect(
+		hours && grid && grid.y + grid.height - (hours.y + hours.height)
+	).toBeLessThan(2);
+});

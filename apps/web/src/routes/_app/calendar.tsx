@@ -137,6 +137,7 @@ function CalendarPage() {
 				</>
 			}
 			className="desk:max-w-[1280px]"
+			fill={view === "week"}
 			title={
 				view === "month"
 					? formatMonthLabel(monthStart)

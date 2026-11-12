@@ -592,24 +592,30 @@ export function TimeGrid({
 	const todayKey = dayKey(today);
 	const showsToday = days.some((day) => dayKey(day) === todayKey);
 	const nowMinutes = Math.floor(minutesIntoDay(now, today));
-	const anchor = useRef<HTMLDivElement>(null);
+	const scroller = useRef<HTMLDivElement>(null);
 	const firstDay = dayKey(days[0] ?? today);
 	const anchorMinutes = showsToday ? Math.max(nowMinutes - 90, 0) : 8 * 60;
 
 	// Open at the current time (or the morning) instead of midnight.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: only when the shown days change
 	useEffect(() => {
-		anchor.current?.scrollIntoView({ block: "start" });
+		// The hours start right under the sticky rows, so this puts the anchor there.
+		if (scroller.current) {
+			scroller.current.scrollTop = (anchorMinutes / 60) * hourHeight;
+		}
 	}, [firstDay, days.length]);
 
 	return (
 		<div
-			className="flex min-w-0 flex-col"
+			// The grid scrolls by itself, its day and 終日 rows held at its top,
+			// so the page around it stays still.
+			className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain"
 			data-slot="time-grid"
+			ref={scroller}
 			style={{ "--hour": `${hourHeight}px` } as CSSProperties}
 		>
 			<div
-				className="sticky top-[var(--grid-head-top)] z-[5] grid border-border border-b bg-background"
+				className="sticky top-0 z-[5] grid border-border border-b bg-background"
 				style={columns}
 			>
 				{showDayHeader ? (
@@ -666,15 +672,6 @@ export function TimeGrid({
 				ref={zoom.bodyRef}
 				style={columns}
 			>
-				<div
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 h-0"
-					ref={anchor}
-					style={{
-						scrollMarginTop: "calc(var(--grid-head-top) + 3.5rem)",
-						top: (anchorMinutes / 60) * hourHeight,
-					}}
-				/>
 				<div className="relative" style={{ height: 24 * hourHeight }}>
 					{HOURS.slice(1).map((hour) => (
 						<span
