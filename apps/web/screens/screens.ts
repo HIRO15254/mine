@@ -67,6 +67,18 @@ export const SCREENS: Screen[] = [
 		},
 	},
 	{
+		// Zoomed out as far as it goes: the whole day fills the screen.
+		clip: true,
+		name: "calendar-fit",
+		path: "/calendar",
+		prepare: async (page) => {
+			const zoomOut = page.getByRole("button", { name: "時間の縮尺を縮小" });
+			while (await zoomOut.isEnabled()) {
+				await zoomOut.click();
+			}
+		},
+	},
+	{
 		clip: true,
 		name: "event-editor",
 		path: "/calendar",

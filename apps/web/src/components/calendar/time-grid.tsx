@@ -29,8 +29,8 @@ import type { EventSeed } from "./event-draft";
 import type { HourZoom } from "./hour-zoom";
 import { RAIL_WIDTH_PX, TimeRail } from "./time-rail";
 
-/** Blocks shorter than this put their time beside the title. */
-const SHORT_MINUTES = 45;
+/** Blocks drawn shorter than two lines put their time beside the title. */
+const TWO_LINES_PX = 36;
 /** The height of a block's title line: blocks that start closer than this sit side by side. */
 const TITLE_PX = 20;
 /** A click on the empty grid starts a new event on this step. */
@@ -357,7 +357,7 @@ function DayColumn({
 							event={item.event}
 							key={item.key}
 							onOpen={actions.onOpenEvent}
-							short={item.end - item.start < SHORT_MINUTES}
+							short={((item.end - item.start) / 60) * hourHeight < TWO_LINES_PX}
 							style={blockStyle(place, hourHeight)}
 							time={formatEventTime(item.event, day)}
 						/>
@@ -371,7 +371,7 @@ function DayColumn({
 							key={item.key}
 							onOpen={actions.onOpenTask}
 							projects={projects}
-							short={item.end - item.start < SHORT_MINUTES}
+							short={((item.end - item.start) / 60) * hourHeight < TWO_LINES_PX}
 							style={blockStyle(place, hourHeight)}
 							task={item.task}
 							variant="block"

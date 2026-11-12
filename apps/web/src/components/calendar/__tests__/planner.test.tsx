@@ -301,32 +301,49 @@ describe("the time scale", () => {
 		expect(hourOf()).toBe("56px");
 	});
 
-	it("stops at the smallest scale", async () => {
-		stubGoogle([]);
-		renderWithQuery(<Planner />);
-		const zoomOut = screen.getByRole("button", { name: "時間の縮尺を縮小" });
+	it("zooms out only until the whole day fits on the screen", async () => {
+		// A 720px window with nothing sticky measured above the hours: 30px an hour.
+		const scroller = document.scrollingElement ?? document.body;
+		Object.defineProperty(scroller, "clientHeight", {
+			configurable: true,
+			value: 720,
+		});
+		try {
+			stubGoogle([]);
+			renderWithQuery(<Planner />);
+			const zoomOut = screen.getByRole("button", { name: "時間の縮尺を縮小" });
 
-		await userEvent.click(zoomOut);
-		expect(hourOf()).toBe("40px");
-		expect(zoomOut).toBeDisabled();
+			for (let step = 0; step < 3; step += 1) {
+				await userEvent.click(zoomOut);
+			}
+			expect(hourOf()).toBe("30px");
+			expect(zoomOut).toBeDisabled();
+			// Saved as "the day fits", so another screen measures its own.
+			expect(
+				JSON.parse(window.localStorage.getItem("mine-calendar-hour") ?? "{}")
+			).toEqual({ desk: "fit" });
 
-		// Nor does the wheel go below it.
-		const hours = document.querySelector(
-			"[data-slot=time-grid-hours]"
-		) as HTMLElement;
-		fireEvent.wheel(hours, { ctrlKey: true, deltaY: 500 });
-		expect(hourOf()).toBe("40px");
+			// Nor does the wheel go below it.
+			const hours = document.querySelector(
+				"[data-slot=time-grid-hours]"
+			) as HTMLElement;
+			fireEvent.wheel(hours, { ctrlKey: true, deltaY: 500 });
+			expect(hourOf()).toBe("30px");
+		} finally {
+			Reflect.deleteProperty(scroller, "clientHeight");
+		}
 	});
 
-	it("raises a scale saved below the smallest", () => {
+	it("raises a scale saved below what fits", () => {
 		window.localStorage.setItem(
 			"mine-calendar-hour",
-			JSON.stringify({ desk: 24 })
+			JSON.stringify({ desk: 12 })
 		);
 		stubGoogle([]);
 		renderWithQuery(<Planner />);
 
-		expect(hourOf()).toBe("40px");
+		// jsdom measures nothing, so the floor before measuring applies.
+		expect(hourOf()).toBe("24px");
 	});
 
 	it("zooms with ctrl and the wheel", () => {

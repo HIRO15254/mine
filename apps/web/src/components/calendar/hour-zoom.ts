@@ -6,45 +6,71 @@ import {
 	useState,
 } from "react";
 
-/**
- * The heights of an hour the zoom buttons step through, in pixels. At the
- * smallest, a 30-minute block still has room for its title line.
- */
-export const HOUR_STEPS = [40, 48, 56, 72, 96, 128] as const;
-export const MIN_HOUR = HOUR_STEPS[0];
+/** The heights of an hour the zoom buttons step through, above the fitted scale. */
+export const HOUR_STEPS = [32, 40, 48, 56, 72, 96, 128] as const;
 export const MAX_HOUR = HOUR_STEPS.at(-1) ?? 128;
+/** The smallest scale before the screen has been measured, as in tests. */
+export const UNMEASURED_MIN_HOUR = 24;
+/** Never smaller than this, however short the window. */
+const FLOOR_HOUR = 16;
 const DEFAULT_HOUR = { desk: 48, phone: 56 } as const;
 const STORAGE_KEY = "mine-calendar-hour";
+/** Saved in place of a number for the smallest scale, which depends on the screen. */
+const FIT = "fit";
 
 type Layout = keyof typeof DEFAULT_HOUR;
+type Saved = number | typeof FIT;
 
-export function clampHour(height: number): number {
-	return Math.round(Math.min(Math.max(height, MIN_HOUR), MAX_HOUR));
+export function clampHour(height: number, min: number): number {
+	return Math.min(Math.max(Math.round(height), min), MAX_HOUR);
 }
 
-/** The next step in a direction from any height, or the same height at the end. */
-export function stepHour(height: number, direction: 1 | -1): number {
+/** The next stop in a direction: the steps above `min`, and `min` itself at the bottom. */
+export function stepHour(
+	height: number,
+	direction: 1 | -1,
+	min: number
+): number {
 	if (direction > 0) {
-		return HOUR_STEPS.find((step) => step > height) ?? MAX_HOUR;
+		return HOUR_STEPS.find((step) => step > height && step > min) ?? MAX_HOUR;
 	}
-	return HOUR_STEPS.findLast((step) => step < height) ?? MIN_HOUR;
+	return HOUR_STEPS.findLast((step) => step < height && step > min) ?? min;
 }
 
-function readSaved(layout: Layout): number {
+/**
+ * The height of an hour at which the whole day fits below the grid's sticky
+ * rows, or null before it can be measured.
+ */
+export function fittedHour(
+	visibleHeight: number,
+	stickyTop: number,
+	headHeight: number
+): number | null {
+	const room = visibleHeight - stickyTop - headHeight;
+	if (room <= 0) {
+		return null;
+	}
+	return Math.min(Math.max(room / 24, FLOOR_HOUR), MAX_HOUR);
+}
+
+function readSaved(layout: Layout): Saved {
 	try {
 		const saved = JSON.parse(
 			window.localStorage.getItem(STORAGE_KEY) ?? "{}"
 		) as Partial<Record<Layout, unknown>>;
 		const value = saved[layout];
+		if (value === FIT) {
+			return FIT;
+		}
 		return typeof value === "number" && Number.isFinite(value)
-			? clampHour(value)
+			? value
 			: DEFAULT_HOUR[layout];
 	} catch {
 		return DEFAULT_HOUR[layout];
 	}
 }
 
-function save(layout: Layout, height: number) {
+function save(layout: Layout, height: Saved) {
 	try {
 		const saved = JSON.parse(
 			window.localStorage.getItem(STORAGE_KEY) ?? "{}"
@@ -88,29 +114,53 @@ export interface HourZoom {
 
 const WHEEL_SPEED = 0.01;
 
+/** How far the scale may be from the fitted one and still count as it. */
+const FIT_TOLERANCE = 0.5;
+
+/** The grid's sticky rows sit right before the hours. */
+function measureFit(body: HTMLElement): number | null {
+	const head = body.previousElementSibling;
+	if (!(head instanceof HTMLElement)) {
+		return null;
+	}
+	return fittedHour(
+		scrollParent(body).clientHeight,
+		Number.parseFloat(getComputedStyle(head).top) || 0,
+		head.offsetHeight
+	);
+}
+
 /**
  * The calendar's time scale: the height of an hour, kept per layout in this
- * browser. Changing it keeps the time under the pointer (or in the middle of
- * the screen) where it was.
+ * browser. It goes down only to where the whole day fits on the screen, which
+ * is measured and saved as "fit" rather than as a number. Changing it keeps
+ * the time under the pointer (or in the middle of the screen) where it was.
  */
 export function useHourZoom(isDesk: boolean): HourZoom {
 	const layout: Layout = isDesk ? "desk" : "phone";
-	const [heights, setHeights] = useState(() => ({
+	const [saved, setSaved] = useState(() => ({
 		desk: readSaved("desk"),
 		phone: readSaved("phone"),
 	}));
-	const hourHeight = heights[layout];
+	const [element, setElement] = useState<HTMLDivElement | null>(null);
+	const [fit, setFit] = useState<number | null>(null);
+	const min = fit ?? UNMEASURED_MIN_HOUR;
+	const chosen = saved[layout];
+	const hourHeight = chosen === FIT ? min : clampHour(chosen, min);
+
 	const body = useRef<HTMLDivElement | null>(null);
 	const focus = useRef<Focus | null>(null);
 	// The scale asked for last, and the scale the grid is drawn at: they differ
 	// between a change and the next render, as during a pinch.
 	const current = useRef(hourHeight);
 	const drawn = useRef(hourHeight);
+	const minRef = useRef(min);
+	minRef.current = min;
 
 	const zoomTo = useCallback(
 		(next: number, clientY?: number) => {
 			const element = body.current;
-			const height = clampHour(next);
+			const height = clampHour(next, minRef.current);
 			if (height === current.current) {
 				return;
 			}
@@ -127,8 +177,10 @@ export function useHourZoom(isDesk: boolean): HourZoom {
 				};
 			}
 			current.current = height;
-			setHeights((all) => ({ ...all, [layout]: height }));
-			save(layout, height);
+			const value: Saved =
+				height - minRef.current < FIT_TOLERANCE ? FIT : height;
+			setSaved((all) => ({ ...all, [layout]: value }));
+			save(layout, value);
 		},
 		[layout]
 	);
@@ -148,11 +200,29 @@ export function useHourZoom(isDesk: boolean): HourZoom {
 		scrollParent(element).scrollTop += shift;
 	}, [hourHeight]);
 
-	const [element, setElement] = useState<HTMLDivElement | null>(null);
 	const bodyRef = useCallback((node: HTMLDivElement | null) => {
 		body.current = node;
 		setElement(node);
 	}, []);
+
+	// Measure what fits now and whenever the window or the sticky rows change size.
+	useLayoutEffect(() => {
+		if (!element) {
+			return;
+		}
+		const measure = () => setFit(measureFit(element));
+		measure();
+		if (typeof ResizeObserver === "undefined") {
+			return;
+		}
+		const observer = new ResizeObserver(measure);
+		observer.observe(scrollParent(element));
+		const head = element.previousElementSibling;
+		if (head) {
+			observer.observe(head);
+		}
+		return () => observer.disconnect();
+	}, [element]);
 
 	useEffect(() => {
 		if (!element) {
@@ -216,9 +286,9 @@ export function useHourZoom(isDesk: boolean): HourZoom {
 	return {
 		bodyRef,
 		canZoomIn: hourHeight < MAX_HOUR,
-		canZoomOut: hourHeight > MIN_HOUR,
+		canZoomOut: hourHeight > min,
 		hourHeight,
-		zoomIn: () => zoomTo(stepHour(hourHeight, 1)),
-		zoomOut: () => zoomTo(stepHour(hourHeight, -1)),
+		zoomIn: () => zoomTo(stepHour(hourHeight, 1, min)),
+		zoomOut: () => zoomTo(stepHour(hourHeight, -1, min)),
 	};
 }
