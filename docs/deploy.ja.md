@@ -55,13 +55,41 @@ gh secret set CLOUDFLARE_API_TOKEN
 
 `BETTER_AUTH_URL` は deploy 時に `PRODUCTION_API_URL` から自動で設定されます。ローカルでは `apps/server/.dev.vars.example` を `.dev.vars` にコピーして値を入れます。
 
-Web（Pages）と API（Worker）は別ドメインなので、セッション cookie は `SameSite=None; Secure` のサードパーティ cookie になります。Safari などで弾かれる場合は、両方を同じ独自ドメインのサブドメインに置いてください。
+セッション cookie は `SameSite=None; Secure` で発行します。本番は Web が `mine.hiro15254.com`、API が `api.mine.hiro15254.com` で、同じ独自ドメインのサブドメインなので、ブラウザのサードパーティ cookie の制限には当たりません。`pages.dev` と `workers.dev` のままで使うと別サイトになり、Safari などでログインが保てません。
 
 ## 本番
 
-`master`へのpushでCI、D1 migration、Worker deploy、Pages build/deployの順に実行します。本番D1 UUIDがplaceholderのままならdeployは停止します。
+`master` への push で、GitHub Actions の Production Deploy が次の順に実行します。前の段が失敗すると、後ろの段は実行しません。
 
-migration は `packages/db/src/migrations` にあり、deploy 前に本番 D1 へ適用されます。
+1. 検査（`bun run verify`）
+2. D1 の migration（`packages/db/src/migrations`）
+3. Worker（API）の deploy
+4. Web の build と Pages への deploy
+
+同じ検査を pre-push フックでも実行するので、手元で通らない変更は push できません。実行の結果は GitHub の Actions の画面で確かめます。
+
+### 途中で止まったとき
+
+| 止まった段 | 本番の状態 | すること |
+|---|---|---|
+| 検査 | 何も変わっていない | 原因を直して push し直す |
+| migration | 表が途中まで変わっていることがある。Worker と Web は前のまま | 適用済みの migration は書き換えず、直す migration を足して push する。`bunx wrangler d1 migrations list DB --remote -c apps/server/wrangler.jsonc` で未適用のものを確かめられる |
+| Worker | 表は新しく、Worker と Web は前のまま | 原因を直して push し直すか、Actions の画面から実行し直す |
+| Web | 表と Worker は新しく、Web は前のまま | 同上。Web だけなら、下の「手動でデプロイする」の最後の 2 行でも出せる |
+
+migration は Worker より先に出るので、「前の Worker でも動く変更」にしておく決まりです（列や表を足すのが先で、消すのは次の push）。これを守っていれば、途中で止まっても本番は動き続けます。
+
+### 元に戻す
+
+- コードを戻すときは、戻すコミット（`git revert`）を push します。履歴を書き換える push はしません。
+- Worker だけを急いで戻すときは、`apps/server` で `bunx wrangler rollback` を実行すると 1 つ前の版に戻ります。そのあと、コードも戻すコミットを push して `master` と本番をそろえます。
+- 表の変更は自動では戻りません。戻す必要があるときは、戻すための migration を足します。データは D1 の Time Travel（`bunx wrangler d1 time-travel restore DB -c apps/server/wrangler.jsonc --timestamp <時刻>`）で過去 30 日以内の時点に戻せますが、その時点より後の書き込みは失われます。
+
+### secret と設定を変えるとき
+
+- Worker の secret は `apps/server` で `bunx wrangler secret put <名前>` を実行して入れ替えます。deploy をまたいで保持されます。
+- 利用者を足すときは `ALLOWED_EMAILS` を入れ替えます。
+- URL を変えるときは、GitHub の variables（`PRODUCTION_WEB_URL` と `PRODUCTION_API_URL`）と、Google の OAuth クライアントのリダイレクト URI を両方直します。
 
 ## 手動でデプロイする
 

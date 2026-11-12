@@ -34,8 +34,11 @@ bun run verify
 
 ## ドキュメント
 
-- [デプロイと運用](./docs/deploy.ja.md): Cloudflare と Google ログインの初期設定、本番への出し方
+- [ドメインの決まり](./docs/domain.ja.md): タスク、プロジェクト、時間の記録、単価、日付と時刻の扱い
+- [全体の構成](./docs/architecture.ja.md): パッケージ、3 つの入口、認証、オフラインの動き
+- [決めたこと](./docs/decisions.ja.md): これまでの判断と理由
+- [デプロイと運用](./docs/deploy.ja.md): Cloudflare と Google ログインの初期設定、本番への出し方、止まったときの対処
 - [デザインの進め方](./docs/design-workflow.ja.md): Claude Design のキャンバスで画面を決めてから実装する流れ
 - [外部アプリ用 API](./docs/app-api.ja.md): 個人用 API トークンで使う `/v1`
 - [Claude から使う](./docs/claude-mcp.ja.md): MCP サーバー `/mcp` の接続方法
-- [AGENTS.md](./AGENTS.md): コーディングエージェント向けの手引き（英語）
+- [AGENTS.md](./AGENTS.md) と [apps/web/AGENTS.md](./apps/web/AGENTS.md): コーディングエージェント向けの手引き（英語）
