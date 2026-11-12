@@ -165,9 +165,9 @@ function headTop(isDesk: boolean, pinnedStrip: boolean): string {
 	if (isDesk) {
 		return "3rem";
 	}
-	// The day picker (3.25rem and its 0.25rem padding) and the tray row (3rem).
+	// The day picker (3.25rem and its 0.5rem padding) and the tray row (3rem).
 	return pinnedStrip
-		? "calc(var(--m-navbar-height) + 6.5rem)"
+		? "calc(var(--m-navbar-height) + 6.75rem)"
 		: "calc(var(--m-navbar-height) + 3rem)";
 }
 
@@ -614,7 +614,7 @@ export function CalendarPlanner({
 				<div className="flex min-w-0 flex-col gap-3">
 					{pinnedStrip ? (
 						<div
-							className="sticky top-[var(--m-navbar-height)] z-[6] -mx-3.5 flex flex-col bg-background px-3.5 pt-1"
+							className="sticky top-[var(--m-navbar-height)] z-[6] -mx-3.5 -mt-3.5 flex flex-col bg-background px-3.5 pt-2"
 							data-slot="day-strip"
 						>
 							<DayStrip

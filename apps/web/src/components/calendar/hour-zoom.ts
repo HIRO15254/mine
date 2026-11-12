@@ -6,8 +6,11 @@ import {
 	useState,
 } from "react";
 
-/** The heights of an hour the zoom buttons step through, in pixels. */
-export const HOUR_STEPS = [24, 32, 40, 48, 56, 72, 96, 128] as const;
+/**
+ * The heights of an hour the zoom buttons step through, in pixels. At the
+ * smallest, a 30-minute block still has room for its title line.
+ */
+export const HOUR_STEPS = [40, 48, 56, 72, 96, 128] as const;
 export const MIN_HOUR = HOUR_STEPS[0];
 export const MAX_HOUR = HOUR_STEPS.at(-1) ?? 128;
 const DEFAULT_HOUR = { desk: 48, phone: 56 } as const;

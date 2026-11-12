@@ -306,12 +306,27 @@ describe("the time scale", () => {
 		renderWithQuery(<Planner />);
 		const zoomOut = screen.getByRole("button", { name: "時間の縮尺を縮小" });
 
-		for (let step = 0; step < 4; step += 1) {
-			await userEvent.click(zoomOut);
-		}
-
-		expect(hourOf()).toBe("24px");
+		await userEvent.click(zoomOut);
+		expect(hourOf()).toBe("40px");
 		expect(zoomOut).toBeDisabled();
+
+		// Nor does the wheel go below it.
+		const hours = document.querySelector(
+			"[data-slot=time-grid-hours]"
+		) as HTMLElement;
+		fireEvent.wheel(hours, { ctrlKey: true, deltaY: 500 });
+		expect(hourOf()).toBe("40px");
+	});
+
+	it("raises a scale saved below the smallest", () => {
+		window.localStorage.setItem(
+			"mine-calendar-hour",
+			JSON.stringify({ desk: 24 })
+		);
+		stubGoogle([]);
+		renderWithQuery(<Planner />);
+
+		expect(hourOf()).toBe("40px");
 	});
 
 	it("zooms with ctrl and the wheel", () => {
@@ -351,7 +366,9 @@ describe("the phone's week", () => {
 		renderWithQuery(<Planner />);
 
 		const strip = document.querySelector("[data-slot=day-strip]");
-		expect(strip).toHaveClass("sticky");
+		// It cancels the page's top padding, so the space above the days is the
+		// same before and after it sticks.
+		expect(strip).toHaveClass("sticky", "-mt-3.5");
 		expect(within(strip as HTMLElement).getByRole("tablist")).toBeVisible();
 		expect(strip).toContainElement(tray());
 	});
