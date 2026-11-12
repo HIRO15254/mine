@@ -1,5 +1,4 @@
 import { IconAdjustmentsHorizontal, IconPlus } from "@tabler/icons-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useId, useState } from "react";
 import { toast } from "sonner";
 
@@ -8,15 +7,8 @@ import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
 import { useIsDesk } from "@/hooks/use-media-query";
 import { type Label, type Project, parseQuickAdd, todayKey } from "@/lib/tasks";
-import { trpc } from "@/utils/trpc";
-import {
-	placeTask,
-	restoreTaskLists,
-	snapshotTaskLists,
-	taskFromInput,
-} from "./optimistic";
 import type { DraftDefaults } from "./task-draft";
-import { useInvalidateTasks } from "./use-tasks";
+import { useCreateTask } from "./use-tasks";
 
 /**
  * One-line entry that understands "p1", "#プロジェクト", "@ラベル" and
@@ -42,23 +34,8 @@ export function QuickAdd({
 	const id = useId();
 	const isDesk = useIsDesk();
 	const [text, setText] = useState(initialText ?? "");
-	const invalidate = useInvalidateTasks();
-	const queryClient = useQueryClient();
 	// The task shows in the lists at once; the box is free for the next one.
-	const create = useMutation(
-		trpc.task.create.mutationOptions({
-			onMutate: async (input) => {
-				const snapshot = await snapshotTaskLists(queryClient);
-				placeTask(queryClient, taskFromInput(queryClient, input, null));
-				return { snapshot };
-			},
-			onError: (_error, _input, context) => {
-				restoreTaskLists(queryClient, context?.snapshot);
-				toast.error("追加できませんでした");
-			},
-			onSettled: invalidate,
-		})
-	);
+	const create = useCreateTask(() => toast.error("追加できませんでした"));
 
 	const submit = (event: FormEvent) => {
 		event.preventDefault();

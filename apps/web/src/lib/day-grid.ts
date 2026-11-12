@@ -125,3 +125,45 @@ export function dropMinutes(
 	const latest = DAY_MINUTES - Math.min(length, DAY_MINUTES - SNAP_MINUTES);
 	return Math.min(Math.max(snapped, 0), latest);
 }
+
+/** Where a dragged task was let go: a day's time grid, its 終日 row, or the tray. */
+export type DropTarget =
+	| { day: string; kind: "allday" }
+	| { day: string; kind: "slot" }
+	| { kind: "tray" };
+
+/** The two fields that put a task on the calendar. */
+export interface Placement {
+	scheduledDate: string | null;
+	scheduledTime: string | null;
+}
+
+/**
+ * What a drop changes on the task, or null when it changes nothing.
+ *
+ * - On a day's grid: that day at `start` minutes (see `dropMinutes`).
+ * - On a 終日 row: that day, without a time.
+ * - On the tray: the time comes off and the day stays, so the task is still
+ *   planned for its day but no longer sits on the grid.
+ */
+export function placementForDrop(
+	task: Placement,
+	target: DropTarget,
+	start: number | null
+): Placement | null {
+	let next: Placement;
+	if (target.kind === "slot") {
+		if (start === null) {
+			return null;
+		}
+		next = { scheduledDate: target.day, scheduledTime: formatTime(start) };
+	} else if (target.kind === "allday") {
+		next = { scheduledDate: target.day, scheduledTime: null };
+	} else {
+		next = { scheduledDate: task.scheduledDate, scheduledTime: null };
+	}
+	return next.scheduledDate === task.scheduledDate &&
+		next.scheduledTime === task.scheduledTime
+		? null
+		: next;
+}

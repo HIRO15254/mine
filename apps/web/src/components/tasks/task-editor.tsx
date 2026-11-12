@@ -1,4 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,16 +19,7 @@ import {
 	type Task,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/utils/trpc";
 import { ConfirmDeleteButton } from "./confirm-delete-button";
-import {
-	findTask,
-	placeTask,
-	removeTask,
-	restoreTaskLists,
-	snapshotTaskLists,
-	taskFromInput,
-} from "./optimistic";
 import {
 	type DraftDefaults,
 	draftError,
@@ -38,7 +28,7 @@ import {
 	type RepeatBasis,
 	type TaskDraft,
 } from "./task-draft";
-import { useInvalidateTasks } from "./use-tasks";
+import { useCreateTask, useDeleteTask, useUpdateTask } from "./use-tasks";
 
 interface EditorState {
 	defaults?: DraftDefaults;
@@ -116,14 +106,12 @@ export function TaskEditor({
 	const formId = useId();
 	const isDesk = useIsDesk();
 	const size = isDesk ? "default" : "xl";
-	const invalidate = useInvalidateTasks();
 	const [draft, setDraft] = useState<TaskDraft>(() =>
 		draftFromTask(task, defaults)
 	);
 	const [error, setError] = useState<string | null>(null);
 
 	const close = () => onOpenChange(false);
-	const queryClient = useQueryClient();
 	const mounted = useRef(true);
 	useEffect(() => {
 		mounted.current = true;
@@ -133,64 +121,21 @@ export function TaskEditor({
 	}, []);
 	// Saving closes the sheet at once and shows the change in the lists; if
 	// the server refuses, the lists go back and the sheet reopens with the draft.
-	const failed =
-		(message: string) =>
-		(
-			_error: unknown,
-			_input: unknown,
-			context:
-				| { snapshot: Awaited<ReturnType<typeof snapshotTaskLists>> }
-				| undefined
-		) => {
-			restoreTaskLists(queryClient, context?.snapshot);
-			if (!mounted.current) {
-				// Another task's sheet (or another screen) is up by now: reopening
-				// would show that one, so the failure is told on its own.
-				toast.error(message, { description: draft.title.trim() || undefined });
-				return;
-			}
-			setError(message);
-			onOpenChange(true);
-		};
-	const create = useMutation(
-		trpc.task.create.mutationOptions({
-			onError: failed("保存できませんでした"),
-			onMutate: async (input) => {
-				const snapshot = await snapshotTaskLists(queryClient);
-				placeTask(queryClient, taskFromInput(queryClient, input, null));
-				return { snapshot };
-			},
-			onSettled: invalidate,
-		})
-	);
-	const update = useMutation(
-		trpc.task.update.mutationOptions({
-			onError: failed("保存できませんでした"),
-			onMutate: async ({ id, ...input }) => {
-				const snapshot = await snapshotTaskLists(queryClient);
-				const base = findTask(queryClient, id) ?? task;
-				if (base) {
-					placeTask(queryClient, taskFromInput(queryClient, input, base));
-				}
-				return { snapshot };
-			},
-			onSettled: invalidate,
-		})
-	);
-	const remove = useMutation(
-		trpc.task.delete.mutationOptions({
-			onError: failed("削除できませんでした"),
-			onMutate: async ({ id }) => {
-				const snapshot = await snapshotTaskLists(queryClient);
-				removeTask(queryClient, id);
-				return { snapshot };
-			},
-			onSettled: invalidate,
-			onSuccess: () => {
-				toast.success("削除しました", { description: task?.title });
-			},
-		})
-	);
+	const failed = (message: string) => () => {
+		if (!mounted.current) {
+			// Another task's sheet (or another screen) is up by now: reopening
+			// would show that one, so the failure is told on its own.
+			toast.error(message, { description: draft.title.trim() || undefined });
+			return;
+		}
+		setError(message);
+		onOpenChange(true);
+	};
+	const create = useCreateTask(failed("保存できませんでした"));
+	const update = useUpdateTask(failed("保存できませんでした"), task);
+	const remove = useDeleteTask(failed("削除できませんでした"), () => {
+		toast.success("削除しました", { description: task?.title });
+	});
 
 	const set = <K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) =>
 		setDraft((current) => ({ ...current, [key]: value }));

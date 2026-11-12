@@ -2,6 +2,7 @@ import { IconPlayerPlay } from "@tabler/icons-react";
 
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { useIsDesk } from "@/hooks/use-media-query";
+import { useNow } from "@/hooks/use-now";
 import { PROJECT_COLOR_CLASS, type Project, projectPath } from "@/lib/tasks";
 import {
 	entryDuration,
@@ -12,7 +13,7 @@ import {
 } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
-import { useNow, useStartTimer } from "./use-time";
+import { useStartTimer } from "./use-time";
 
 export function EntryList({
 	entries,
@@ -24,7 +25,7 @@ export function EntryList({
 	projects: Project[];
 }) {
 	const hasRunning = entries.some((entry) => entry.endedAt === null);
-	const now = useNow(hasRunning);
+	const now = useNow(1000, hasRunning);
 	const days = groupEntriesByDay(entries, now);
 
 	return (

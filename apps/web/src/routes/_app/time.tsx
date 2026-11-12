@@ -1,7 +1,5 @@
 import {
 	IconAlertTriangle,
-	IconChevronLeft,
-	IconChevronRight,
 	IconClockHour4,
 	IconPlus,
 } from "@tabler/icons-react";
@@ -9,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { Page } from "@/components/app-shell/page";
+import { WeekNavigation } from "@/components/app-shell/week-navigation";
 import { ComingSoon } from "@/components/placeholder/coming-soon";
 import { useTaskContext } from "@/components/tasks/use-tasks";
 import { useEntryEditor } from "@/components/time/entry-editor";
@@ -22,24 +21,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card/card";
-import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Spinner } from "@/components/ui/spinner/spinner";
-import { useTodayDate } from "@/hooks/use-today";
-import {
-	addDays,
-	dayKey,
-	formatWeekLabel,
-	parseDayKey,
-	startOfWeek,
-} from "@/lib/calendar-time";
+import { useWeek, validateWeekSearch, weekSearch } from "@/hooks/use-week";
+import { formatWeekLabel } from "@/lib/calendar-time";
 import { currentTimeZone, weekRange } from "@/lib/time";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_app/time")({
-	validateSearch: (search: Record<string, unknown>): { week?: string } =>
-		typeof search.week === "string" && parseDayKey(search.week)
-			? { week: search.week }
-			: {},
+	validateSearch: validateWeekSearch,
 	component: TimePage,
 });
 
@@ -54,13 +43,8 @@ function Loading() {
 function TimePage() {
 	const { week } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
-	const today = useTodayDate();
-	const weekStart = useMemo(
-		() => startOfWeek(parseDayKey(week) ?? today),
-		[today, week]
-	);
+	const { isCurrentWeek, weekStart } = useWeek(week);
 	const range = useMemo(() => weekRange(weekStart), [weekStart]);
-	const isCurrentWeek = dayKey(weekStart) === dayKey(startOfWeek(today));
 	const { projects } = useTaskContext();
 	const { editor, openEdit, openNew } = useEntryEditor(projects);
 	const entries = useQuery(trpc.time.list.queryOptions(range));
@@ -68,35 +52,14 @@ function TimePage() {
 		trpc.time.summary.queryOptions({ ...range, timeZone: currentTimeZone() })
 	);
 
-	const goToWeek = (start: Date | null) =>
-		navigate({ search: start ? { week: dayKey(start) } : {} });
-
 	return (
 		<Page
 			actions={
-				<>
-					<Button
-						disabled={isCurrentWeek}
-						onClick={() => goToWeek(null)}
-						size="sm"
-						type="button"
-						variant="outline"
-					>
-						今週
-					</Button>
-					<IconButton
-						label="前の週"
-						onClick={() => goToWeek(addDays(weekStart, -7))}
-					>
-						<IconChevronLeft aria-hidden />
-					</IconButton>
-					<IconButton
-						label="次の週"
-						onClick={() => goToWeek(addDays(weekStart, 7))}
-					>
-						<IconChevronRight aria-hidden />
-					</IconButton>
-				</>
+				<WeekNavigation
+					isCurrentWeek={isCurrentWeek}
+					onChange={(start) => navigate({ search: weekSearch(start) })}
+					weekStart={weekStart}
+				/>
 			}
 			title={`記録 ${formatWeekLabel(weekStart)}`}
 		>

@@ -5,6 +5,7 @@ import {
 	formatTime,
 	layoutDay,
 	parseTime,
+	placementForDrop,
 	timedEventsOn,
 } from "../day-grid";
 
@@ -71,5 +72,50 @@ describe("dropMinutes", () => {
 		expect(dropMinutes(48 * 13 + 10, 48, 30)).toBe(13 * 60 + 15);
 		expect(dropMinutes(-20, 48, 30)).toBe(0);
 		expect(dropMinutes(48 * 24, 48, 90)).toBe(24 * 60 - 90);
+	});
+});
+
+describe("placementForDrop", () => {
+	const unplanned = { scheduledDate: null, scheduledTime: null };
+	const timed = { scheduledDate: "2026-11-10", scheduledTime: "09:00" };
+	const allDay = { scheduledDate: "2026-11-10", scheduledTime: null };
+
+	it("puts a task on the day and time it is dropped on", () => {
+		expect(
+			placementForDrop(unplanned, { day: "2026-11-12", kind: "slot" }, 13 * 60)
+		).toEqual({ scheduledDate: "2026-11-12", scheduledTime: "13:00" });
+		expect(
+			placementForDrop(timed, { day: "2026-11-10", kind: "slot" }, 9 * 60 + 15)
+		).toEqual({ scheduledDate: "2026-11-10", scheduledTime: "09:15" });
+	});
+
+	it("takes the time off on a 終日 row and moves the day", () => {
+		expect(
+			placementForDrop(timed, { day: "2026-11-11", kind: "allday" }, null)
+		).toEqual({ scheduledDate: "2026-11-11", scheduledTime: null });
+	});
+
+	it("keeps the day when a timed task goes back to the tray", () => {
+		expect(placementForDrop(timed, { kind: "tray" }, null)).toEqual({
+			scheduledDate: "2026-11-10",
+			scheduledTime: null,
+		});
+	});
+
+	it("changes nothing when the task is dropped where it already is", () => {
+		expect(
+			placementForDrop(timed, { day: "2026-11-10", kind: "slot" }, 9 * 60)
+		).toBeNull();
+		expect(
+			placementForDrop(allDay, { day: "2026-11-10", kind: "allday" }, null)
+		).toBeNull();
+		expect(placementForDrop(allDay, { kind: "tray" }, null)).toBeNull();
+		expect(placementForDrop(unplanned, { kind: "tray" }, null)).toBeNull();
+	});
+
+	it("ignores a drop on the grid that has no landing time", () => {
+		expect(
+			placementForDrop(unplanned, { day: "2026-11-12", kind: "slot" }, null)
+		).toBeNull();
 	});
 });

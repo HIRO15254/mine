@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
 import { Input } from "@/components/ui/input/input";
 import { useIsDesk } from "@/hooks/use-media-query";
+import { useNow } from "@/hooks/use-now";
 import { useToday, useTodayDate } from "@/hooks/use-today";
 import { addDays, rangeOfDays } from "@/lib/calendar-time";
 import type { Project } from "@/lib/tasks";
@@ -96,16 +97,6 @@ function useSuggestionSources(active: boolean) {
 		events: events.data?.events ?? [],
 		tasks: tasks.data ?? [],
 	};
-}
-
-/** The current time, refreshed every 30 seconds. */
-function useHalfMinute(): number {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-		return () => window.clearInterval(timer);
-	}, []);
-	return now;
 }
 
 const clock = new Intl.DateTimeFormat("ja-JP", {
@@ -329,7 +320,7 @@ export function TimerInput({
 	const [touched, setTouched] = useState(false);
 	const start = useStartTimer();
 	const sources = useSuggestionSources(touched);
-	const now = useHalfMinute();
+	const now = useNow(30_000);
 	const [, setDismissed] = useState(0);
 	const unrecorded = useMemo(
 		() =>

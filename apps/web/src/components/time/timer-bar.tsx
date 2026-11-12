@@ -5,15 +5,11 @@ import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
 import { Spinner } from "@/components/ui/spinner/spinner";
 import { useIsDesk } from "@/hooks/use-media-query";
+import { useNow } from "@/hooks/use-now";
 import type { Project } from "@/lib/tasks";
 import { formatElapsed, type TimeEntry } from "@/lib/time";
 import { TimerInput } from "./timer-input";
-import {
-	isOptimisticEntry,
-	useNow,
-	useRunningEntry,
-	useStopTimer,
-} from "./use-time";
+import { isOptimisticEntry, useRunningEntry, useStopTimer } from "./use-time";
 
 /** The running entry with a stop button, or a form to start one. */
 export function TimerBar({
