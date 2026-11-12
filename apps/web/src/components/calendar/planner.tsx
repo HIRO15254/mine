@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { IconCalendarEvent, IconChecklist } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { type CSSProperties, type ReactNode, useState } from "react";
+import { type CSSProperties, Fragment, type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import { useTaskEditor } from "@/components/tasks/task-editor";
@@ -45,6 +45,7 @@ import {
 	shiftedByDays,
 } from "./event-draft";
 import type { useEventEditor } from "./event-editor";
+import { useHourZoom } from "./hour-zoom";
 import { DayAgenda, MonthGrid } from "./month-grid";
 import { TaskTray, type TrayFilter } from "./task-tray";
 import {
@@ -158,6 +159,17 @@ function eventMove(
 }
 
 const WEEKDAY = new Intl.DateTimeFormat("ja-JP", { weekday: "short" });
+
+/** Where the grid's sticky rows start: under the header, and on the phone under what sticks above them. */
+function headTop(isDesk: boolean, pinnedStrip: boolean): string {
+	if (isDesk) {
+		return "3rem";
+	}
+	// The day picker (3.25rem and its 0.25rem padding) and the tray row (3rem).
+	return pinnedStrip
+		? "calc(var(--m-navbar-height) + 6.5rem)"
+		: "calc(var(--m-navbar-height) + 3rem)";
+}
 
 /** The phone's day picker: one day of the week at a time. */
 function DayStrip({
@@ -474,7 +486,8 @@ export function CalendarPlanner({
 }) {
 	const isDesk = useIsDesk();
 	const now = useNow(30_000);
-	const hourHeight = isDesk ? 48 : 56;
+	const zoom = useHourZoom(isDesk);
+	const { hourHeight } = zoom;
 	const { labels, projects } = useTaskContext();
 	const { editor: taskEditor, openEdit } = useTaskEditor({ labels, projects });
 	const { editor: entryEditor, openEdit: openEntry } = useEntryEditor(projects);
@@ -567,15 +580,17 @@ export function CalendarPlanner({
 			days={visibleDays}
 			entries={entries.data ?? []}
 			events={eventList}
-			hourHeight={hourHeight}
 			now={now}
 			preview={drag.preview}
 			projects={projects}
 			showDayHeader={isDesk}
 			tasks={tasks}
 			today={today}
+			zoom={zoom}
 		/>
 	);
+	// On the phone's week the day picker stays with the tray under the header.
+	const pinnedStrip = !isDesk && view === "week";
 
 	return (
 		<DndContext
@@ -590,24 +605,28 @@ export function CalendarPlanner({
 				className="grid desk:grid-cols-[minmax(0,1fr)_15rem] items-start desk:gap-5 gap-3"
 				style={
 					// The grid's day and 終日 rows stick under the page header, and on
-					// the phone under the tray row too.
+					// the phone under the day picker and the tray row too.
 					{
-						"--grid-head-top": isDesk
-							? "3rem"
-							: "calc(var(--m-navbar-height) + 3rem)",
+						"--grid-head-top": headTop(isDesk, pinnedStrip),
 					} as CSSProperties
 				}
 			>
 				<div className="flex min-w-0 flex-col gap-3">
-					{isDesk || view === "month" ? null : (
-						<DayStrip
-							days={days}
-							onSelect={setSelected}
-							selected={selected}
-							today={today}
-						/>
-					)}
-					{isDesk ? null : tray}
+					{pinnedStrip ? (
+						<div
+							className="sticky top-[var(--m-navbar-height)] z-[6] -mx-3.5 flex flex-col bg-background px-3.5 pt-1"
+							data-slot="day-strip"
+						>
+							<DayStrip
+								days={days}
+								onSelect={setSelected}
+								selected={selected}
+								today={today}
+							/>
+							{tray}
+						</div>
+					) : null}
+					{isDesk || pinnedStrip ? null : tray}
 					{events.isError ? (
 						<CalendarError
 							error={events.error}
@@ -628,8 +647,9 @@ export function CalendarPlanner({
 					/>
 				) : null}
 			</DragOverlay>
-			{taskEditor}
-			{entryEditor}
+			{/* Each sheet keys itself by its own count, so they need keys of their own here. */}
+			<Fragment key="task-editor">{taskEditor}</Fragment>
+			<Fragment key="entry-editor">{entryEditor}</Fragment>
 		</DndContext>
 	);
 }

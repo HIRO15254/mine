@@ -51,6 +51,22 @@ export const SCREENS: Screen[] = [
 		},
 	},
 	{
+		// Zoomed in and scrolled: the day rows stay put and the rail passes under them.
+		clip: true,
+		name: "calendar-scrolled",
+		path: "/calendar",
+		prepare: async (page) => {
+			await page.getByRole("button", { name: "時間の縮尺を拡大" }).click();
+			await page.locator('[data-slot="time-grid-hours"]').evaluate((hours) => {
+				const scroller =
+					hours.closest(".overflow-auto") ?? document.scrollingElement;
+				if (scroller) {
+					scroller.scrollTop = 9.5 * 72 + 120;
+				}
+			});
+		},
+	},
+	{
 		clip: true,
 		name: "event-editor",
 		path: "/calendar",

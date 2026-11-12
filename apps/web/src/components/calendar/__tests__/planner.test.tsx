@@ -81,10 +81,27 @@ function Planner({
 const tray = () =>
 	screen.getByRole("region", { name: "時間が決まっていないタスク" });
 
+const hourOf = () =>
+	(
+		document.querySelector("[data-slot=time-grid]") as HTMLElement
+	).style.getPropertyValue("--hour");
+
+function usePhoneLayout() {
+	window.matchMedia = ((query: string) => ({
+		addEventListener: () => undefined,
+		addListener: () => undefined,
+		matches: false,
+		media: query,
+		removeEventListener: () => undefined,
+		removeListener: () => undefined,
+	})) as unknown as typeof window.matchMedia;
+}
+
 beforeEach(async () => {
 	await api.reset();
 	freezeNow();
 	useDesktopLayout();
+	window.localStorage.clear();
 });
 
 describe("the tray", () => {
@@ -262,6 +279,81 @@ describe("the time rail", () => {
 		const card = screen.getByRole("dialog", { name: "時間の記録" });
 		expect(within(card).getByText("研究")).toBeVisible();
 		expect(within(card).getByText(TWO_AND_A_HALF_HOURS)).toBeVisible();
+		// The hours are their own stack, so the rail cannot rise above the
+		// sticky day and 終日 rows or the page header.
+		expect(card.closest("[data-slot=time-grid-hours]")).toHaveClass("isolate");
+	});
+});
+
+describe("the time scale", () => {
+	it("zooms the hours with its buttons and keeps the scale for the next visit", async () => {
+		stubGoogle([]);
+		const first = renderWithQuery(<Planner />);
+		expect(hourOf()).toBe(`${HOUR_PX}px`);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "時間の縮尺を拡大" })
+		);
+		expect(hourOf()).toBe("56px");
+		first.unmount();
+
+		renderWithQuery(<Planner />);
+		expect(hourOf()).toBe("56px");
+	});
+
+	it("stops at the smallest scale", async () => {
+		stubGoogle([]);
+		renderWithQuery(<Planner />);
+		const zoomOut = screen.getByRole("button", { name: "時間の縮尺を縮小" });
+
+		for (let step = 0; step < 4; step += 1) {
+			await userEvent.click(zoomOut);
+		}
+
+		expect(hourOf()).toBe("24px");
+		expect(zoomOut).toBeDisabled();
+	});
+
+	it("zooms with ctrl and the wheel", () => {
+		stubGoogle([]);
+		renderWithQuery(<Planner />);
+		const hours = document.querySelector(
+			"[data-slot=time-grid-hours]"
+		) as HTMLElement;
+
+		fireEvent.wheel(hours, { ctrlKey: true, deltaY: -50 });
+
+		expect(Number.parseFloat(hourOf())).toBeGreaterThan(HOUR_PX);
+	});
+});
+
+describe("the editors", () => {
+	it("keeps the task and the record editors apart", async () => {
+		const error = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		stubGoogle([]);
+		renderWithQuery(<Planner />);
+		await screen.findByRole("region", { name: "時間が決まっていないタスク" });
+
+		const duplicateKeys = error.mock.calls.filter((call) =>
+			String(call[0]).includes("same key")
+		);
+		error.mockRestore();
+		expect(duplicateKeys).toEqual([]);
+	});
+});
+
+describe("the phone's week", () => {
+	it("keeps the day picker with the tray under the header", () => {
+		usePhoneLayout();
+		stubGoogle([]);
+		renderWithQuery(<Planner />);
+
+		const strip = document.querySelector("[data-slot=day-strip]");
+		expect(strip).toHaveClass("sticky");
+		expect(within(strip as HTMLElement).getByRole("tablist")).toBeVisible();
+		expect(strip).toContainElement(tray());
 	});
 });
 

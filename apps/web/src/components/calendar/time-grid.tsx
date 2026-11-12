@@ -1,7 +1,7 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { IconChecklist } from "@tabler/icons-react";
+import { IconChecklist, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
 import { type CSSProperties, type MouseEvent, useEffect, useRef } from "react";
-
+import { IconButton } from "@/components/ui/icon-button/icon-button";
 import {
 	type DisplayEvent,
 	dayKey,
@@ -26,6 +26,7 @@ import type { TimeEntry } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
 import type { EventSeed } from "./event-draft";
+import type { HourZoom } from "./hour-zoom";
 import { RAIL_WIDTH_PX, TimeRail } from "./time-rail";
 
 /** Blocks shorter than this put their time beside the title. */
@@ -527,6 +528,33 @@ function AllDayCell({
 	);
 }
 
+/** The time scale's buttons, in the corner above the hours. */
+function ZoomControl({ zoom }: { zoom: HourZoom }) {
+	const button = "size-5 rounded-sm [&_svg:not([class*='size-'])]:size-3.5";
+	return (
+		<div className="flex items-center justify-end gap-0.5 pr-0.5">
+			<IconButton
+				className={button}
+				disabled={!zoom.canZoomOut}
+				label="時間の縮尺を縮小"
+				onClick={zoom.zoomOut}
+				type="button"
+			>
+				<IconZoomOut aria-hidden />
+			</IconButton>
+			<IconButton
+				className={button}
+				disabled={!zoom.canZoomIn}
+				label="時間の縮尺を拡大"
+				onClick={zoom.zoomIn}
+				type="button"
+			>
+				<IconZoomIn aria-hidden />
+			</IconButton>
+		</div>
+	);
+}
+
 /**
  * Hours down the side, one column per day: events from the calendar, tasks
  * placed at a time, and a line at the current time. Tasks dropped on a
@@ -537,26 +565,27 @@ export function TimeGrid({
 	days,
 	entries,
 	events,
-	hourHeight,
 	now,
 	preview,
 	projects,
 	showDayHeader,
 	tasks,
 	today,
+	zoom,
 }: {
 	actions: GridActions;
 	days: Date[];
 	entries: TimeEntry[];
 	events: DisplayEvent[];
-	hourHeight: number;
 	now: number;
 	preview: DropPreview | null;
 	projects: Project[];
 	showDayHeader: boolean;
 	tasks: Task[];
 	today: Date;
+	zoom: HourZoom;
 }) {
+	const { hourHeight } = zoom;
 	const columns = {
 		gridTemplateColumns: `2.75rem repeat(${days.length}, minmax(0, 1fr))`,
 	};
@@ -585,7 +614,9 @@ export function TimeGrid({
 			>
 				{showDayHeader ? (
 					<>
-						<span />
+						<div className="self-center">
+							<ZoomControl zoom={zoom} />
+						</div>
 						{days.map((day) => {
 							const isToday = dayKey(day) === todayKey;
 							return (
@@ -611,9 +642,12 @@ export function TimeGrid({
 						})}
 					</>
 				) : null}
-				<span className="self-start pt-1.5 pr-1.5 text-right text-[11px] text-muted-foreground">
-					終日
-				</span>
+				<div className="flex flex-col items-end gap-0.5 self-start pt-1">
+					{showDayHeader ? null : <ZoomControl zoom={zoom} />}
+					<span className="pt-0.5 pr-1.5 text-[11px] text-muted-foreground">
+						終日
+					</span>
+				</div>
 				{days.map((day) => (
 					<AllDayCell
 						actions={actions}
@@ -625,12 +659,21 @@ export function TimeGrid({
 					/>
 				))}
 			</div>
-			<div className="relative grid" style={columns}>
+			{/* Its own stack, so the rail and the now line stay under the sticky rows. */}
+			<div
+				className="relative isolate grid"
+				data-slot="time-grid-hours"
+				ref={zoom.bodyRef}
+				style={columns}
+			>
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-x-0 h-0 scroll-mt-44"
+					className="pointer-events-none absolute inset-x-0 h-0"
 					ref={anchor}
-					style={{ top: (anchorMinutes / 60) * hourHeight }}
+					style={{
+						scrollMarginTop: "calc(var(--grid-head-top) + 3.5rem)",
+						top: (anchorMinutes / 60) * hourHeight,
+					}}
 				/>
 				<div className="relative" style={{ height: 24 * hourHeight }}>
 					{HOURS.slice(1).map((hour) => (
