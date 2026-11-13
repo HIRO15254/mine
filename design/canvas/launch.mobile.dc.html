@@ -21,14 +21,47 @@ a{color:var(--primary-text);text-decoration:none}a:hover{color:var(--foreground)
 </style>
 </helmet>
 <div class="{{themeClass}}" data-theme="{{theme}}" style="position: relative; width: 390px; height: 844px; box-sizing: border-box; display: grid; place-items: center; overflow: hidden; background: var(--background); color: var(--foreground); font-family: var(--font-sans)">
+<div style="position: absolute; top: 50%; left: 50%; pointer-events: none; width: 1940px; height: 1940px; margin: -970px 0 0 -970px; border-radius: 50%; opacity: {{flood}}; background: radial-gradient(closest-side at 32% 34%, var(--chart-1), transparent), radial-gradient(closest-side at 68% 30%, var(--chart-2), transparent), radial-gradient(closest-side at 72% 66%, var(--chart-3), transparent), radial-gradient(closest-side at 34% 70%, var(--chart-4), transparent), radial-gradient(closest-side at 50% 50%, var(--chart-5), transparent)"></div>
+<div style="position: absolute; top: 50%; left: 50%; pointer-events: none; width: 1688px; height: 1688px; margin: -844px 0 0 -844px; opacity: {{rays}}; -webkit-mask-image: radial-gradient(closest-side, transparent 4%, #000 14%, transparent 100%); mask-image: radial-gradient(closest-side, transparent 4%, #000 14%, transparent 100%)"><div style="position: absolute; inset: 0; background: conic-gradient(from 0deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)); -webkit-mask-image: repeating-conic-gradient(#000 0deg 2deg, transparent 6deg 15deg); mask-image: repeating-conic-gradient(#000 0deg 2deg, transparent 6deg 15deg)"></div></div>
+<div style="position: absolute; top: 50%; left: 50%; pointer-events: none; width: 780px; height: 780px; margin: -390px 0 0 -390px; border-radius: 50%; opacity: .55; background: conic-gradient(from 0deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)); -webkit-mask-image: radial-gradient(closest-side, transparent 86%, #000 95%, transparent 100%); mask-image: radial-gradient(closest-side, transparent 86%, #000 95%, transparent 100%)"></div>
+<div style="position: absolute; top: 50%; left: 50%; pointer-events: none; width: 0; height: 0">
+<i style="position: absolute; left: 0; top: -1.5px; width: 11px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-1)); transform-origin: 0 50%; transform: rotate(2.6deg) translateX(159px); opacity: 0.62"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 60px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-2)); transform-origin: 0 50%; transform: rotate(17.1deg) translateX(215px); opacity: 0.49"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 44px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-3)); transform-origin: 0 50%; transform: rotate(26.0deg) translateX(233px); opacity: 0.45"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 49px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-4)); transform-origin: 0 50%; transform: rotate(42.0deg) translateX(335px); opacity: 0.25"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 16px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-5)); transform-origin: 0 50%; transform: rotate(56.4deg) translateX(366px); opacity: 0.25"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 14px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-1)); transform-origin: 0 50%; transform: rotate(72.1deg) translateX(132px); opacity: 0.69"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 73px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-2)); transform-origin: 0 50%; transform: rotate(78.3deg) translateX(151px); opacity: 0.64"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 15px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-3)); transform-origin: 0 50%; transform: rotate(91.4deg) translateX(271px); opacity: 0.35"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 48px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-4)); transform-origin: 0 50%; transform: rotate(107.2deg) translateX(136px); opacity: 0.68"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 63px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-5)); transform-origin: 0 50%; transform: rotate(121.2deg) translateX(231px); opacity: 0.45"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 20px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-1)); transform-origin: 0 50%; transform: rotate(132.2deg) translateX(198px); opacity: 0.53"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 22px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-2)); transform-origin: 0 50%; transform: rotate(143.4deg) translateX(269px); opacity: 0.36"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 12px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-3)); transform-origin: 0 50%; transform: rotate(160.1deg) translateX(195px); opacity: 0.54"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 60px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-4)); transform-origin: 0 50%; transform: rotate(170.5deg) translateX(317px); opacity: 0.25"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 18px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-5)); transform-origin: 0 50%; transform: rotate(180.3deg) translateX(294px); opacity: 0.30"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 18px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-1)); transform-origin: 0 50%; transform: rotate(199.9deg) translateX(202px); opacity: 0.52"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 23px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-2)); transform-origin: 0 50%; transform: rotate(210.4deg) translateX(239px); opacity: 0.43"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 68px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-3)); transform-origin: 0 50%; transform: rotate(222.4deg) translateX(293px); opacity: 0.30"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 14px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-4)); transform-origin: 0 50%; transform: rotate(236.6deg) translateX(378px); opacity: 0.25"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 58px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-5)); transform-origin: 0 50%; transform: rotate(247.4deg) translateX(294px); opacity: 0.30"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 71px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-1)); transform-origin: 0 50%; transform: rotate(258.5deg) translateX(150px); opacity: 0.64"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 75px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-2)); transform-origin: 0 50%; transform: rotate(271.0deg) translateX(184px); opacity: 0.56"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 22px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-3)); transform-origin: 0 50%; transform: rotate(283.5deg) translateX(237px); opacity: 0.44"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 57px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-4)); transform-origin: 0 50%; transform: rotate(302.3deg) translateX(345px); opacity: 0.25"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 12px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-5)); transform-origin: 0 50%; transform: rotate(311.4deg) translateX(350px); opacity: 0.25"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 59px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-1)); transform-origin: 0 50%; transform: rotate(322.8deg) translateX(180px); opacity: 0.57"></i>
+<i style="position: absolute; left: 0; top: -1.0px; width: 57px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-2)); transform-origin: 0 50%; transform: rotate(339.0deg) translateX(188px); opacity: 0.55"></i>
+<i style="position: absolute; left: 0; top: -1.5px; width: 20px; height: 3px; border-radius: 99px; background: linear-gradient(90deg, transparent, var(--chart-3)); transform-origin: 0 50%; transform: rotate(350.1deg) translateX(267px); opacity: 0.36"></i>
+</div>
 <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px">
-<div style="position: absolute; top: -34px; width: 180px; height: 180px; border-radius: 50%; background: conic-gradient(from 0deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)); filter: blur(46px); opacity: .32"></div>
+<div style="position: absolute; top: -54px; width: 220px; height: 220px; border-radius: 50%; background: conic-gradient(from 0deg, var(--chart-1), var(--chart-2), var(--chart-3), var(--chart-4), var(--chart-5), var(--chart-1)); filter: blur(48px); opacity: .45"></div>
 <div style="position: relative; width: 112px; height: 112px; overflow: hidden; border-radius: 22%; isolation: isolate">
 <img class="mark" src="assets/mine-icon.png" alt="" width="112" height="112" style="display: block; width: 100%; height: 100%">
 <span style="position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 38%, #8fb4ff 44%, #6fd1b0 48%, #efb36d 52%, #f2828c 56%, #b49cff 60%, transparent 66%); mix-blend-mode: overlay"></span>
 </div>
-<div style="font-size: 22px; font-weight: 600; letter-spacing: .14em; margin-right: -.14em">Mine</div>
-<div style="width: 128px; height: 2px; margin-top: -6px; border-radius: 1px; background: var(--prism); opacity: .85"></div>
+<div style="font-size: 26px; font-weight: 600; letter-spacing: .18em; margin-right: -.18em">Mine</div>
+<div style="position: absolute; bottom: -10px; left: 50%; width: 390px; height: 2px; margin-left: -195px; background: linear-gradient(90deg, transparent, var(--chart-1) 20%, var(--chart-2) 35%, var(--chart-3) 50%, var(--chart-4) 65%, var(--chart-5) 80%, transparent); box-shadow: 0 0 10px var(--chart-5); opacity: .9"></div>
 </div>
 </div>
 </x-dc>
@@ -39,6 +72,8 @@ const theme = this.props.theme ?? 'dark';
 return {
 theme: theme,
 themeClass: theme === 'dark' ? 'dark' : 'light',
+flood: theme === 'dark' ? 0.3 : 0.2,
+rays: theme === 'dark' ? 0.22 : 0.28,
 sky: theme === 'dark' ? 'radial-gradient(900px 420px at 18% -8%, rgba(200,215,240,0.07), transparent 65%)' : 'none',
 yes: true, i12: 12, i14: 14, i16: 16, i24: 24
 };
