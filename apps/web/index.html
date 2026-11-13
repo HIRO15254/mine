@@ -5,20 +5,16 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Mine</title>
 		<!--
-			The launch: the Mine mark lands with a flash, prism shock waves and
-			sparks burst out to the edges of the screen, light rays turn behind it
-			and the screen fills with prism light while the app loads. When the
-			app is ready the screen opens from the middle like an iris onto the
-			first screen. It is inline because it shows before the app's CSS; the
-			colors copy the tokens in src/index.css (docs/design/exceptions.md).
-			src/lib/splash.ts takes it away once the first screen is ready.
+			The launch: the Mine mark settles in and soft prism light spreads out
+			from it until it fills the screen while the app loads. When the app is
+			ready the light keeps spreading and the screen fades onto the first
+			screen. Everything moves only by transform and opacity, so it stays
+			smooth while the app's script starts. It is inline because it shows
+			before the app's CSS; the colors copy the tokens in src/index.css
+			(docs/design/exceptions.md). src/lib/splash.ts takes it away once the
+			first screen is ready.
 		-->
 		<style>
-		@property --sp-hole {
-			syntax: "<length>";
-			inherits: false;
-			initial-value: 0px;
-		}
 		#splash {
 			--sp-bg: #f6f7f9;
 			--sp-fg: #14161a;
@@ -27,37 +23,23 @@
 			--sp-c3: #b06a00;
 			--sp-c4: #c8434f;
 			--sp-c5: #7a52d6;
-			--sp-prism: linear-gradient(
-				90deg,
-				var(--sp-c1),
-				var(--sp-c2),
-				var(--sp-c3),
-				var(--sp-c4),
-				var(--sp-c5)
-			);
-			--sp-wheel: conic-gradient(
-				from 0deg,
-				var(--sp-c1),
-				var(--sp-c2),
-				var(--sp-c3),
-				var(--sp-c4),
-				var(--sp-c5),
-				var(--sp-c1)
-			);
-			--sp-flash: rgba(143, 180, 255, 0.55);
-			--sp-flood: 0.2;
-			--sp-rays: 0.28;
+			--sp-core: rgba(255, 255, 255, 0.9);
+			--sp-ripple: rgba(20, 22, 26, 0.07);
+			--sp-light: 0.24;
 			--sp-mark-filter: invert(1);
 			--sp-blend: soft-light;
 			position: fixed;
 			inset: 0;
 			z-index: 2147483647;
+			display: grid;
+			place-items: center;
 			overflow: hidden;
 			font-family:
 				"Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
 			color: var(--sp-fg);
+			background: var(--sp-bg);
 			transition:
-				opacity 0.7s cubic-bezier(0.7, 0, 0.9, 0.5),
+				opacity 0.7s cubic-bezier(0.45, 0, 0.25, 1),
 				visibility 0s linear 0.7s;
 		}
 		#splash.sp-dark {
@@ -68,133 +50,90 @@
 			--sp-c3: #efb36d;
 			--sp-c4: #f2828c;
 			--sp-c5: #b49cff;
-			--sp-flash: rgba(255, 255, 255, 0.9);
-			--sp-flood: 0.3;
-			--sp-rays: 0.22;
+			--sp-core: rgba(238, 241, 245, 0.16);
+			--sp-ripple: rgba(238, 241, 245, 0.07);
+			--sp-light: 0.3;
 			--sp-mark-filter: none;
 			--sp-blend: overlay;
 		}
-		.sp-scene {
+		/* The light: soft discs that grow from the mark past the screen's edges. */
+		.sp-light {
 			position: absolute;
 			inset: 0;
-			display: grid;
-			place-items: center;
-			overflow: hidden;
-			background: var(--sp-bg);
+			pointer-events: none;
+			transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 		}
-		/* Layers that fill the screen: centered squares sized from the viewport. */
-		.sp-fx {
+		.sp-light i {
 			position: absolute;
 			top: 50%;
 			left: 50%;
-			width: var(--sp-size);
-			height: var(--sp-size);
-			margin: calc(var(--sp-size) / -2) 0 0 calc(var(--sp-size) / -2);
-			pointer-events: none;
-		}
-		.sp-flood {
-			--sp-size: 230vmax;
-			background:
-				radial-gradient(closest-side at 32% 34%, var(--sp-c1), transparent),
-				radial-gradient(closest-side at 68% 30%, var(--sp-c2), transparent),
-				radial-gradient(closest-side at 72% 66%, var(--sp-c3), transparent),
-				radial-gradient(closest-side at 34% 70%, var(--sp-c4), transparent),
-				radial-gradient(closest-side at 50% 50%, var(--sp-c5), transparent);
+			width: 60vmax;
+			height: 60vmax;
+			margin: -30vmax 0 0 -30vmax;
+			background: radial-gradient(closest-side, var(--c), transparent);
 			border-radius: 50%;
 			opacity: 0;
-			transform: scale(0);
-			animation:
-				sp-flood-in 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.32s forwards,
-				sp-turn 14s linear infinite;
+			transform: translate(var(--x), var(--y)) scale(0.12);
+			animation: sp-spread 2.2s cubic-bezier(0.22, 1, 0.36, 1) var(--d) forwards;
+			will-change: transform, opacity;
 		}
-		.sp-rays {
-			--sp-size: 200vmax;
-			opacity: 0;
-			-webkit-mask-image: radial-gradient(
-				closest-side,
-				transparent 4%,
-				#000 14%,
-				transparent 100%
-			);
-			mask-image: radial-gradient(
-				closest-side,
-				transparent 4%,
-				#000 14%,
-				transparent 100%
-			);
-			animation: sp-rays-in 1.2s ease-out 0.4s forwards;
+		.sp-light i:nth-child(1) {
+			--c: var(--sp-c1);
+			--x: 0vmax;
+			--y: -18vmax;
+			--d: 0.1s;
 		}
-		.sp-rays::before {
+		.sp-light i:nth-child(2) {
+			--c: var(--sp-c2);
+			--x: 17vmax;
+			--y: -6vmax;
+			--d: 0.18s;
+		}
+		.sp-light i:nth-child(3) {
+			--c: var(--sp-c3);
+			--x: 11vmax;
+			--y: 15vmax;
+			--d: 0.26s;
+		}
+		.sp-light i:nth-child(4) {
+			--c: var(--sp-c4);
+			--x: -11vmax;
+			--y: 15vmax;
+			--d: 0.34s;
+		}
+		.sp-light i:nth-child(5) {
+			--c: var(--sp-c5);
+			--x: -17vmax;
+			--y: -6vmax;
+			--d: 0.42s;
+		}
+		.sp-light b {
 			position: absolute;
-			inset: 0;
-			content: "";
-			background: var(--sp-wheel);
-			-webkit-mask-image: repeating-conic-gradient(
-				#000 0deg 2deg,
-				transparent 6deg 15deg
-			);
-			mask-image: repeating-conic-gradient(
-				#000 0deg 2deg,
-				transparent 6deg 15deg
-			);
-			animation: sp-turn 9s linear infinite reverse;
-		}
-		.sp-ring {
-			--sp-size: 160vmax;
-			background: var(--sp-wheel);
-			border-radius: 50%;
-			opacity: 0;
-			-webkit-mask-image: radial-gradient(
-				closest-side,
-				transparent 86%,
-				#000 95%,
-				transparent 100%
-			);
-			mask-image: radial-gradient(
-				closest-side,
-				transparent 86%,
-				#000 95%,
-				transparent 100%
-			);
-			transform: scale(0.04);
-			animation: sp-ring 1.25s cubic-bezier(0.1, 0.75, 0.25, 1) 0.3s forwards;
-		}
-		.sp-ring:nth-of-type(2) {
-			rotate: 120deg;
-			animation-delay: 0.46s;
-		}
-		.sp-ring:nth-of-type(3) {
-			rotate: 240deg;
-			animation-delay: 0.62s;
-		}
-		.sp-flash {
-			--sp-size: 70vmax;
-			background: radial-gradient(
-				closest-side,
-				var(--sp-flash),
-				transparent 70%
-			);
+			top: 50%;
+			left: 50%;
+			width: 50vmax;
+			height: 50vmax;
+			margin: -25vmax 0 0 -25vmax;
 			border-radius: 50%;
 			opacity: 0;
 			transform: scale(0.1);
-			animation: sp-flash 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) 0.28s forwards;
+			will-change: transform, opacity;
 		}
-		.sp-sparks {
-			--sp-size: 0px;
+		.sp-core {
+			background: radial-gradient(closest-side, var(--sp-core), transparent);
+			animation: sp-core 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
 		}
-		.sp-sparks i {
-			position: absolute;
-			top: calc(var(--h) / -2);
-			left: 0;
-			width: var(--w);
-			height: var(--h);
-			background: linear-gradient(90deg, transparent, var(--c));
-			border-radius: 99px;
-			opacity: 0;
-			transform: rotate(var(--a)) translateX(48px);
-			transform-origin: 0 50%;
-			animation: sp-spark 1.15s cubic-bezier(0.08, 0.7, 0.2, 1) var(--d)
-				forwards;
+		.sp-ripple {
+			background: radial-gradient(
+				closest-side,
+				transparent 55%,
+				var(--sp-ripple) 80%,
+				transparent
+			);
+			animation: sp-ripple 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+		}
+		.sp-ripple + .sp-ripple {
+			animation-delay: 0.85s;
 		}
 		.sp-stage {
 			position: relative;
@@ -202,19 +141,9 @@
 			flex-direction: column;
 			gap: 18px;
 			align-items: center;
-		}
-		.sp-aura {
-			position: absolute;
-			top: -54px;
-			width: 220px;
-			height: 220px;
-			background: var(--sp-wheel);
-			border-radius: 50%;
-			opacity: 0;
-			filter: blur(48px);
-			animation:
-				sp-aura-in 1.1s ease-out 0.15s forwards,
-				sp-turn 6s linear infinite;
+			transition:
+				transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+				opacity 0.45s ease;
 		}
 		.sp-mark {
 			position: relative;
@@ -224,7 +153,8 @@
 			border-radius: 22%;
 			isolation: isolate;
 			opacity: 0;
-			animation: sp-mark-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+			transform: scale(0.9);
+			animation: sp-mark-in 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 		}
 		.sp-mark img {
 			display: block;
@@ -247,168 +177,72 @@
 			);
 			mix-blend-mode: var(--sp-blend);
 			transform: translateX(-70%);
-			animation: sp-sweep 1.1s cubic-bezier(0.45, 0, 0.2, 1) 0.45s forwards;
+			animation: sp-sweep 1.4s cubic-bezier(0.45, 0, 0.2, 1) 0.35s forwards;
 		}
 		.sp-word {
-			display: flex;
-			margin-right: -0.18em;
-			font-size: 26px;
+			margin-right: -0.16em;
+			font-size: 22px;
 			font-weight: 600;
-			letter-spacing: 0.18em;
-		}
-		.sp-word span {
-			display: inline-block;
+			letter-spacing: 0.16em;
 			opacity: 0;
-			filter: blur(8px);
-			transform: translateY(0.7em) scale(0.6);
-			animation: sp-letter 0.6s cubic-bezier(0.2, 0.9, 0.25, 1.3) forwards;
-		}
-		.sp-word span:nth-child(1) {
-			animation-delay: 0.6s;
-		}
-		.sp-word span:nth-child(2) {
-			animation-delay: 0.67s;
-		}
-		.sp-word span:nth-child(3) {
-			animation-delay: 0.74s;
-		}
-		.sp-word span:nth-child(4) {
-			animation-delay: 0.81s;
+			transform: translateY(8px);
+			animation: sp-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards;
 		}
 		.sp-line {
-			position: absolute;
-			bottom: -10px;
-			left: 50%;
-			width: 100vw;
+			width: 128px;
 			height: 2px;
-			margin-left: -50vw;
+			margin-top: -6px;
 			background: linear-gradient(
 				90deg,
-				transparent,
-				var(--sp-c1) 20%,
-				var(--sp-c2) 35%,
-				var(--sp-c3) 50%,
-				var(--sp-c4) 65%,
-				var(--sp-c5) 80%,
-				transparent
+				var(--sp-c1),
+				var(--sp-c2),
+				var(--sp-c3),
+				var(--sp-c4),
+				var(--sp-c5)
 			);
-			opacity: 0.9;
-			transform: scaleX(0);
-			animation: sp-line-in 1s cubic-bezier(0.65, 0, 0.35, 1) 0.78s forwards;
-		}
-		.sp-line::after {
-			position: absolute;
-			inset: -4px 0;
-			content: "";
-			background: inherit;
-			filter: blur(6px);
-		}
-		.sp-iris {
-			--sp-size: 172vmax;
-			background: var(--sp-wheel);
-			border-radius: 50%;
+			border-radius: 1px;
 			opacity: 0;
-			-webkit-mask-image: radial-gradient(
-				closest-side,
-				transparent 90%,
-				#000 97%,
-				transparent 100%
-			);
-			mask-image: radial-gradient(
-				closest-side,
-				transparent 90%,
-				#000 97%,
-				transparent 100%
-			);
-			transform: scale(0);
+			transform: scaleX(0);
+			animation: sp-line-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.65s forwards;
 		}
-		/* Leaving: the screen opens from the middle onto the app. */
+		/* Leaving: the light keeps spreading and the screen fades onto the app. */
 		#splash.sp-out {
 			visibility: hidden;
 			opacity: 0;
 		}
-		#splash.sp-out .sp-scene {
-			-webkit-mask-image: radial-gradient(
-				circle at 50% 50%,
-				transparent var(--sp-hole),
-				#000 calc(var(--sp-hole) + 40px)
-			);
-			mask-image: radial-gradient(
-				circle at 50% 50%,
-				transparent var(--sp-hole),
-				#000 calc(var(--sp-hole) + 40px)
-			);
-			animation: sp-hole 0.7s cubic-bezier(0.5, 0, 0.75, 0.5) forwards;
+		#splash.sp-out .sp-light {
+			transform: scale(1.6);
 		}
 		#splash.sp-out .sp-stage {
-			animation: sp-stage-out 0.5s cubic-bezier(0.6, 0, 0.4, 1) forwards;
+			opacity: 0;
+			transform: scale(1.06);
 		}
-		#splash.sp-out .sp-iris {
-			animation: sp-iris 0.7s cubic-bezier(0.5, 0, 0.75, 0.5) forwards;
-		}
-		@keyframes sp-turn {
+		@keyframes sp-spread {
 			to {
-				rotate: 360deg;
+				opacity: var(--sp-light);
+				transform: translate(calc(var(--x) * 1.6), calc(var(--y) * 1.6))
+					scale(2.2);
 			}
 		}
-		@keyframes sp-flood-in {
+		@keyframes sp-core {
 			to {
-				opacity: var(--sp-flood);
+				opacity: 1;
 				transform: none;
 			}
 		}
-		@keyframes sp-rays-in {
-			to {
-				opacity: var(--sp-rays);
-			}
-		}
-		@keyframes sp-ring {
-			8% {
+		@keyframes sp-ripple {
+			15% {
 				opacity: 1;
 			}
 			to {
 				opacity: 0;
-				transform: none;
-			}
-		}
-		@keyframes sp-flash {
-			20% {
-				opacity: 1;
-			}
-			to {
-				opacity: 0;
-				transform: scale(1.6);
-			}
-		}
-		@keyframes sp-spark {
-			10% {
-				opacity: 1;
-			}
-			to {
-				opacity: 0;
-				transform: rotate(var(--a)) translateX(var(--r)) scaleX(0.4);
-			}
-		}
-		@keyframes sp-aura-in {
-			to {
-				opacity: 0.45;
+				transform: scale(3.4);
 			}
 		}
 		@keyframes sp-mark-in {
-			0% {
-				opacity: 0;
-				transform: scale(0.4) rotate(-14deg);
-				filter: blur(14px);
-			}
-			55% {
-				opacity: 1;
-				transform: scale(1.1) rotate(2deg);
-				filter: none;
-			}
 			to {
 				opacity: 1;
 				transform: none;
-				filter: none;
 			}
 		}
 		@keyframes sp-sweep {
@@ -416,106 +250,67 @@
 				transform: translateX(70%);
 			}
 		}
-		@keyframes sp-letter {
+		@keyframes sp-rise {
 			to {
 				opacity: 1;
 				transform: none;
-				filter: none;
 			}
 		}
 		@keyframes sp-line-in {
 			to {
+				opacity: 0.85;
 				transform: none;
-			}
-		}
-		@keyframes sp-hole {
-			to {
-				--sp-hole: 78vmax;
-			}
-		}
-		@keyframes sp-iris {
-			from {
-				opacity: 1;
-			}
-			to {
-				opacity: 1;
-				transform: none;
-			}
-		}
-		@keyframes sp-stage-out {
-			to {
-				opacity: 0;
-				transform: scale(2.4);
-				filter: blur(10px);
 			}
 		}
 		@media (prefers-reduced-motion: reduce) {
 			#splash,
+			#splash * {
+				transition: opacity 0.3s ease !important;
+				animation: none !important;
+			}
 			#splash.sp-out {
 				transition:
 					opacity 0.3s ease,
-					visibility 0s linear 0.3s;
+					visibility 0s linear 0.3s !important;
 			}
-			#splash.sp-out .sp-scene {
-				-webkit-mask-image: none;
-				mask-image: none;
-			}
-			#splash *,
-			#splash.sp-out * {
+			.sp-mark,
+			.sp-word,
+			#splash .sp-stage {
 				opacity: 1;
-				filter: none;
 				transform: none;
-				transition: none !important;
-				animation: none !important;
 			}
-			.sp-flood,
-			.sp-rays,
-			.sp-ring,
-			.sp-flash,
-			.sp-sparks,
-			.sp-iris,
+			.sp-line {
+				opacity: 0.85;
+				transform: none;
+			}
+			.sp-light,
 			.sp-sweep {
 				display: none;
-			}
-			.sp-aura {
-				opacity: 0.45 !important;
-				filter: blur(48px) !important;
-			}
-			.sp-mark img {
-				filter: var(--sp-mark-filter) !important;
 			}
 		}
 		</style>
 	</head>
 	<body>
 		<div aria-hidden="true" id="splash">
-			<div class="sp-scene">
-				<div class="sp-fx sp-flood"></div>
-				<div class="sp-fx sp-rays"></div>
-				<div class="sp-fx sp-ring"></div>
-				<div class="sp-fx sp-ring"></div>
-				<div class="sp-fx sp-ring"></div>
-				<div class="sp-fx sp-flash"></div>
-				<div class="sp-fx sp-sparks"></div>
-				<div class="sp-stage">
-					<div class="sp-aura"></div>
-					<div class="sp-mark">
-						<img alt="" height="112" src="/logo.png" width="112">
-						<span class="sp-sweep"></span>
-					</div>
-					<div class="sp-word">
-						<span>M</span><span>i</span><span>n</span><span>e</span>
-					</div>
-					<div class="sp-line"></div>
-				</div>
+			<div class="sp-light">
+				<b class="sp-core"></b>
+				<i></i><i></i><i></i><i></i><i></i>
+				<b class="sp-ripple"></b>
+				<b class="sp-ripple"></b>
 			</div>
-			<div class="sp-fx sp-iris"></div>
+			<div class="sp-stage">
+				<div class="sp-mark">
+					<img alt="" height="112" src="/logo.png" width="112">
+					<span class="sp-sweep"></span>
+				</div>
+				<div class="sp-word">Mine</div>
+				<div class="sp-line"></div>
+			</div>
 		</div>
 		<script>
 		"use strict";
+		// Match the theme next-themes will pick ("theme" in localStorage).
 		(() => {
-			const splash = document.getElementById("splash");
-			// Match the theme next-themes will pick ("theme" in localStorage).
 			let theme = "system";
 			try {
 				theme = localStorage.getItem("theme") || "system";
@@ -526,27 +321,12 @@
 				theme === "dark" ||
 				(theme !== "light" &&
 					matchMedia("(prefers-color-scheme: dark)").matches);
-			splash.classList.toggle("sp-dark", dark);
+			document.getElementById("splash").classList.toggle("sp-dark", dark);
 			window.__splashStart = performance.now();
-			// Sparks fly out from the mark to beyond the edges of the screen.
-			const sparks = splash.querySelector(".sp-sparks");
-			const count = 36;
-			for (let i = 0; i < count; i++) {
-				const spark = document.createElement("i");
-				const angle = (360 / count) * i + Math.random() * 8;
-				const long = Math.random() < 0.4;
-				spark.style.cssText = [
-					`--a:${angle}deg`,
-					`--r:${45 + Math.random() * 45}vmax`,
-					`--w:${long ? 40 + Math.random() * 40 : 10 + Math.random() * 14}px`,
-					`--h:${long ? 2 : 3 + Math.random() * 2}px`,
-					`--c:var(--sp-c${(i % 5) + 1})`,
-					`--d:${0.3 + Math.random() * 0.2}s`,
-				].join(";");
-				sparks.append(spark);
-			}
 			// Never cover the page for good, even if the app fails to load.
-			setTimeout(() => splash.classList.add("sp-out"), 10_000);
+			setTimeout(() => {
+				document.getElementById("splash")?.classList.add("sp-out");
+			}, 10_000);
 		})();
 		</script>
 		<div id="app"></div>

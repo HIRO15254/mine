@@ -1,11 +1,11 @@
 /**
  * The launch animation lives in index.html so it shows before the app loads.
- * It plays for at least MIN_MS, then the screen opens from the middle onto the
- * app and the first screen's content rises in (`app-enter` in index.css).
+ * It plays for at least MIN_MS, then its light keeps spreading as it fades onto
+ * the app, and the first screen's content rises in (`app-enter` in index.css).
  * With reduced motion there is nothing to watch, so it only waits REDUCED_MS
  * and fades.
  */
-export const MIN_MS = 1800;
+export const MIN_MS = 1600;
 export const REDUCED_MS = 300;
 const OUT_MS = 700;
 const REDUCED_OUT_MS = 300;
