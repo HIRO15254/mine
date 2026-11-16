@@ -28,6 +28,7 @@ import { useControlSize, useIsDesk } from "@/hooks/use-media-query";
 import { useNow } from "@/hooks/use-now";
 import { useToday, useTodayDate } from "@/hooks/use-today";
 import { addDays, formatClock, rangeOfDays } from "@/lib/calendar-time";
+import { moveActive } from "@/lib/caret-token";
 import type { Project } from "@/lib/tasks";
 import {
 	completeHash,
@@ -192,21 +193,6 @@ function Highlighted({
 	}
 	parts.push(text.slice(from));
 	return <>{parts}</>;
-}
-
-/** The next highlighted suggestion; the list grows upward when placed on top. */
-function moveActive(
-	key: "ArrowDown" | "ArrowUp",
-	current: number,
-	count: number,
-	placement: "bottom" | "top"
-): number {
-	const towardList = placement === "top" ? "ArrowUp" : "ArrowDown";
-	const delta = key === towardList ? 1 : -1;
-	if (current < 0) {
-		return delta > 0 ? 0 : count - 1;
-	}
-	return (current + delta + count) % count;
 }
 
 function SuggestionOption({

@@ -91,7 +91,7 @@ describe("hashAtCaret and completeHash", () => {
 	it("finds the #word being typed and completes it", () => {
 		const text = "会議 #仕 あと";
 		const token = hashAtCaret(text, 5);
-		expect(token).toEqual({ end: 5, query: "仕", start: 3 });
+		expect(token).toEqual({ end: 5, query: "仕", start: 3, trigger: "#" });
 		expect(completeHash(text, token ?? { end: 0, start: 0 }, work)).toEqual({
 			caret: 7,
 			text: "会議 #仕事 あと",

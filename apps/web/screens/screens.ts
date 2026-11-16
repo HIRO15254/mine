@@ -40,6 +40,16 @@ export const SCREENS: Screen[] = [
 			await page.getByText("ゼミ発表のスライドを仕上げる").first().click();
 		},
 	},
+	{
+		// "#" typed in quick add: the projects to complete it with.
+		name: "tasks-quick-add",
+		path: "/tasks?view=today",
+		prepare: async (page) => {
+			await page
+				.getByLabel("タスクを追加")
+				.pressSequentially("資料をまとめる #");
+		},
+	},
 	{ name: "time", path: "/time" },
 	{ name: "calendar", path: "/calendar" },
 	{ name: "calendar-month", path: "/calendar?view=month" },

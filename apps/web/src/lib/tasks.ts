@@ -122,6 +122,8 @@ const WHITESPACE = /\s+/;
 
 interface QuickAddContext {
 	labels: Label[];
+	/** The project picked from the suggestions, for a name several share. */
+	preferredProjectId?: string | null;
 	projects: Project[];
 	today: string;
 }
@@ -151,7 +153,11 @@ function applyToken(
 		return false;
 	}
 	if (token.startsWith("#")) {
-		const match = findProjectByName(context.projects, token.slice(1));
+		const match = findProjectByName(
+			context.projects,
+			token.slice(1),
+			context.preferredProjectId
+		);
 		if (match) {
 			result.projectId = match.id;
 		}
@@ -168,9 +174,18 @@ function applyToken(
 	return false;
 }
 
+/** The most words in one project or label name ("Side project" is two). */
+function longestName(context: QuickAddContext): number {
+	const names = [...context.projects, ...context.labels].map(
+		(item) => item.name
+	);
+	return Math.max(1, ...names.map((name) => name.split(WHITESPACE).length));
+}
+
 /**
  * Reads Todoist-style tokens out of a one-line entry:
  * "p1", "#プロジェクト", "@ラベル" (or the label's own "@name"), "今日/明日/明後日".
+ * A name with spaces is read whole ("#Side project"), longest first.
  * Unknown #/@ tokens stay in the title so nothing typed is lost.
  */
 export function parseQuickAdd(
@@ -178,10 +193,31 @@ export function parseQuickAdd(
 	context: QuickAddContext
 ): QuickAddResult {
 	const result: QuickAddResult = { labelIds: [], title: "" };
-	const words = text
-		.split(WHITESPACE)
-		.filter((token) => token && !applyToken(token, result, context));
-	result.title = words.join(" ");
+	const words = text.split(WHITESPACE).filter(Boolean);
+	const span = longestName(context);
+	const title: string[] = [];
+	let index = 0;
+	while (index < words.length) {
+		const word = words[index] ?? "";
+		const named = word.startsWith("#") || word.startsWith("@");
+		let used = 0;
+		for (
+			let count = named ? Math.min(span, words.length - index) : 1;
+			count > 0 && !used;
+			count -= 1
+		) {
+			const token = words.slice(index, index + count).join(" ");
+			if (applyToken(token, result, context)) {
+				used = count;
+			}
+		}
+		if (!used) {
+			title.push(word);
+			used = 1;
+		}
+		index += used;
+	}
+	result.title = title.join(" ");
 	return result;
 }
 

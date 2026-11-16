@@ -8,6 +8,9 @@ import { renderWithQuery } from "../../../__tests__/render";
 import { api } from "../../../__tests__/test-api";
 import { QuickAdd } from "../quick-add";
 
+const TRAINING = /研修/;
+const NEXT = /next/;
+
 async function seed() {
 	const lab = await api.caller.project.create({ name: "研究" });
 	return { lab, projects: await api.client.project.list.query() };
@@ -83,5 +86,75 @@ describe("QuickAdd", () => {
 		expect(api.calls("task.create")).toMatchObject([
 			{ title: "あとで読む https://example.com/a" },
 		]);
+	});
+
+	it("completes #projects and @labels as they are typed", async () => {
+		const { lab } = await seed();
+		await api.caller.project.create({ name: "研修" });
+		const next = await api.caller.label.create({ name: "next" });
+		const projects = await api.client.project.list.query();
+		const labels = await api.client.label.list.query();
+		renderWithQuery(
+			<QuickAdd labels={labels} onOpenEditor={vi.fn()} projects={projects} />
+		);
+		const input = screen.getByLabelText("タスクを追加");
+
+		await userEvent.type(input, "論文を読む #研");
+		expect(
+			screen.getAllByRole("option").map((option) => option.textContent)
+		).toEqual(["研究", "研修"]);
+		await userEvent.keyboard("{Enter}");
+		expect(input).toHaveValue("論文を読む #研究 ");
+		expect(input).toHaveAttribute("aria-expanded", "false");
+
+		await userEvent.type(input, "@n");
+		expect(screen.getByRole("option", { name: NEXT })).toBeInTheDocument();
+		await userEvent.keyboard("{Tab}");
+		expect(input).toHaveValue("論文を読む #研究 @next ");
+		expect(api.calls("task.create")).toEqual([]);
+
+		await userEvent.keyboard("{Enter}");
+		await waitFor(async () =>
+			expect(
+				await api.caller.task.list({ today: "2026-11-05", view: "open" })
+			).toMatchObject([
+				{
+					labels: [{ id: next.id }],
+					projectId: lab.id,
+					title: "論文を読む",
+				},
+			])
+		);
+	});
+
+	it("chooses with the arrow keys, by click, and closes with Escape", async () => {
+		await seed();
+		const training = await api.caller.project.create({ name: "研修" });
+		const projects = await api.client.project.list.query();
+		renderWithQuery(
+			<QuickAdd labels={[]} onOpenEditor={vi.fn()} projects={projects} />
+		);
+		const input = screen.getByLabelText("タスクを追加");
+
+		await userEvent.type(input, "#研{ArrowDown}");
+		expect(screen.getByRole("option", { name: TRAINING })).toHaveAttribute(
+			"aria-selected",
+			"true"
+		);
+		await userEvent.keyboard("{Enter}");
+		expect(input).toHaveValue("#研修 ");
+
+		await userEvent.type(input, "#研{Escape}");
+		expect(input).toHaveAttribute("aria-expanded", "false");
+		await userEvent.keyboard("{Backspace}");
+		await userEvent.click(screen.getByRole("option", { name: TRAINING }));
+		expect(input).toHaveValue("#研修 #研修 ");
+
+		await userEvent.type(input, "日報{Enter}");
+		await waitFor(() =>
+			expect(api.calls("task.create")).toMatchObject([
+				{ projectId: training.id, title: "日報" },
+			])
+		);
 	});
 });

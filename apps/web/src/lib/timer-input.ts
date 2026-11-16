@@ -4,6 +4,7 @@
  * calendar events happening around now.
  */
 import { type DisplayEvent, formatClock } from "./calendar-time";
+import { type CaretToken, replaceToken, tokenAtCaret } from "./caret-token";
 import { findProjectByName, type Project, type Task } from "./tasks";
 import type { TimeEntry } from "./time";
 
@@ -18,7 +19,6 @@ export interface HashToken {
 const HASH = /#[^\s#]+/g;
 const SPACE = /\s/;
 const SPACES = /\s+/g;
-const LEADING_SPACE = /^\s+/;
 
 /** The project name with spaces that the text after a "#" starts with. */
 function spacedName(rest: string, names: string[]): string | undefined {
@@ -90,22 +90,8 @@ export function parseTimerText(
 }
 
 /** The "#word" the caret is in or right after, while it is being typed. */
-export function hashAtCaret(
-	text: string,
-	caret: number
-): { end: number; query: string; start: number } | null {
-	let start = caret;
-	while (start > 0 && !SPACE.test(text[start - 1] ?? "")) {
-		start -= 1;
-	}
-	if (text[start] !== "#") {
-		return null;
-	}
-	let end = caret;
-	while (end < text.length && !SPACE.test(text[end] ?? "")) {
-		end += 1;
-	}
-	return { end, query: text.slice(start + 1, caret), start };
+export function hashAtCaret(text: string, caret: number): CaretToken | null {
+	return tokenAtCaret(text, caret, ["#"]);
 }
 
 /** Replaces the token being typed with "#name " and returns the new caret. */
@@ -114,12 +100,7 @@ export function completeHash(
 	token: { end: number; start: number },
 	project: Project
 ): { caret: number; text: string } {
-	const inserted = `#${project.name} `;
-	const rest = text.slice(token.end).replace(LEADING_SPACE, "");
-	return {
-		caret: token.start + inserted.length,
-		text: text.slice(0, token.start) + inserted + rest,
-	};
+	return replaceToken(text, token, `#${project.name}`);
 }
 
 /** The text that starts `description` on `projectId`. */

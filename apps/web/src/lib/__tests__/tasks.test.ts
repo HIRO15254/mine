@@ -78,6 +78,44 @@ describe("parseQuickAdd", () => {
 		expect(result.projectId).toBe("home");
 	});
 
+	it("reads project and label names that have spaces, longest first", () => {
+		const result = parseQuickAdd("資料 #Digital Experts @Side job 作成 #Side", {
+			labels: [...labels, makeLabel({ id: "side-job", name: "Side job" })],
+			projects: [
+				...projects,
+				makeProject({ id: "de", name: "Digital Experts" }),
+				makeProject({ id: "digital", name: "Digital" }),
+				makeProject({ id: "side", name: "Side" }),
+			],
+			today: TODAY,
+		});
+		expect(result).toMatchObject({
+			labelIds: ["side-job"],
+			projectId: "side",
+			title: "資料 作成",
+		});
+		expect(
+			parseQuickAdd("資料 #Digital Experts", {
+				labels,
+				projects: [
+					...projects,
+					makeProject({ id: "de", name: "Digital Experts" }),
+				],
+				today: TODAY,
+			}).projectId
+		).toBe("de");
+	});
+
+	it("prefers the picked project among several of one name", () => {
+		const result = parseQuickAdd("発表 #研究", {
+			labels,
+			preferredProjectId: "lab-2",
+			projects: [...projects, makeProject({ id: "lab-2", name: "研究" })],
+			today: TODAY,
+		});
+		expect(result.projectId).toBe("lab-2");
+	});
+
 	it("reads words every object inherits as plain title text", () => {
 		const result = parseQuickAdd("fix toString and constructor bug", {
 			labels,
