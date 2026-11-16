@@ -18,7 +18,6 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
-import { Input } from "@/components/ui/input/input";
 import { useControlSize, useIsDesk } from "@/hooks/use-media-query";
 import { moveActive, replaceToken, tokenAtCaret } from "@/lib/caret-token";
 import {
@@ -26,13 +25,42 @@ import {
 	type QuickAddSuggestion,
 	suggestQuickAdd,
 } from "@/lib/quick-add";
-import { type Label, type Project, parseQuickAdd, todayKey } from "@/lib/tasks";
+import {
+	type Label,
+	type Project,
+	type QuickAddToken,
+	readQuickAdd,
+	todayKey,
+} from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { MarkedInput, type TextMark } from "./marked-input";
 import { ProjectName } from "./project-name";
 import type { DraftDefaults } from "./task-draft";
 import { useCreateTask } from "./use-tasks";
 
 const lower = (value: string) => value.toLocaleLowerCase("ja");
+
+const PRIORITY_COLOR: Record<number, string> = {
+	1: "var(--destructive)",
+	2: "var(--warning)",
+	3: "var(--primary)",
+	4: "var(--muted-foreground)",
+};
+
+/**
+ * Each token that will not be part of the title, as a chip: a project in
+ * its hue, a priority in its color, a day in the color of "today".
+ */
+function tokenMark(token: QuickAddToken, projects: Project[]): TextMark {
+	const project = projects.find((item) => item.id === token.projectId);
+	const color = {
+		date: "var(--success)",
+		label: "var(--primary)",
+		priority: PRIORITY_COLOR[token.priority ?? 4] ?? null,
+		project: project ? `var(--${project.color})` : null,
+	}[token.kind];
+	return { ...token, color };
+}
 
 function SuggestionOption({
 	active,
@@ -136,6 +164,12 @@ export function QuickAdd({
 		}
 	});
 
+	const read = readQuickAdd(text, {
+		labels,
+		preferredProjectId: pickedProjectId,
+		projects,
+		today: todayKey(),
+	});
 	const token = tokenAtCaret(text, caret, QUICK_ADD_TRIGGERS);
 	const suggestions = suggestQuickAdd({ labels, projects, token });
 	const showMenu = open && suggestions.length > 0;
@@ -163,12 +197,7 @@ export function QuickAdd({
 
 	const submit = (event: FormEvent) => {
 		event.preventDefault();
-		const parsed = parseQuickAdd(text, {
-			labels,
-			preferredProjectId: pickedProjectId,
-			projects,
-			today: todayKey(),
-		});
+		const parsed = read.result;
 		if (!parsed.title) {
 			return;
 		}
@@ -231,7 +260,7 @@ export function QuickAdd({
 			<label className="sr-only" htmlFor={id}>
 				タスクを追加
 			</label>
-			<Input
+			<MarkedInput
 				aria-activedescendant={current >= 0 ? optionId(current) : undefined}
 				aria-autocomplete="list"
 				aria-controls={listId}
@@ -241,6 +270,7 @@ export function QuickAdd({
 				autoFocus={autoFocus}
 				enterKeyHint="done"
 				id={id}
+				marks={read.tokens.map((item) => tokenMark(item, projects))}
 				onBlur={() => setOpen(false)}
 				onChange={(event: ChangeEvent<HTMLInputElement>) =>
 					update(

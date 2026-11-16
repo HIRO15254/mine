@@ -12,7 +12,6 @@ import {
 	type CSSProperties,
 	type FormEvent,
 	type KeyboardEvent,
-	type ReactNode,
 	useEffect,
 	useId,
 	useMemo,
@@ -20,10 +19,10 @@ import {
 	useState,
 } from "react";
 
+import { MarkedInput, type TextMark } from "@/components/tasks/marked-input";
 import { ProjectName } from "@/components/tasks/project-name";
 import { Button } from "@/components/ui/button/button";
 import { IconButton } from "@/components/ui/icon-button/icon-button";
-import { Input } from "@/components/ui/input/input";
 import { useControlSize, useIsDesk } from "@/hooks/use-media-query";
 import { useNow } from "@/hooks/use-now";
 import { useToday, useTodayDate } from "@/hooks/use-today";
@@ -158,41 +157,19 @@ function EventNudge({
 	);
 }
 
-/** The typed text with each "#プロジェクト" drawn in its project's hue. */
-function Highlighted({
-	pickedProjectId,
-	projects,
-	text,
-}: {
-	pickedProjectId: string | null;
-	projects: Project[];
-	text: string;
-}) {
-	const parts: ReactNode[] = [];
-	let from = 0;
-	for (const token of findHashTokens(text, projects, pickedProjectId)) {
-		parts.push(text.slice(from, token.start));
-		const word = text.slice(token.start, token.end);
-		parts.push(
-			token.project ? (
-				<mark
-					className="rounded-[3px] bg-[color-mix(in_srgb,var(--c)_22%,transparent)] text-[color-mix(in_srgb,var(--c)_75%,var(--foreground))] shadow-[0_0_0_2px_color-mix(in_srgb,var(--c)_22%,transparent)]"
-					data-project={token.project.id}
-					key={token.start}
-					style={{ "--c": `var(--${token.project.color})` } as CSSProperties}
-				>
-					{word}
-				</mark>
-			) : (
-				<span className="text-muted-foreground" key={token.start}>
-					{word}
-				</span>
-			)
-		);
-		from = token.end;
-	}
-	parts.push(text.slice(from));
-	return <>{parts}</>;
+/** Each "#word": a project's in its hue, an unknown one dimmed. */
+function hashMarks(
+	text: string,
+	projects: Project[],
+	pickedProjectId: string | null
+): TextMark[] {
+	return findHashTokens(text, projects, pickedProjectId).map((token) => ({
+		color: token.project ? `var(--${token.project.color})` : null,
+		end: token.end,
+		kind: "project",
+		projectId: token.project?.id,
+		start: token.start,
+	}));
 }
 
 function SuggestionOption({
@@ -284,7 +261,6 @@ export function TimerInput({
 	const isDesk = useIsDesk();
 	const size = useControlSize();
 	const input = useRef<HTMLInputElement>(null);
-	const mirror = useRef<HTMLDivElement>(null);
 	const [text, setText] = useState(() => unsent?.text ?? "");
 	const [caret, setCaret] = useState(0);
 	const [open, setOpen] = useState(false);
@@ -336,25 +312,17 @@ export function TimerInput({
 	const firstOrActive = hash && active < 0 ? 0 : active;
 	const current = showMenu ? firstOrActive : -1;
 
-	const syncScroll = () => {
-		if (mirror.current && input.current) {
-			mirror.current.scrollLeft = input.current.scrollLeft;
-		}
-	};
-
 	const update = (value: string, position: number) => {
 		setText(value);
 		setCaret(position);
 		setActive(-1);
 		setOpen(true);
-		requestAnimationFrame(syncScroll);
 	};
 
 	const placeCaret = (position: number) => {
 		requestAnimationFrame(() => {
 			input.current?.setSelectionRange(position, position);
 			setCaret(position);
-			syncScroll();
 		});
 	};
 
@@ -456,62 +424,37 @@ export function TimerInput({
 			<label className="sr-only" htmlFor={id}>
 				何をしていますか
 			</label>
-			<div className="relative min-w-0 flex-1">
-				<Input
-					aria-activedescendant={current >= 0 ? optionId(current) : undefined}
-					aria-autocomplete="list"
-					aria-controls={listId}
-					aria-expanded={showMenu}
-					autoComplete="off"
-					className="text-transparent caret-foreground selection:bg-primary-soft selection:text-transparent"
-					enterKeyHint="go"
-					id={id}
-					onBlur={() => setOpen(false)}
-					onChange={(event: ChangeEvent<HTMLInputElement>) => {
-						update(
-							event.target.value,
-							event.target.selectionStart ?? event.target.value.length
-						);
-					}}
-					onFocus={() => {
-						setTouched(true);
-						setOpen(true);
-					}}
-					onKeyDown={onKeyDown}
-					onKeyUp={(event) => {
-						setCaret(event.currentTarget.selectionStart ?? 0);
-						syncScroll();
-					}}
-					onMouseUp={(event) =>
-						setCaret(event.currentTarget.selectionStart ?? 0)
-					}
-					onScroll={syncScroll}
-					placeholder={
-						isDesk ? "何をしていますか（#プロジェクト）" : "何をしていますか"
-					}
-					ref={input}
-					role="combobox"
-					size={size}
-					value={text}
-				/>
-				<div
-					aria-hidden
-					className={cn(
-						"pointer-events-none absolute inset-px flex items-center overflow-hidden whitespace-pre px-2.5 text-foreground",
-						isDesk ? "text-sm" : "text-[length:var(--m-text-body)]"
-					)}
-					data-slot="timer-input-mirror"
-					ref={mirror}
-				>
-					<span className="shrink-0">
-						<Highlighted
-							pickedProjectId={pickedProjectId}
-							projects={projects}
-							text={text}
-						/>
-					</span>
-				</div>
-			</div>
+			<MarkedInput
+				aria-activedescendant={current >= 0 ? optionId(current) : undefined}
+				aria-autocomplete="list"
+				aria-controls={listId}
+				aria-expanded={showMenu}
+				autoComplete="off"
+				enterKeyHint="go"
+				id={id}
+				marks={hashMarks(text, projects, pickedProjectId)}
+				onBlur={() => setOpen(false)}
+				onChange={(event: ChangeEvent<HTMLInputElement>) => {
+					update(
+						event.target.value,
+						event.target.selectionStart ?? event.target.value.length
+					);
+				}}
+				onFocus={() => {
+					setTouched(true);
+					setOpen(true);
+				}}
+				onKeyDown={onKeyDown}
+				onKeyUp={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
+				onMouseUp={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
+				placeholder={
+					isDesk ? "何をしていますか（#プロジェクト）" : "何をしていますか"
+				}
+				ref={input}
+				role="combobox"
+				size={size}
+				value={text}
+			/>
 			<Button
 				aria-label="計測を始める"
 				className={isDesk ? undefined : "w-[var(--m-control)] px-0"}

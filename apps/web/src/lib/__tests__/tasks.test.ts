@@ -13,6 +13,7 @@ import {
 	groupTasks,
 	parseQuickAdd,
 	projectPath,
+	readQuickAdd,
 } from "../tasks";
 
 const TODAY = "2026-11-05";
@@ -124,6 +125,35 @@ describe("parseQuickAdd", () => {
 		});
 		expect(result.title).toBe("fix toString and constructor bug");
 		expect(result.scheduledDate).toBeUndefined();
+	});
+});
+
+describe("readQuickAdd", () => {
+	it("says where each token that leaves the title stands", () => {
+		const text = "論文 p2 #研究  @next 明日 #未登録";
+		const { tokens } = readQuickAdd(text, { labels, projects, today: TODAY });
+		expect(
+			tokens.map((token) => [token.kind, text.slice(token.start, token.end)])
+		).toEqual([
+			["priority", "p2"],
+			["project", "#研究"],
+			["label", "@next"],
+			["date", "明日"],
+		]);
+		expect(tokens[0]?.priority).toBe(2);
+		expect(tokens[1]?.projectId).toBe("lab");
+	});
+
+	it("covers a name with spaces as one token", () => {
+		const text = "資料 #Digital  Experts";
+		const { tokens } = readQuickAdd(text, {
+			labels,
+			projects: [makeProject({ id: "de", name: "Digital Experts" })],
+			today: TODAY,
+		});
+		expect(tokens).toMatchObject([
+			{ end: text.length, kind: "project", start: 3 },
+		]);
 	});
 });
 

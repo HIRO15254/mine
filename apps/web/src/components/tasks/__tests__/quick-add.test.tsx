@@ -157,4 +157,29 @@ describe("QuickAdd", () => {
 			])
 		);
 	});
+
+	it("marks the words that will not be part of the title", async () => {
+		const { lab, projects } = await seed();
+		const { container } = renderWithQuery(
+			<QuickAdd labels={[]} onOpenEditor={vi.fn()} projects={projects} />
+		);
+
+		await userEvent.type(
+			screen.getByLabelText("タスクを追加"),
+			"論文 p1 明日 #研究 #未登録"
+		);
+
+		const marks = [...container.querySelectorAll("mark")].map((mark) => [
+			mark.dataset.kind,
+			mark.textContent,
+		]);
+		expect(marks).toEqual([
+			["priority", "p1"],
+			["date", "明日"],
+			["project", "#研究"],
+		]);
+		expect(
+			container.querySelector(`mark[data-project="${lab.id}"]`)
+		).not.toBeNull();
+	});
 });

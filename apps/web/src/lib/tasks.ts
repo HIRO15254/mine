@@ -130,16 +130,29 @@ interface QuickAddContext {
 
 const lower = (value: string) => value.toLocaleLowerCase("ja");
 
-/** Applies one token to the result; false when it is plain title text. */
+export type QuickAddTokenKind = "date" | "label" | "priority" | "project";
+
+/** A stretch of the entry that sets a field instead of joining the title. */
+export interface QuickAddToken {
+	end: number;
+	kind: QuickAddTokenKind;
+	/** The priority it sets, for a priority token. */
+	priority?: number;
+	/** The project it names, for a project token. */
+	projectId?: string;
+	start: number;
+}
+
+/** Applies one token to the result; null when it is plain title text. */
 function applyToken(
 	token: string,
 	result: QuickAddResult,
 	context: QuickAddContext
-): boolean {
+): QuickAddTokenKind | null {
 	const priority = PRIORITY_TOKEN.exec(token);
 	if (priority) {
 		result.priority = Number(priority[1]);
-		return true;
+		return "priority";
 	}
 	// Own keys only: `in` would also match toString, constructor and the like.
 	const base = Object.hasOwn(DATE_WORDS, token)
@@ -147,10 +160,10 @@ function applyToken(
 		: null;
 	if (base) {
 		result.scheduledDate = dayKey(addDays(base, DATE_WORDS[token] ?? 0));
-		return true;
+		return "date";
 	}
 	if (token.length < 2) {
-		return false;
+		return null;
 	}
 	if (token.startsWith("#")) {
 		const match = findProjectByName(
@@ -158,20 +171,24 @@ function applyToken(
 			token.slice(1),
 			context.preferredProjectId
 		);
-		if (match) {
-			result.projectId = match.id;
+		if (!match) {
+			return null;
 		}
-		return Boolean(match);
+		result.projectId = match.id;
+		return "project";
 	}
 	if (token.startsWith("@")) {
 		const names = [lower(token), lower(token.slice(1))];
 		const match = context.labels.find((l) => names.includes(lower(l.name)));
-		if (match && !result.labelIds.includes(match.id)) {
+		if (!match) {
+			return null;
+		}
+		if (!result.labelIds.includes(match.id)) {
 			result.labelIds.push(match.id);
 		}
-		return Boolean(match);
+		return "label";
 	}
-	return false;
+	return null;
 }
 
 /** The most words in one project or label name ("Side project" is two). */
@@ -182,43 +199,98 @@ function longestName(context: QuickAddContext): number {
 	return Math.max(1, ...names.map((name) => name.split(WHITESPACE).length));
 }
 
+interface Word {
+	end: number;
+	start: number;
+	text: string;
+}
+
+const WORD = /\S+/g;
+
+/**
+ * The token that starts at `words[index]`, applied to the result. A "#" or
+ * "@" word may run on over the next words for a name with spaces; the
+ * longest name that matches wins.
+ */
+function tokenAt(
+	words: Word[],
+	index: number,
+	span: number,
+	result: QuickAddResult,
+	context: QuickAddContext
+): QuickAddToken | null {
+	const first = words[index];
+	if (!first) {
+		return null;
+	}
+	const named = first.text.startsWith("#") || first.text.startsWith("@");
+	for (
+		let count = named ? Math.min(span, words.length - index) : 1;
+		count > 0;
+		count -= 1
+	) {
+		const run = words.slice(index, index + count);
+		const kind = applyToken(
+			run.map((word) => word.text).join(" "),
+			result,
+			context
+		);
+		if (kind) {
+			return {
+				end: run.at(-1)?.end ?? first.end,
+				kind,
+				priority: kind === "priority" ? result.priority : undefined,
+				projectId: kind === "project" ? result.projectId : undefined,
+				start: first.start,
+			};
+		}
+	}
+	return null;
+}
+
 /**
  * Reads Todoist-style tokens out of a one-line entry:
  * "p1", "#プロジェクト", "@ラベル" (or the label's own "@name"), "今日/明日/明後日".
  * A name with spaces is read whole ("#Side project"), longest first.
- * Unknown #/@ tokens stay in the title so nothing typed is lost.
+ * Unknown #/@ tokens stay in the title so nothing typed is lost. Returns the
+ * fields and where each token stands in the text, for the box to mark them.
  */
+export function readQuickAdd(
+	text: string,
+	context: QuickAddContext
+): { result: QuickAddResult; tokens: QuickAddToken[] } {
+	const result: QuickAddResult = { labelIds: [], title: "" };
+	const words = [...text.matchAll(WORD)].map((match) => ({
+		end: match.index + match[0].length,
+		start: match.index,
+		text: match[0],
+	}));
+	const span = longestName(context);
+	const title: string[] = [];
+	const tokens: QuickAddToken[] = [];
+	let index = 0;
+	while (index < words.length) {
+		const token = tokenAt(words, index, span, result, context);
+		if (token) {
+			tokens.push(token);
+			while (index < words.length && (words[index]?.start ?? 0) < token.end) {
+				index += 1;
+			}
+		} else {
+			title.push(words[index]?.text ?? "");
+			index += 1;
+		}
+	}
+	result.title = title.join(" ");
+	return { result, tokens };
+}
+
+/** The fields a one-line entry sets; see `readQuickAdd`. */
 export function parseQuickAdd(
 	text: string,
 	context: QuickAddContext
 ): QuickAddResult {
-	const result: QuickAddResult = { labelIds: [], title: "" };
-	const words = text.split(WHITESPACE).filter(Boolean);
-	const span = longestName(context);
-	const title: string[] = [];
-	let index = 0;
-	while (index < words.length) {
-		const word = words[index] ?? "";
-		const named = word.startsWith("#") || word.startsWith("@");
-		let used = 0;
-		for (
-			let count = named ? Math.min(span, words.length - index) : 1;
-			count > 0 && !used;
-			count -= 1
-		) {
-			const token = words.slice(index, index + count).join(" ");
-			if (applyToken(token, result, context)) {
-				used = count;
-			}
-		}
-		if (!used) {
-			title.push(word);
-			used = 1;
-		}
-		index += used;
-	}
-	result.title = title.join(" ");
-	return result;
+	return readQuickAdd(text, context).result;
 }
 
 /** Projects in tree order with their depth, children after their parent. */

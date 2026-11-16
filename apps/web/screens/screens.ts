@@ -41,13 +41,13 @@ export const SCREENS: Screen[] = [
 		},
 	},
 	{
-		// "#" typed in quick add: the projects to complete it with.
+		// Quick add with tokens marked and "#" opening the projects to complete it with.
 		name: "tasks-quick-add",
 		path: "/tasks?view=today",
 		prepare: async (page) => {
 			await page
 				.getByLabel("タスクを追加")
-				.pressSequentially("資料をまとめる #");
+				.pressSequentially("資料をまとめる p1 明日 @next #");
 		},
 	},
 	{ name: "time", path: "/time" },
