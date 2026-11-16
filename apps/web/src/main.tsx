@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 
 import { RouteError, RouteNotFound } from "./components/app-shell/route-error";
+import { refetchOnWindowFocus } from "./lib/focus";
 import {
 	CACHE_MAX_AGE,
 	CACHE_VERSION,
@@ -15,6 +16,7 @@ import { queryClient, trpc } from "./lib/trpc";
 import { routeTree } from "./routeTree.gen";
 
 syncOnlineState();
+refetchOnWindowFocus();
 
 const router = createRouter({
 	routeTree,

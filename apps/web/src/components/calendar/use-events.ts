@@ -20,6 +20,8 @@ type Snapshot = [QueryKey, EventsData | undefined][];
 export function useCalendarEvents(range: TimedRange) {
 	return useQuery({
 		...trpc.calendar.events.queryOptions(range),
+		// Changes made in Google or by Claude come in while the calendar is open.
+		refetchInterval: 60_000,
 		retry: false,
 		staleTime: 60_000,
 	});

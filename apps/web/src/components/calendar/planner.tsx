@@ -160,6 +160,9 @@ function eventMove(
 
 const WEEKDAY = new Intl.DateTimeFormat("ja-JP", { weekday: "short" });
 
+/** How often the calendar reloads tasks while it is on screen. */
+const REFRESH_MS = 60_000;
+
 /** The phone's day picker: one day of the week at a time. */
 function DayStrip({
 	days,
@@ -261,8 +264,8 @@ function DraggedChip({
 }
 
 /**
- * What the tray lists: tasks not on the calendar (no time in the week view,
- * and not on a day shown), of the period (planned or due in it, or on Today
+ * What the tray lists: tasks not on the calendar (not planned for a day
+ * shown, whatever their time), of the period (planned or due in it, or on Today
  * while today is in it) unless every open task is asked for.
  */
 export function tasksForTray({
@@ -272,7 +275,6 @@ export function tasksForTray({
 	tasks,
 	today,
 	todayTasks,
-	view,
 }: {
 	filter: TrayFilter;
 	period: Date[];
@@ -280,7 +282,6 @@ export function tasksForTray({
 	tasks: Task[];
 	today: string;
 	todayTasks: Task[];
-	view: CalendarView;
 }): Task[] {
 	const shownKeys = new Set(shown.map(dayKey));
 	const periodKeys = new Set(period.map(dayKey));
@@ -289,9 +290,9 @@ export function tasksForTray({
 		(task.scheduledDate !== null && periodKeys.has(task.scheduledDate)) ||
 		(task.deadline !== null && periodKeys.has(task.deadline)) ||
 		(periodKeys.has(today) && dueToday.has(task.id));
+	// On a day shown, a task is in its column or its 終日 cell already.
 	const onCalendar = (task: Task) =>
-		(view === "week" && task.scheduledTime !== null) ||
-		(task.scheduledDate !== null && shownKeys.has(task.scheduledDate));
+		task.scheduledDate !== null && shownKeys.has(task.scheduledDate);
 	return tasks.filter(
 		(task) => !onCalendar(task) && (filter === "all" || inPeriod(task))
 	);
@@ -490,12 +491,16 @@ export function CalendarPlanner({
 		enabled: view === "week",
 	});
 	const todayString = useToday();
-	const openTasks = useQuery(
-		trpc.task.list.queryOptions({ today: todayString, view: "open" })
-	);
-	const todayTasks = useQuery(
-		trpc.task.list.queryOptions({ today: todayString, view: "today" })
-	);
+	// Kept fresh while the calendar is open, for changes made elsewhere (by
+	// Claude, or on another device); also refetched when the window gets focus.
+	const openTasks = useQuery({
+		...trpc.task.list.queryOptions({ today: todayString, view: "open" }),
+		refetchInterval: REFRESH_MS,
+	});
+	const todayTasks = useQuery({
+		...trpc.task.list.queryOptions({ today: todayString, view: "today" }),
+		refetchInterval: REFRESH_MS,
+	});
 	const [filter, setFilter] = useState<TrayFilter>("period");
 	const [selected, setSelected] = useState(() =>
 		firstSelected(days, month, today)
@@ -521,7 +526,6 @@ export function CalendarPlanner({
 		tasks,
 		today: todayString,
 		todayTasks: todayTasks.data ?? [],
-		view,
 	});
 	const words = trayWords(view, isDesk);
 

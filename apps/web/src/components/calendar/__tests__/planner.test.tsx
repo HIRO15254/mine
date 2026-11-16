@@ -105,6 +105,20 @@ beforeEach(async () => {
 });
 
 describe("the tray", () => {
+	it("keeps a task with a time on another week, which the grid does not show", async () => {
+		await api.caller.task.create({
+			scheduledDate: "2026-11-20",
+			scheduledTime: "10:00",
+			title: "来週の10時にやる",
+		});
+		stubGoogle([]);
+		renderWithQuery(<Planner />);
+
+		await userEvent.click(await within(tray()).findByText("すべて"));
+
+		expect(await within(tray()).findByText("来週の10時にやる")).toBeVisible();
+	});
+
 	it("lists the tasks of the week on screen until every task is asked for", async () => {
 		await api.caller.task.create({
 			deadline: "2026-11-13",

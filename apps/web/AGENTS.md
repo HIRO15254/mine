@@ -31,6 +31,7 @@ Before writing a helper, look for it; these exist once and are meant to be reuse
 ## Reading and writing data
 
 - Read with `useQuery(trpc.<router>.<procedure>.queryOptions(input))`. Put a query used by more than one component into the feature's `use-*.ts` hook.
+- Data also changes outside the app (Claude through `/mcp`, shortcuts, another device). Stale queries refetch when the page becomes visible or the window gets focus back (`src/lib/focus.ts`); a screen that stays open while such changes happen, as the calendar does, also sets a `refetchInterval`.
 - Write through hooks in the feature's `use-*.ts`. Changes to tasks and the timer are optimistic: change the cached lists first (`components/tasks/optimistic.ts`), roll back and show a message when the server refuses, then invalidate. For tasks that is `useCreateTask`, `useUpdateTask` and `useDeleteTask` in `use-tasks.ts`; pass what to say on failure and do not write another `onMutate`.
 - A mutation without its own `onError` gets the common toast from the `MutationCache` in `src/lib/trpc.ts`; add `onError` only to say something more specific. `isConflict(error)` tells a duplicate or refused change apart.
 - Mutations do not wait for a connection (`networkMode: "always"`): offline they fail at once and the input stays or comes back. Never queue a write for later.
