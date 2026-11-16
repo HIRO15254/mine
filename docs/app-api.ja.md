@@ -90,6 +90,23 @@ Authorization: Bearer mine_xxxxxxxx…
 
 URL を知っている人は誰でもこのページを見られます（操作はできません）。漏れたときは、設定で「URL を再発行」すると前の URL はすぐ使えなくなり、「削除」すると止まります。日付と時刻は日本時間です。
 
+### KWGT などで自分で描く（JSON）
+
+同じ URL の末尾に `.json` を付けると、同じ内容を JSON で返します（`https://api.mine.hiro15254.com/widget/mine_wg_….json`）。ヘッダーを送れないウィジェット作成アプリ（KWGT など）向けです。
+
+- `text.timer`、`text.events`、`text.tasks` は、そのまま表示できる文字列です。予定とタスクは 1 行に 1 件ずつ改行で区切っています。
+- 項目ごとに並べたいときは `timer`、`events[]`、`tasks[]` を使います。中身はページと同じです（予定は終わったものを除き、タスクは最大 8 件で、残りの件数が `moreTasks`）。
+
+KWGT なら、テキストの部品に次のように書くと表示できます（URL は自分のものに置き換えます）。
+
+```
+$wg("https://api.mine.hiro15254.com/widget/mine_wg_….json", json, .text.timer)$
+$wg("https://api.mine.hiro15254.com/widget/mine_wg_….json", json, .text.events)$
+$wg("https://api.mine.hiro15254.com/widget/mine_wg_….json", json, .text.tasks)$
+```
+
+KWGT がデータを取り直す間隔は Android の省電力の影響を受け、数十分おきになることがあります。
+
 ## Tasker など
 
 ほかのアプリでも、上のヘッダーを付けて同じ URL を呼べば使えます。Tasker なら「HTTP Request」アクションで `GET /timer` を呼び、`text` を通知に出せば、計測中の表示を常に出しておくこともできます。

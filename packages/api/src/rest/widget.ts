@@ -172,3 +172,36 @@ export async function widgetSnapshot(
 		today,
 	};
 }
+
+/**
+ * The snapshot for widget makers that read JSON (KWGT, Tasker): the same
+ * data, plus each part already written as lines, so one text field can show
+ * a whole list without looping over it.
+ */
+export function widgetJson(snapshot: WidgetSnapshot) {
+	const timerText = snapshot.timer
+		? `${snapshot.timer.elapsed} ${snapshot.timer.description ?? "説明なし"}${snapshot.timer.project ? `（${snapshot.timer.project}）` : ""}`
+		: "計測していません";
+	const eventLines =
+		snapshot.events === null
+			? ["カレンダーを読み込めませんでした"]
+			: snapshot.events.map(
+					(event) =>
+						`${event.allDay ? "終日" : `${event.start}–${event.end}`} ${event.title}`
+				);
+	const taskLines = snapshot.tasks.map(
+		(task) =>
+			`${task.title}${task.time ? ` ${task.time}` : ""}${task.overdue ? "（期限切れ）" : ""}`
+	);
+	if (snapshot.moreTasks > 0) {
+		taskLines.push(`ほか ${snapshot.moreTasks} 件`);
+	}
+	return {
+		...snapshot,
+		text: {
+			events: eventLines.join("\n") || "今日の残りの予定はありません",
+			tasks: taskLines.join("\n") || "今日のタスクはありません",
+			timer: timerText,
+		},
+	};
+}

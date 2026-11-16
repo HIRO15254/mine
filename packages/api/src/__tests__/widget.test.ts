@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { WIDGET_TASK_LIMIT, widgetSnapshot } from "../rest/widget";
+import { WIDGET_TASK_LIMIT, widgetJson, widgetSnapshot } from "../rest/widget";
 import { createTestApp, OTHER_USER, TEST_USER } from "../testing";
 import { resolveTokenSession, resolveWidgetToken } from "../tokens";
 
@@ -206,5 +206,72 @@ describe("widget snapshot", () => {
 		expect(snapshot.timer).toBeNull();
 		expect(snapshot.tasks).toHaveLength(WIDGET_TASK_LIMIT);
 		expect(snapshot.moreTasks).toBe(3);
+	});
+
+	it("writes each part as lines for a single text field", async () => {
+		const app = await createTestApp({
+			fetch: googleFetch([
+				{
+					end: { dateTime: "2026-11-16T15:00:00+09:00" },
+					id: "later",
+					start: { dateTime: "2026-11-16T14:00:00+09:00" },
+					summary: "面談",
+				},
+				{
+					end: { date: "2026-11-17" },
+					id: "allday",
+					start: { date: "2026-11-16" },
+					summary: "出張",
+				},
+			]),
+			getGoogleAccessToken: () => Promise.resolve("token"),
+			now: NOW,
+		});
+		const work = await app.caller.project.create({ name: "仕事" });
+		const next = await app.caller.label.create({ name: "next" });
+		for (let index = 0; index < WIDGET_TASK_LIMIT; index += 1) {
+			await app.caller.task.create({
+				labelIds: [next.id],
+				title: `タスク${index}`,
+			});
+		}
+		await app.caller.task.create({
+			priority: 1,
+			scheduledDate: "2026-11-16",
+			scheduledTime: "13:00",
+			title: "資料",
+		});
+		app.clock.now = NOW - 5 * 60_000;
+		await app.caller.time.start({ projectId: work.id });
+		app.clock.now = NOW;
+
+		const json = widgetJson(await widgetSnapshot(app.caller, NOW, TZ));
+
+		expect(json.text.timer).toBe("0:05 説明なし（仕事）");
+		expect(json.text.events).toBe("終日 出張\n14:00–15:00 面談");
+		const lines = json.text.tasks.split("\n");
+		expect(lines[0]).toBe("資料 13:00");
+		expect(lines).toHaveLength(WIDGET_TASK_LIMIT + 1);
+		expect(lines.at(-1)).toBe("ほか 1 件");
+		expect(json.tasks).toHaveLength(WIDGET_TASK_LIMIT);
+	});
+
+	it("says so in words when there is nothing to show", async () => {
+		const app = await createTestApp({
+			fetch: googleFetch([]),
+			getGoogleAccessToken: () => Promise.resolve("token"),
+			now: NOW,
+		});
+		app.clock.now = NOW - 60_000;
+		await app.caller.time.start({ description: "読書" });
+		app.clock.now = NOW;
+
+		const json = widgetJson(await widgetSnapshot(app.caller, NOW, TZ));
+
+		expect(json.text).toEqual({
+			events: "今日の残りの予定はありません",
+			tasks: "今日のタスクはありません",
+			timer: "0:01 読書",
+		});
 	});
 });

@@ -571,6 +571,32 @@ describe("widget page", () => {
 		expect(light).toContain("color-scheme: light;");
 	});
 
+	it("gives the same snapshot as JSON for widget makers", async () => {
+		const { get } = await widgetSetup();
+
+		const response = await get(`/widget/${WIDGET_TOKEN}.json`);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("Content-Type")).toContain("application/json");
+		expect(response.headers.get("Cache-Control")).toBe("no-store");
+		await expect(response.json()).resolves.toMatchObject({
+			events: null,
+			tasks: [{ overdue: true, priority: 1, title: "<b>見積</b>" }],
+			text: {
+				events: "カレンダーを読み込めませんでした",
+				tasks: "<b>見積</b>（期限切れ）",
+				timer: "計測していません",
+			},
+			timer: null,
+		});
+
+		const unknown = await get("/widget/mine_wg_nope.json");
+		expect(unknown.status).toBe(404);
+		await expect(unknown.json()).resolves.toEqual({
+			error: "Unknown widget link",
+		});
+	});
+
 	it("refuses an unknown link, an API token, and an account off the allowlist", async () => {
 		const { get } = await widgetSetup();
 		const unknown = await get("/widget/mine_wg_nope");

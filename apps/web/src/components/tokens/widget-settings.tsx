@@ -75,7 +75,7 @@ export function WidgetSettings() {
 		<div className="flex flex-col gap-2">
 			<p className="m-0 text-muted-foreground text-xs">
 				{
-					"Android のホーム画面に今日の予定・タスク・タイマーを表示するページです。HTML Widget などのアプリに URL を設定します。URL を知っている人は誰でも見られるので、共有しないでください。"
+					"Android のホーム画面に今日の予定・タスク・タイマーを表示するページです。HTML Widget などのアプリに URL を設定します。KWGT など JSON を読むアプリには、末尾に .json を付けた URL を使います。URL を知っている人は誰でも見られるので、共有しないでください。"
 				}
 			</p>
 			{issued && (
