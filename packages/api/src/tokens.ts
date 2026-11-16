@@ -1,6 +1,6 @@
 import { user } from "@mine/db/schema/auth";
 import { oauthGrant } from "@mine/db/schema/oauth";
-import { apiToken } from "@mine/db/schema/token";
+import { apiToken, widgetToken } from "@mine/db/schema/token";
 import { and, eq, gt } from "drizzle-orm";
 
 import type { Context, Session } from "./context";
@@ -9,6 +9,8 @@ export const TOKEN_PREFIX = "mine_";
 /** OAuth access and refresh tokens issued to apps such as Claude. */
 export const ACCESS_TOKEN_PREFIX = "mine_at_";
 export const REFRESH_TOKEN_PREFIX = "mine_rt_";
+/** The secret in the widget page's link; it reads that page and nothing else. */
+export const WIDGET_TOKEN_PREFIX = "mine_wg_";
 const PREFIX_LENGTH = TOKEN_PREFIX.length + 6;
 const PADDING = /=+$/;
 const BEARER = /^Bearer\s+(\S+)$/i;
@@ -123,5 +125,42 @@ export async function resolveTokenSession(
 	return {
 		user: { email: row.email, id: row.id, name: row.name },
 		via: "api-token",
+	};
+}
+
+/**
+ * Resolves the secret of a widget link to its owner and records when the page
+ * was drawn. Kept apart from `resolveTokenSession`: a widget link can never be
+ * used as a bearer token, so it reads the widget page and nothing more.
+ */
+export async function resolveWidgetToken(
+	db: Context["db"],
+	token: string,
+	now: Date = new Date()
+): Promise<Session | null> {
+	if (!token.startsWith(WIDGET_TOKEN_PREFIX)) {
+		return null;
+	}
+	const [row] = await db
+		.select({
+			email: user.email,
+			id: user.id,
+			name: user.name,
+			tokenId: widgetToken.id,
+		})
+		.from(widgetToken)
+		.innerJoin(user, eq(user.id, widgetToken.userId))
+		.where(eq(widgetToken.tokenHash, await hashToken(token)))
+		.limit(1);
+	if (!row) {
+		return null;
+	}
+	await db
+		.update(widgetToken)
+		.set({ lastUsedAt: now.getTime() })
+		.where(eq(widgetToken.id, row.tokenId));
+	return {
+		user: { email: row.email, id: row.id, name: row.name },
+		via: "widget",
 	};
 }

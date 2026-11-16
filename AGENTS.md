@@ -73,6 +73,8 @@ Mine is a single-user personal dashboard for schedule, tasks and time tracking. 
 - `/v1`: REST for shortcuts and other apps; personal API tokens only. Documented in `docs/app-api.ja.md`.
 - `/mcp`: tools for Claude; an OAuth access token from Mine's own OAuth server, or a personal API token. Documented in `docs/claude-mcp.ja.md`.
 
+Beside them, `/widget/<secret>` serves a read-only HTML page for Android home-screen widget apps (`routes/widget.ts`, `widget-page.ts`, and `packages/api/src/rest/widget.ts` for its data). Its secret link lives in its own table, is read only by `widgetCaller()` in `session.ts`, and is never accepted as a bearer token. The page uses no scripts or external resources; documented in `docs/app-api.ja.md`.
+
 A feature is not reachable from Claude until it has an MCP tool. When adding or changing a feature, go through this list:
 
 1. Schema and migration in `packages/db` (see `packages/db/src/migrations/README.md` for the steps and the column conventions). A test compares the Drizzle tables with what the migrations build, so one cannot change without the other.

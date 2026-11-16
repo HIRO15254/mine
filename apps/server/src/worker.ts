@@ -7,12 +7,14 @@ import { mcpRoutes } from "./routes/mcp";
 import { oauthRoutes } from "./routes/oauth";
 import { trpcRoutes } from "./routes/trpc";
 import { v1Routes } from "./routes/v1";
+import { widgetRoutes } from "./routes/widget";
 import { authFor } from "./session";
 
 /*
  * The Worker: CORS, Better Auth's own endpoints, and the three API surfaces.
  * Who may call what is decided in `session.ts`; each file in `routes/` names
- * the kinds of sign-in its surface accepts.
+ * the kinds of sign-in its surface accepts. `/widget` adds a page for home
+ * screen widgets, read through a secret link.
  */
 const app = new Hono<AppEnv>();
 
@@ -33,6 +35,7 @@ app.route("/", trpcRoutes);
 app.route("/v1", v1Routes);
 app.route("/", oauthRoutes);
 app.route("/", mcpRoutes);
+app.route("/", widgetRoutes);
 
 app.get("/", (context) => context.text("OK"));
 

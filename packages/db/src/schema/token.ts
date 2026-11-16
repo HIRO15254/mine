@@ -32,3 +32,28 @@ export const apiToken = sqliteTable(
 		index("api_token_user_idx").on(table.userId),
 	]
 );
+
+/**
+ * The secret link to the home-screen widget page (`/widget/<token>`), at most
+ * one per user. Like an API token only its hash is kept, but it can only read
+ * that page: `/v1`, `/mcp` and `/trpc` never accept it.
+ */
+export const widgetToken = sqliteTable(
+	"widget_token",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		tokenHash: text("token_hash").notNull(),
+		/** The first characters of the token, to recognise the link. */
+		prefix: text("prefix").notNull(),
+		/** Epoch milliseconds of the last time the page was drawn. */
+		lastUsedAt: integer("last_used_at"),
+		createdAt: createdAt(),
+	},
+	(table) => [
+		uniqueIndex("widget_token_hash_idx").on(table.tokenHash),
+		uniqueIndex("widget_token_user_idx").on(table.userId),
+	]
+);

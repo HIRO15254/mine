@@ -9,13 +9,14 @@ export interface SessionUser {
 	name: string;
 }
 
-export type TokenKind = "api-token" | "oauth";
+export type TokenKind = "api-token" | "oauth" | "widget";
 
 export interface Session {
 	user: SessionUser;
 	/**
 	 * How a request without a browser cookie was authenticated: a personal API
-	 * token, or an OAuth access token issued to an app such as Claude.
+	 * token, an OAuth access token issued to an app such as Claude, or the
+	 * secret link of the home-screen widget page.
 	 */
 	via?: TokenKind;
 }

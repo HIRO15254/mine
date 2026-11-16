@@ -17,6 +17,7 @@ import { ConnectedApps } from "@/components/oauth/connected-apps";
 import { LabelSettings } from "@/components/tasks/label-settings";
 import { ProjectSettings } from "@/components/tasks/project-settings";
 import { ApiTokenSettings } from "@/components/tokens/api-token-settings";
+import { WidgetSettings } from "@/components/tokens/widget-settings";
 import { Button } from "@/components/ui/button/button";
 import {
 	Item,
@@ -97,6 +98,10 @@ function SettingsPage() {
 				<section className="flex flex-col gap-2">
 					<h2 className="m-0 font-semibold text-sm">Claude との接続</h2>
 					<ConnectedApps />
+				</section>
+				<section className="flex flex-col gap-2">
+					<h2 className="m-0 font-semibold text-sm">ウィジェット</h2>
+					<WidgetSettings />
 				</section>
 				<section className="flex flex-col gap-2">
 					<h2 className="m-0 font-semibold text-sm">APIトークン</h2>

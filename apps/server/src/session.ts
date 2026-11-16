@@ -4,7 +4,11 @@ import {
 	type TokenKind,
 } from "@mine/api/context";
 import { appRouter, type Caller } from "@mine/api/routers/index";
-import { bearerToken, resolveTokenSession } from "@mine/api/tokens";
+import {
+	bearerToken,
+	resolveTokenSession,
+	resolveWidgetToken,
+} from "@mine/api/tokens";
 import { createAuth } from "@mine/auth";
 import { isEmailAllowed, parseAllowedEmails } from "@mine/auth/allowlist";
 import { createDb, type Database } from "@mine/db";
@@ -27,7 +31,9 @@ type Auth = ReturnType<typeof authFor>;
 /**
  * The ways a request can say who it is from: the browser's session cookie, a
  * personal API token, or an OAuth access token issued to an app such as
- * Claude. Each surface names the ones it takes.
+ * Claude. Each surface names the ones it takes. A widget link is never
+ * found from a header (it is not in the API token table): it comes in the
+ * page's address, and only `widgetCaller()` reads it.
  */
 export type AuthKind = "cookie" | TokenKind;
 
@@ -88,16 +94,27 @@ export function requestContext(
 	headers: Headers,
 	accept: readonly AuthKind[]
 ) {
+	return contextFor(env, headers, (db, auth) =>
+		resolveSession(env, db, auth, headers, accept)
+	);
+}
+
+function contextFor(
+	env: Bindings,
+	headers: Headers,
+	find: (db: Database, auth: Auth) => Promise<Session | null>
+) {
 	const db = createDb(env.DB);
 	const auth = authFor(env, db);
 	let pending: Promise<Session | null> | undefined;
 	const session = () => {
-		pending ??= resolveSession(env, db, auth, headers, accept);
+		pending ??= find(db, auth);
 		return pending;
 	};
 	/*
 	 * A browser session reads Google tokens through its cookie; a token session
-	 * (API token or OAuth app) looks them up by user, since it has no cookie.
+	 * (API token, OAuth app or widget link) looks them up by user, since it has
+	 * no cookie.
 	 */
 	const getGoogleAccessToken = async () => {
 		const current = await session();
@@ -122,6 +139,28 @@ export function requestContext(
 		createContext: createContextFactory(db, session, { getGoogleAccessToken }),
 		session,
 	};
+}
+
+/**
+ * A caller for the owner of a widget link, or null when the link is unknown
+ * or its account left the allowlist. The page it draws only reads; the link
+ * is never accepted by `/trpc`, `/v1` or `/mcp`.
+ */
+export async function widgetCaller(
+	env: Bindings,
+	token: string
+): Promise<Caller | null> {
+	const { createContext, session } = contextFor(
+		env,
+		new Headers(),
+		async (db) => {
+			const found = await resolveWidgetToken(db, token);
+			return found && isAllowed(env, found.user.email) ? found : null;
+		}
+	);
+	return (await session())
+		? appRouter.createCaller(await createContext())
+		: null;
 }
 
 /** A caller for the signed-in user, or null when the request is not signed in. */

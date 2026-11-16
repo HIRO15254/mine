@@ -33,7 +33,7 @@ import {
 	timeEntry,
 	timeEntryRelations,
 } from "./schema/time";
-import { apiToken } from "./schema/token";
+import { apiToken, widgetToken } from "./schema/token";
 
 export const schema = {
 	account,
@@ -65,4 +65,5 @@ export const schema = {
 	user,
 	userRelations,
 	verification,
+	widgetToken,
 };

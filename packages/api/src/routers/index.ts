@@ -10,6 +10,7 @@ import { taskRouter } from "./task";
 import { threadRouter } from "./thread";
 import { timeRouter } from "./time";
 import { tokenRouter } from "./token";
+import { widgetRouter } from "./widget";
 
 export const appRouter = router({
 	healthCheck: publicProcedure.query(() => "OK" as const),
@@ -23,6 +24,7 @@ export const appRouter = router({
 	thread: threadRouter,
 	time: timeRouter,
 	token: tokenRouter,
+	widget: widgetRouter,
 });
 
 export type AppRouter = typeof appRouter;

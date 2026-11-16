@@ -1,4 +1,5 @@
 import { createTestApp } from "@mine/api/testing";
+import { hashToken } from "@mine/api/tokens";
 import { describe, expect, it } from "vitest";
 import type { Bindings } from "../bindings";
 import { app } from "../worker";
@@ -499,5 +500,89 @@ describe("OAuth consent page", () => {
 		expect(location.origin + location.pathname).toBe(CLAUDE);
 		expect(location.searchParams.get("state")).toBe("st");
 		expect(location.searchParams.get("code")).toMatch(CODE_FORMAT);
+	});
+});
+
+const WIDGET_TOKEN = "mine_wg_test-widget-000000000000000000000000000";
+
+async function widgetSetup(allowed = "me@example.com") {
+	const { d1, sqlite } = await createTestApp();
+	sqlite
+		.prepare(
+			"insert into widget_token (id, user_id, token_hash, prefix) values (?, ?, ?, ?)"
+		)
+		.run("w1", "u1", await hashToken(WIDGET_TOKEN), WIDGET_TOKEN.slice(0, 11));
+	sqlite
+		.prepare(
+			"insert into project (id, user_id, name, parent_id, color) values ('p1', 'u1', '仕事', null, 'chart-3')"
+		)
+		.run();
+	sqlite
+		.prepare(
+			"insert into task (id, user_id, title, project_id, priority, deadline) values ('t1', 'u1', '<b>見積</b>', 'p1', 1, '2000-01-01')"
+		)
+		.run();
+	const bindings = {
+		ALLOWED_EMAILS: allowed,
+		BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret",
+		BETTER_AUTH_URL: "https://api.example.test",
+		CORS_ORIGIN: "https://web.example.test",
+		DB: d1,
+		GOOGLE_CLIENT_ID: "client-id",
+		GOOGLE_CLIENT_SECRET: "client-secret",
+	} as Bindings;
+	const get = (path: string, init: RequestInit = {}) =>
+		app.request(path, init, bindings);
+	return { get, sqlite };
+}
+
+describe("widget page", () => {
+	it("draws today's page for a known link, without scripts", async () => {
+		const { get, sqlite } = await widgetSetup();
+
+		const response = await get(`/widget/${WIDGET_TOKEN}`);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("Content-Type")).toContain("text/html");
+		expect(response.headers.get("Referrer-Policy")).toBe("no-referrer");
+		expect(response.headers.get("Cache-Control")).toBe("no-store");
+		const html = await response.text();
+		expect(html).toContain("&lt;b&gt;見積&lt;/b&gt;");
+		expect(html).toContain("期限切れ");
+		expect(html).toContain("計測していません");
+		// Google is not connected in tests.
+		expect(html).toContain("カレンダーを読み込めませんでした");
+		expect(html).toContain("prefers-color-scheme");
+		expect(html).not.toContain("<script");
+		expect(
+			sqlite.prepare("select last_used_at from widget_token").get()
+		).toMatchObject({ last_used_at: expect.any(Number) });
+	});
+
+	it("takes a fixed theme from the address", async () => {
+		const { get } = await widgetSetup();
+
+		const dark = await (await get(`/widget/${WIDGET_TOKEN}?theme=dark`)).text();
+		expect(dark).toContain("color-scheme: dark;");
+		expect(dark).not.toContain("prefers-color-scheme");
+		const light = await (
+			await get(`/widget/${WIDGET_TOKEN}?theme=light`)
+		).text();
+		expect(light).toContain("color-scheme: light;");
+	});
+
+	it("refuses an unknown link, an API token, and an account off the allowlist", async () => {
+		const { get } = await widgetSetup();
+		const unknown = await get("/widget/mine_wg_nope");
+		expect(unknown.status).toBe(404);
+		await expect(unknown.text()).resolves.toContain("このリンクは使えません");
+
+		const header = await get("/v1/timer", {
+			headers: { Authorization: `Bearer ${WIDGET_TOKEN}` },
+		});
+		expect(header.status).toBe(401);
+
+		const locked = await widgetSetup("someone@example.com");
+		expect((await locked.get(`/widget/${WIDGET_TOKEN}`)).status).toBe(404);
 	});
 });

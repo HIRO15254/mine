@@ -23,10 +23,12 @@ packages/config 共有の TypeScript 設定
 | `/trpc` | Web アプリ | セッション cookie、または個人用 API トークン | `apps/server/src/routes/trpc.ts` と `packages/api/src/routers/` |
 | `/v1` | ショートカットなどの外部アプリ | 個人用 API トークンだけ | `apps/server/src/routes/v1.ts` と `packages/api/src/rest/` |
 | `/mcp` | Claude | Mine の OAuth のアクセストークン、または個人用 API トークン | `apps/server/src/routes/mcp.ts` と `packages/api/src/mcp/` |
+| `/widget/<秘密>` | Android のウィジェットアプリ（見るだけ） | URL に入った秘密のリンク | `apps/server/src/routes/widget.ts`、`apps/server/src/widget-page.ts` と `packages/api/src/rest/widget.ts` |
 
 - 「誰からの依頼か」を決めるのは `apps/server/src/session.ts` の 1 か所です。それぞれの入口は、受け付ける認証の種類（cookie、API トークン、OAuth）を並べて渡すだけです。
 - cookie は `SameSite=None` なので、`/trpc` への書き込みは Web アプリの `Origin` が付いたものだけを受け付けます（別サイトのフォームからの送信を断るため）。
 - OAuth のトークンは `/mcp` だけで使えます。同意画面が約束したのは MCP のツールだけだからです。
+- ウィジェットのリンク（`mine_wg_…`）は、ウィジェットのページを表示することにしか使えません。API トークンとは別の表に置き、ヘッダーで送っても受け付けません。1 人 1 本で、再発行すると前のリンクはすぐ使えなくなります。ページはサーバーで描いた HTML で、スクリプトを使わず、日付は `Asia/Tokyo` で決めます。
 - トークンの発行と削除、接続したアプリの管理は、どのトークンからもできず、ブラウザのログインからだけです。
 - MCP のツールは tRPC の手続きを呼びます。そのため、機能を足しても MCP のツールを足さない限り Claude からは使えません。
 

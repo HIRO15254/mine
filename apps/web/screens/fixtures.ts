@@ -365,6 +365,12 @@ export const tokens: Outputs["token"]["list"] = [
 	},
 ];
 
+export const widgetLink: Outputs["widget"]["link"] = {
+	createdAt: "2026-11-16T05:00:00.000Z",
+	lastUsedAt: Date.parse("2026-11-16T05:30:00.000Z"),
+	prefix: "mine_wg_7Qc",
+};
+
 export const connections: Outputs["oauth"]["connections"] = [
 	{
 		createdAt: "2026-11-06T05:00:00.000Z",
@@ -439,4 +445,5 @@ export const queries: Record<string, (input: unknown) => unknown> = {
 		});
 	},
 	"token.list": () => tokens,
+	"widget.link": () => widgetLink,
 };
