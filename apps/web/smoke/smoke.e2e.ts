@@ -1,8 +1,8 @@
 /**
  * The few paths that must work in a real browser for Mine to be usable:
  * signing in is asked for, a task can be added, completed and brought back,
- * the timer starts and stops, and a task and an event can be dragged on the
- * calendar.
+ * the timer starts and stops, a task and an event can be dragged on the
+ * calendar, and the switches keep their labels inside them on a narrow phone.
  * Each test checks what the server holds afterwards, not only the screen.
  *
  *   bun run smoke
@@ -213,4 +213,25 @@ it("fits the whole day on the screen at the smallest scale, with nothing else sc
 	expect(
 		hours && grid && grid.y + grid.height - (hours.y + hours.height)
 	).toBeLessThan(2);
+});
+
+it("keeps the switches' labels inside them on a narrow phone", async () => {
+	const { page } = session;
+	await page.setViewportSize({ height: 800, width: 360 });
+
+	for (const path of ["/settings", "/tasks?view=today"]) {
+		await session.open(path);
+		const items = page.locator('[data-slot="toggle-group-item"]');
+		await items.first().waitFor();
+		const overflowing = await items.evaluateAll((elements) =>
+			elements
+				.filter(
+					(element) =>
+						element.scrollWidth > element.clientWidth ||
+						element.getBoundingClientRect().right > window.innerWidth
+				)
+				.map((element) => element.textContent)
+		);
+		expect(overflowing, path).toEqual([]);
+	}
 });

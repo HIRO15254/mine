@@ -10,7 +10,7 @@ function ToggleGroup({
 	return (
 		<ToggleGroupPrimitive.Root
 			className={cn(
-				"isolate grid auto-cols-[minmax(0,1fr)] grid-flow-col",
+				"isolate grid auto-cols-[minmax(min-content,1fr)] grid-flow-col",
 				className
 			)}
 			data-slot="toggle-group"

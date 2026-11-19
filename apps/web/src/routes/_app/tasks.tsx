@@ -116,11 +116,7 @@ function TasksPage() {
 					value={view}
 				>
 					{TASK_VIEW_OPTIONS.map((option) => (
-						<ToggleGroupItem
-							className="px-1"
-							key={option.value}
-							value={option.value}
-						>
+						<ToggleGroupItem key={option.value} value={option.value}>
 							{option.label}
 						</ToggleGroupItem>
 					))}
